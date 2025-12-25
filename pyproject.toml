@@ -1,0 +1,16 @@
+[project]
+name = "agentic-ai-nurse"
+version = "0.1.0"
+description = "AI-Driven Patient Health Monitoring System"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "crewai",
+    "crewai-tools",
+    "langchain-groq",
+    "python-dotenv"
+]
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
