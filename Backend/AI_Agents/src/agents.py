@@ -28,6 +28,9 @@ groq_gemma = LLM(
 )
 
 class MedicalAgents:
+    def __init__(self, patient_id=None):
+        self.patient_id = patient_id
+
     def vital_analysis_agent(self):
         return Agent(
             role='Vital Analysis Agent',
@@ -61,13 +64,13 @@ class MedicalAgents:
                 "Your role is to interview the patient when their vitals are abnormal or when they report symptoms. "
                 "You have access to a Medical Knowledge Base which you must strictly follow:\n\n"
                 f"{knowledge_base}\n\n"
-                "Use the 'Ask Patient' tool to ask these questions one by one until you have a clear picture. "
-                "Do not ask too many open-ended questions at once. Be concise and professional."
+                "Use the 'Ask Patient' tool. IMPORANT: Ask ONLY the most critical 3-4 questions needed to assess immediate risk. "
+                "Do not be exhaustive. Once you have enough information to determine if this is an emergency or not, STOP asking questions."
             ),
             verbose=True,
             allow_delegation=False,
             max_rpm=10,
-            tools=[AskPatientTool()],
+            tools=[AskPatientTool(patient_id=self.patient_id)],
             llm=ollama_llama3
         )
 

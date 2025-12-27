@@ -1,19 +1,9 @@
-import sys
-import os
-
-# Ensure backend root is in path to import database modules
-current_dir = os.path.dirname(os.path.abspath(__file__)) # .../Backend/AI_Agents/src
-backend_root = os.path.dirname(os.path.dirname(os.path.dirname(current_dir))) # .../Backend (hopefully)
-# Actually, let's just use relative to this file
-backend_path = os.path.abspath(os.path.join(current_dir, '..', '..'))
-if backend_path not in sys.path:
-    sys.path.append(backend_path)
-
 from crewai.tools import BaseTool
 import time
 import uuid
 
 # Import DB session and model
+# Note: We assume this runs in a context where 'Backend' is in path or installed
 from database.session import SessionLocal
 from database.models import AgentInteraction
 
@@ -25,7 +15,7 @@ class AskPatientTool(BaseTool):
     )
     patient_id: str = None
     
-    def __init__(self, patient_id: str = None):
+    def __init__(self, patient_id: str):
         super().__init__()
         self.patient_id = patient_id
 
@@ -54,10 +44,10 @@ class AskPatientTool(BaseTool):
             db.close()
 
         # 2. Poll for Answer
-        # Wait for up to 5 minutes (150 * 2s)
-        max_retries = 150 
+        max_retries = 30 # 30 * 2s = 60 seconds timeout (Adjust as needed)
+        # Ideally, this should be much longer or configurable for real usage
         
-        print(f"[AskPatientTool] Waiting for answer for Interaction {interaction_id}...")
+        print("[AskPatientTool] Waiting for answer...")
         for _ in range(max_retries):
             time.sleep(2)
             db = SessionLocal()

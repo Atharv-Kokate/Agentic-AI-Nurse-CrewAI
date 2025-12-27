@@ -52,3 +52,12 @@ class alerts(Base):
     call_received = Column(Boolean, nullable=False)
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
     updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+class AgentInteraction(Base):
+    __tablename__ = "agent_interactions"
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    patient_id = Column(UUID(as_uuid=True), ForeignKey("patients.id"), nullable=False)
+    question = Column(String, nullable=False)
+    answer = Column(String, nullable=True)
+    status = Column(String, nullable=False, default="PENDING") # PENDING, ANSWERED
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)

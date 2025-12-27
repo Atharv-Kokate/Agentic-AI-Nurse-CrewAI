@@ -24,8 +24,9 @@ class MedicalTasks:
             description=(
                 "Based on the vital analysis and any initial symptoms reported, determine if further questions are needed. "
                 "If 'requires_symptom_check' is true or if there are abnormal findings, use the 'Ask Patient' tool "
-                "to interview the patient. Ask relevant questions from your knowledge base to clarify the condition. "
-                "Stop when you have enough information."
+                "to interview the patient. Limit yourself to 3 questions max. "
+                "Prioritize identifying red flags (severe pain, difficulty breathing, altered mental state). "
+                "Stop immediately if you identify a medical emergency or have enough info."
             ),
             expected_output=(
                 "A JSON object containing:\n"
@@ -68,6 +69,7 @@ class MedicalTasks:
                 "A JSON object containing:\n"
                 "{\n"
                 "  \"risk_level\": \"HIGH\",\n"
+                "  \"risk_score\": 85,\n"
                 "  \"justification\": \"Patient has critical BP and specific symptoms...\",\n"
                 "  \"requires_immediate_action\": true\n"
                 "}"

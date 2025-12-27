@@ -4,3 +4,8 @@ langchain-groq
 python-dotenv
 litellm
 langchain-google-genai
+psycopg2
+sqlalchemy
+fastapi
+uvicorn
+httpx

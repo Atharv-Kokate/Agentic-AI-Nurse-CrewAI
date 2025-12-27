@@ -5,8 +5,8 @@ import time
 import sys
 
 class MedicalCrew:
-    def __init__(self):
-        self.agents = MedicalAgents()
+    def __init__(self, patient_id=None):
+        self.agents = MedicalAgents(patient_id=patient_id)
         self.tasks = MedicalTasks()
 
     def kickoff_with_retry(self, crew_instance, step_name):
@@ -62,12 +62,16 @@ class MedicalCrew:
 
         print("\n[4/5] Running Risk Assessment Agent...")
         c4 = Crew(agents=[risk_agent], tasks=[risk_assessment], verbose=True)
-        self.kickoff_with_retry(c4, "Risk Assessment")
+        c4 = Crew(agents=[risk_agent], tasks=[risk_assessment], verbose=True)
+        risk_result = self.kickoff_with_retry(c4, "Risk Assessment")
         print("Assessment Complete. Cooling down (10s)...")
         time.sleep(10)
 
         print("\n[5/5] Running Decision & Action Agent...")
         c5 = Crew(agents=[decision_agent], tasks=[decision_making], verbose=True)
-        result = self.kickoff_with_retry(c5, "Decision Action")
+        decision_result = self.kickoff_with_retry(c5, "Decision Action")
         
-        return result
+        return {
+            "risk_assessment": risk_result,
+            "decision_action": decision_result
+        }
