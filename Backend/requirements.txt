@@ -7,5 +7,10 @@ langchain-google-genai
 psycopg2
 sqlalchemy
 fastapi
-uvicorn
+uvicorn[standard]
 httpx
+pydantic
+python-jose[cryptography]
+passlib[bcrypt]
+python-multipart
+email-validator

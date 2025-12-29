@@ -2,6 +2,7 @@ import json
 import logging
 from typing import Optional, Dict, Any, List
 from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 from datetime import datetime
@@ -13,13 +14,39 @@ sys.path.append(os.path.join(os.path.dirname(__file__), 'AI_Agents'))
 
 # Database imports
 from database.session import engine, Base, get_db, SessionLocal
-from database.models import Patient, monitoring_logs, ai_assesments, alerts, AgentInteraction
-from src.crew import MedicalCrew 
+from database.models import Patient, monitoring_logs, ai_assesments, alerts, AgentInteraction, User, UserRole
+from src.crew import MedicalCrew
+
+# Auth imports
+from auth.dependencies import get_current_active_user, require_roles
+
+# Route imports
+from routes.auth import router as auth_router
+from routes.patients import router as patients_router 
 
 # Initialize DB tables
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="Agentic AI Nurse API", version="1.0.0")
+app = FastAPI(
+    title="Agentic AI Nurse API",
+    version="1.0.0",
+    description="AI-powered patient monitoring and risk assessment system",
+    docs_url="/docs",
+    redoc_url="/redoc"
+)
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, replace with specific origins
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Include Routers
+app.include_router(auth_router)
+app.include_router(patients_router)
 
 # Setup Logging
 logging.basicConfig(level=logging.INFO)
@@ -44,6 +71,26 @@ class PatientRequest(BaseModel):
     # Clinical Info
     known_conditions: str
     initial_symptoms: str
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "name": "Async Test Patient",
+                    "age": 55,
+                    "gender": "Male",
+                    "contact_number": "555-ASYNC-001",
+                    "blood_pressure": "200/100",
+                    "heart_rate": "95",
+                    "blood_sugar": "100",
+                    "meds_taken": False,
+                    "known_conditions": "history of high BP, cardiac failure or heart attack",
+                    "initial_symptoms": "difficulties in breathing",
+                    "sleep_hours": 6
+                }
+            ]
+        }
+    }
 
 class AnalysisInitResponse(BaseModel):
     message: str
@@ -158,9 +205,15 @@ def run_crew_background(crew_input: dict, patient_id_str: str):
 # --- Routes ---
 
 @app.post("/api/v1/analyze", response_model=AnalysisInitResponse)
-def analyze_patient(request: PatientRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+def analyze_patient(
+    request: PatientRequest,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles([UserRole.ADMIN, UserRole.NURSE, UserRole.DOCTOR]))
+):
     """
     Ingest patient data and start AI analysis in background.
+    Requires authentication: ADMIN, NURSE, or DOCTOR role.
     """
     try:
         logger.info(f"Received analysis request for patient: {request.name}")
@@ -242,9 +295,14 @@ def analyze_patient(request: PatientRequest, background_tasks: BackgroundTasks, 
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/v1/status/{patient_id}", response_model=StatusResponse)
-def check_status(patient_id: str, db: Session = Depends(get_db)):
+def check_status(
+    patient_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles([UserRole.ADMIN, UserRole.NURSE, UserRole.DOCTOR]))
+):
     """
     Check the status of the analysis.
+    Requires authentication: ADMIN, NURSE, or DOCTOR role.
     """
     # 1. Check for Pending Interactions (HITL)
     pending_interaction = db.query(AgentInteraction).filter(
@@ -306,9 +364,15 @@ def check_status(patient_id: str, db: Session = Depends(get_db)):
     return StatusResponse(status="RUNNING")
 
 @app.post("/api/v1/interaction/{interaction_id}")
-def provide_answer(interaction_id: str, request: AnswerRequest, db: Session = Depends(get_db)):
+def provide_answer(
+    interaction_id: str,
+    request: AnswerRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles([UserRole.ADMIN, UserRole.NURSE, UserRole.DOCTOR]))
+):
     """
     Provide an answer to a pending question.
+    Requires authentication: ADMIN, NURSE, or DOCTOR role.
     """
     interaction = db.query(AgentInteraction).filter(AgentInteraction.id == interaction_id).first()
     if not interaction:

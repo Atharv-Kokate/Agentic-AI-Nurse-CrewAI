@@ -1,9 +1,34 @@
 import uuid
 from datetime import datetime
-from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, JSON, Boolean
+from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, JSON, Boolean, Enum
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
 from database.session import Base
+import enum
+
+
+class UserRole(str, enum.Enum):
+    ADMIN = "ADMIN"
+    NURSE = "NURSE"
+    DOCTOR = "DOCTOR"
+    PATIENT = "PATIENT"
+
+
+class User(Base):
+    __tablename__ = "users"
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    email = Column(String, unique=True, nullable=False, index=True)
+    hashed_password = Column(String, nullable=False)
+    full_name = Column(String, nullable=False)
+    role = Column(Enum(UserRole), nullable=False, default=UserRole.PATIENT)
+    is_active = Column(Boolean, default=True)
+    # Link to Patient record (only used when role=PATIENT)
+    patient_id = Column(UUID(as_uuid=True), ForeignKey("patients.id"), nullable=True)
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationship to Patient
+    patient = relationship("Patient", back_populates="user_account")
 
 
 class Patient(Base):
@@ -16,8 +41,12 @@ class Patient(Base):
     next_appointment_date = Column(DateTime, nullable=True)    
     known_conditions = Column(JSONB, nullable=False)
     reported_symptoms = Column(JSONB, nullable=False)
+    assigned_doctor = Column(String, nullable=True)  # Doctor's name (optional)
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
     updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationship to User account (for patient login)
+    user_account = relationship("User", back_populates="patient", uselist=False)
     
 class monitoring_logs(Base):
     __tablename__ = "monitoring_logs"
