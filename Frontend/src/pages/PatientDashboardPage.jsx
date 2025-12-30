@@ -1,0 +1,146 @@
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Activity, Calendar, Clock, AlertTriangle, CheckCircle, Plus } from 'lucide-react';
+import { format } from 'date-fns';
+import client from '../api/client';
+
+const PatientDashboardPage = () => {
+    const navigate = useNavigate();
+    const [patient, setPatient] = useState(null);
+    const [history, setHistory] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                // 1. Get My Patient Record
+                const meRes = await client.get('/patients/me');
+                setPatient(meRes.data);
+
+                // 2. Get Assessment History
+                if (meRes.data.id) {
+                    const historyRes = await client.get(`/patients/${meRes.data.id}/history`);
+                    setHistory(historyRes.data);
+                }
+            } catch (error) {
+                console.error("Failed to fetch dashboard data", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchData();
+    }, []);
+
+    if (loading) return <div className="p-10 text-center">Loading dashboard...</div>;
+    if (!patient) return <div className="p-10 text-center">No patient record found. Please contact your nurse.</div>;
+
+    return (
+        <div className="space-y-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h1 className="text-2xl font-bold text-slate-900">Welcome, {patient.name}</h1>
+                    <p className="text-slate-500">Track your health status and run new check-ups.</p>
+                </div>
+                <button
+                    onClick={() => navigate('/assessments/new')}
+                    className="flex items-center gap-2 rounded-lg bg-sky-500 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-sky-600 transition-all"
+                >
+                    <Plus className="w-4 h-4" /> Start New Check-up
+                </button>
+            </div>
+
+            {/* Status Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="glass-panel p-5 rounded-xl border-l-4 border-l-sky-500">
+                    <div className="flex items-center gap-3 mb-2">
+                        <Activity className="w-5 h-5 text-sky-500" />
+                        <h3 className="font-semibold text-slate-700">Latest Status</h3>
+                    </div>
+                    {history.length > 0 ? (
+                        <>
+                            <p className="text-2xl font-bold text-slate-900">{history[0].risk_level}</p>
+                            <p className="text-xs text-slate-500">Score: {history[0].risk_score}/100</p>
+                        </>
+                    ) : (
+                        <p className="text-slate-500">No assessments yet</p>
+                    )}
+                </div>
+
+                <div className="glass-panel p-5 rounded-xl border-l-4 border-l-emerald-500">
+                    <div className="flex items-center gap-3 mb-2">
+                        <Calendar className="w-5 h-5 text-emerald-500" />
+                        <h3 className="font-semibold text-slate-700">Next Appointment</h3>
+                    </div>
+                    <p className="text-lg font-medium text-slate-900">
+                        {patient.next_appointment_date ? format(new Date(patient.next_appointment_date), 'PPP') : 'Not Scheduled'}
+                    </p>
+                </div>
+
+                <div className="glass-panel p-5 rounded-xl border-l-4 border-l-purple-500">
+                    <div className="flex items-center gap-3 mb-2">
+                        <Clock className="w-5 h-5 text-purple-500" />
+                        <h3 className="font-semibold text-slate-700">Total Check-ups</h3>
+                    </div>
+                    <p className="text-2xl font-bold text-slate-900">{history.length}</p>
+                </div>
+            </div>
+
+            {/* History Table */}
+            <div className="glass-panel rounded-xl overflow-hidden">
+                <div className="px-6 py-4 border-b border-slate-100">
+                    <h3 className="font-semibold text-slate-800">Assessment History</h3>
+                </div>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-sm text-left">
+                        <thead className="text-xs text-slate-500 uppercase bg-slate-50">
+                            <tr>
+                                <th className="px-6 py-3">Date</th>
+                                <th className="px-6 py-3">Risk Level</th>
+                                <th className="px-6 py-3">Score</th>
+                                <th className="px-6 py-3">Alerts</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {history.map((record) => (
+                                <tr key={record.id} className="border-b border-slate-50 hover:bg-slate-50/50">
+                                    <td className="px-6 py-4 font-medium text-slate-900">
+                                        {format(new Date(record.created_at), 'PPP p')}
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${record.risk_level === 'High' ? 'bg-red-100 text-red-800' :
+                                                record.risk_level === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
+                                                    'bg-green-100 text-green-800'
+                                            }`}>
+                                            {record.risk_level}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4 text-slate-600">{record.risk_score}</td>
+                                    <td className="px-6 py-4">
+                                        {record.risk_level === 'High' || record.risk_level === 'Critical' ? (
+                                            <span className="flex items-center gap-1 text-red-600">
+                                                <AlertTriangle className="w-4 h-4" /> Action Required
+                                            </span>
+                                        ) : (
+                                            <span className="flex items-center gap-1 text-emerald-600">
+                                                <CheckCircle className="w-4 h-4" /> Stable
+                                            </span>
+                                        )}
+                                    </td>
+                                </tr>
+                            ))}
+                            {history.length === 0 && (
+                                <tr>
+                                    <td colSpan="4" className="px-6 py-8 text-center text-slate-500">
+                                        No history found. Start your first check-up!
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+export default PatientDashboardPage;

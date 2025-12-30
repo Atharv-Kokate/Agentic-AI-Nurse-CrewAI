@@ -242,4 +242,32 @@ def delete_patient(
     db.delete(patient)
     db.commit()
     
+    db.delete(patient)
+    db.commit()
+    
     return None
+
+from database.models import ai_assesments
+
+@router.get("/{patient_id}/history")
+def get_patient_history(
+    patient_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Get assessment history for a specific patient.
+    """
+    # Authorization check
+    if current_user.role == UserRole.PATIENT:
+        if current_user.patient_id != patient_id:
+             raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You can only view your own history"
+            )
+
+    history = db.query(ai_assesments).filter(
+        ai_assesments.patient_id == patient_id
+    ).order_by(ai_assesments.created_at.desc()).all()
+    
+    return history

@@ -23,6 +23,7 @@ from auth.dependencies import get_current_active_user, require_roles
 # Route imports
 from routes.auth import router as auth_router
 from routes.patients import router as patients_router 
+from routes.dashboard import router as dashboard_router
 
 # Initialize DB tables
 Base.metadata.create_all(bind=engine)
@@ -47,6 +48,7 @@ app.add_middleware(
 # Include Routers
 app.include_router(auth_router)
 app.include_router(patients_router)
+app.include_router(dashboard_router)
 
 # Setup Logging
 logging.basicConfig(level=logging.INFO)
@@ -209,7 +211,7 @@ def analyze_patient(
     request: PatientRequest,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles([UserRole.ADMIN, UserRole.NURSE, UserRole.DOCTOR]))
+    current_user: User = Depends(require_roles([UserRole.ADMIN, UserRole.NURSE, UserRole.DOCTOR, UserRole.PATIENT]))
 ):
     """
     Ingest patient data and start AI analysis in background.
@@ -240,8 +242,14 @@ def analyze_patient(
             patient.name = request.name
             patient.age = request.age
             patient.gender = request.gender
-            patient.known_conditions = conditions_json
+            
+            # Only update known_conditions if provided
+            if request.known_conditions and request.known_conditions.strip():
+                patient.known_conditions = conditions_json
+            
+            # Always update reported_symptoms as these are current
             patient.reported_symptoms = symptoms_json
+            
             patient.updated_at = datetime.utcnow()
             db.commit()
 
@@ -269,6 +277,20 @@ def analyze_patient(
         db.commit()
 
         # 3. Prepare Data for Crew
+        # Fetch last 5 logs for trend analysis
+        recent_logs = db.query(monitoring_logs).filter(
+            monitoring_logs.patient_id == patient.id
+        ).order_by(monitoring_logs.created_at.desc()).limit(5).all()
+
+        history_list = []
+        for log in recent_logs:
+            history_list.append({
+                "date": log.created_at.strftime("%Y-%m-%d %H:%M"),
+                "bp": log.blood_pressure,
+                "hr": log.heart_rate,
+                "sugar": log.blood_sugar
+            })
+
         crew_input = {
             "name": request.name,
             "age": request.age,
@@ -278,7 +300,8 @@ def analyze_patient(
             "blood_sugar": request.blood_sugar,
             "known_conditions": request.known_conditions,
             "reported_symptoms": request.initial_symptoms,
-            "meds_taken": request.meds_taken 
+            "meds_taken": request.meds_taken,
+            "recent_vitals_history": history_list
         }
 
         # 4. Start Background Task
@@ -298,7 +321,7 @@ def analyze_patient(
 def check_status(
     patient_id: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles([UserRole.ADMIN, UserRole.NURSE, UserRole.DOCTOR]))
+    current_user: User = Depends(require_roles([UserRole.ADMIN, UserRole.NURSE, UserRole.DOCTOR, UserRole.PATIENT]))
 ):
     """
     Check the status of the analysis.
@@ -368,7 +391,7 @@ def provide_answer(
     interaction_id: str,
     request: AnswerRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles([UserRole.ADMIN, UserRole.NURSE, UserRole.DOCTOR]))
+    current_user: User = Depends(require_roles([UserRole.ADMIN, UserRole.NURSE, UserRole.DOCTOR, UserRole.PATIENT]))
 ):
     """
     Provide an answer to a pending question.

@@ -6,13 +6,16 @@ class MedicalTasks:
             description=(
                 f"Analyze the following patient vital signs: {patient_data}. "
                 "Compare them against standard medical thresholds (e.g., BP 120/80, HR 60-100). "
-                "Identify any values that are out of range and determine the severity (NORMAL, WARNING, CRITICAL)."
+                "CRITICAL: Check the 'recent_vitals_history' provided in the input. Compare the CURRENT vitals to these previous 5 readings. "
+                "Identify if thresholds are MET, but also if values are TRENDING negatively (e.g., BP steadily rising over last 5 logs). "
+                "Determine the severity (NORMAL, WARNING, CRITICAL) based on both absolute values AND trends."
             ),
             expected_output=(
                 "A JSON object containing:\n"
                 "{\n"
                 "  \"status\": \"NORMAL | WARNING | CRITICAL\",\n"
-                "  \"abnormal_findings\": [\"High BP\", \"Low HR\"],\n"
+                "  \"abnormal_findings\": [\"High BP\", \"Rising HR Trend\"],\n"
+                "  \"trend_analysis\": \"Brief summary of how vitals have changed over the last 5 readings (e.g. 'BP has increased by 10 points since last check')\",\n"
                 "  \"requires_symptom_check\": true\n"
                 "}"
             ),
