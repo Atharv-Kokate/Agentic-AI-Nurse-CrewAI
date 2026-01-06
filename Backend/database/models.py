@@ -90,3 +90,14 @@ class AgentInteraction(Base):
     answer = Column(String, nullable=True)
     status = Column(String, nullable=False, default="PENDING") # PENDING, ANSWERED
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+
+class Reminder(Base):
+    __tablename__ = "reminders"
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    patient_id = Column(UUID(as_uuid=True), ForeignKey("patients.id"), nullable=False)
+    medicine_name = Column(String, nullable=False)
+    dosage = Column(String, nullable=False)
+    schedule_time = Column(String, nullable=False) # Format: "HH:MM" (24h)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)

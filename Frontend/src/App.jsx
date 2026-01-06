@@ -10,6 +10,7 @@ import Layout from './components/Layout';
 
 import RegisterPatientPage from './pages/RegisterPatientPage';
 import PatientDashboardPage from './pages/PatientDashboardPage';
+import MedicineRemindersPage from './pages/MedicineRemindersPage';
 import { useAuth } from './contexts/AuthContext';
 
 function App() {
@@ -35,6 +36,7 @@ function App() {
                         {/* Patient Only Routes */}
                         <Route element={<ProtectedRoute roles={['PATIENT']} />}>
                             <Route path="/my-dashboard" element={<PatientDashboardPage />} />
+                            <Route path="/reminders" element={<MedicineRemindersPage />} />
                         </Route>
                     </Route>
                 </Route>

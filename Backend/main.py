@@ -24,6 +24,7 @@ from auth.dependencies import get_current_active_user, require_roles
 from routes.auth import router as auth_router
 from routes.patients import router as patients_router 
 from routes.dashboard import router as dashboard_router
+from routes.reminders import router as reminders_router
 
 # Initialize DB tables
 Base.metadata.create_all(bind=engine)
@@ -49,6 +50,7 @@ app.add_middleware(
 app.include_router(auth_router)
 app.include_router(patients_router)
 app.include_router(dashboard_router)
+app.include_router(reminders_router)
 
 # Setup Logging
 logging.basicConfig(level=logging.INFO)
