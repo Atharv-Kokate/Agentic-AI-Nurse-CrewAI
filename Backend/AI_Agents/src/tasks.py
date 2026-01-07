@@ -5,17 +5,19 @@ class MedicalTasks:
         return Task(
             description=(
                 f"Analyze the following patient vital signs: {patient_data}. "
-                "Compare them against standard medical thresholds (e.g., BP 120/80, HR 60-100). "
-                "CRITICAL: Check the 'recent_vitals_history' provided in the input. Compare the CURRENT vitals to these previous 5 readings. "
-                "Identify if thresholds are MET, but also if values are TRENDING negatively (e.g., BP steadily rising over last 5 logs). "
-                "Determine the severity (NORMAL, WARNING, CRITICAL) based on both absolute values AND trends."
+                "Compare the [CURRENT VITALS] against standard medical thresholds (e.g., BP 120/80, HR 60-100). "
+                "CRITICAL INSTRUCTIONS:\n"
+                "1. USE ONLY THE NUMBERS PROVIDED IN [CURRENT VITALS]. DO NOT HALLUCINATE OR INVENT VALUES.\n"
+                "2. If [RECENT VITALS HISTORY] is empty or [] or None, ASSUME NO HISTORY. Do NOT invent a history.\n"
+                "3. Compare current vitals to history ONLY IF history exists.\n"
+                "4. Determine severity (NORMAL, WARNING, CRITICAL) based strictly on the provided numbers."
             ),
             expected_output=(
                 "A JSON object containing:\n"
                 "{\n"
                 "  \"status\": \"NORMAL | WARNING | CRITICAL\",\n"
                 "  \"abnormal_findings\": [\"High BP\", \"Rising HR Trend\"],\n"
-                "  \"trend_analysis\": \"Brief summary of how vitals have changed over the last 5 readings (e.g. 'BP has increased by 10 points since last check')\",\n"
+                "  \"trend_analysis\": \"Brief summary... OR 'No history available'\",\n"
                 "  \"requires_symptom_check\": true\n"
                 "}"
             ),
@@ -26,10 +28,12 @@ class MedicalTasks:
         return Task(
             description=(
                 "Based on the vital analysis and any initial symptoms reported, determine if further questions are needed. "
-                "If 'requires_symptom_check' is true or if there are abnormal findings, use the 'Ask Patient' tool "
-                "to interview the patient. Limit yourself to 3 questions max. "
-                "Prioritize identifying red flags (severe pain, difficulty breathing, altered mental state). "
-                "Stop immediately if you identify a medical emergency or have enough info."
+                "CRITICAL INSTRUCTIONS:\n"
+                "1. CHECK [CONTEXT - VITAL ANALYSIS]. If status is 'NORMAL' AND input reported_symptoms is 'None' or empty, DO NOT ASK QUESTIONS.\n"
+                "2. If no questions needed, return \"symptom_summary\": \"No symptoms reported, patient healthy\".\n"
+                "3. DO NOT INVENT SYMPTOMS like 'chest pain' if the user did not report them. STRICTLY USE REPORTED SYMPTOMS ONLY.\n"
+                "4. Only ask questions if 'requires_symptom_check' is true or explicit symptoms were provided.\n"
+                "5. Stop immediately if you identify a medical emergency or have enough info."
             ),
             expected_output=(
                 "A JSON object containing:\n"
@@ -48,7 +52,8 @@ class MedicalTasks:
             description=(
                 "Combine the vital analysis and the symptom inquiry results into a cohesive clinical summary. "
                 "Highlight correlations between vitals and symptoms. "
-                "Identify key risk factors present in the data."
+                "Identify key risk factors present in the data.\n"
+                "CRITICAL: If Symptom Inquiry says 'No symptoms' and Vitals are 'NORMAL', the aggregate summary MUST reflect a healthy patient."
             ),
             expected_output=(
                 "A JSON object containing:\n"
@@ -66,7 +71,11 @@ class MedicalTasks:
         return Task(
             description=(
                 "Evaluate the aggregated clinical context and determine the overall health risk. "
-                "Assign a risk level (LOW, MODERATE, HIGH, CRITICAL) and provide a medical justification."
+                "Assign a risk level (LOW, MODERATE, HIGH, CRITICAL) and provide a medical justification.\n"
+                "CRITICAL INSTRUCTIONS:\n"
+                "1. IF [CONTEXT - CLINICAL AGGREGATION] says 'No symptoms' AND vitals are 'NORMAL', Risk Level MUST be 'LOW'.\n"
+                "2. DO NOT HALLUCINATE RISKS. If vitals are benign, do not claim 'hypertensive crisis'.\n"
+                "3. Consistency Check: If BP is < 130/85, Risk CANNOT be HIGH unless severe symptoms exist."
             ),
             expected_output=(
                 "A JSON object containing:\n"

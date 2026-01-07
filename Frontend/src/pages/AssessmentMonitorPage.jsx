@@ -164,7 +164,28 @@ const AssessmentMonitorPage = () => {
                                 </p>
                             </div>
 
-                            <div className="mt-8 flex justify-end">
+                            <div className="mt-8 flex justify-between items-center">
+                                <button
+                                    onClick={async () => {
+                                        if (!confirm("Are you sure you want to escalate this case to the doctor?")) return;
+                                        const btn = document.getElementById('escalate-btn');
+                                        if (btn) btn.disabled = true;
+                                        try {
+                                            await client.post('/escalate', { patient_id: patientId });
+                                            alert("Doctor has been notified successfully.");
+                                        } catch (err) {
+                                            alert("Failed to escalate: " + (err.response?.data?.detail || err.message));
+                                        } finally {
+                                            if (btn) btn.disabled = false;
+                                        }
+                                    }}
+                                    id="escalate-btn"
+                                    className="flex items-center gap-2 rounded-lg bg-red-600 px-6 py-2 text-sm font-medium text-white hover:bg-red-700 transition-colors shadow-sm"
+                                >
+                                    <ShieldAlert className="h-4 w-4" />
+                                    Call Doctor
+                                </button>
+
                                 <button
                                     onClick={() => navigate('/')}
                                     className="rounded-lg border border-slate-200 px-6 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"

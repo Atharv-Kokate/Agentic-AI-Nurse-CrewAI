@@ -25,6 +25,8 @@ from routes.auth import router as auth_router
 from routes.patients import router as patients_router 
 from routes.dashboard import router as dashboard_router
 from routes.reminders import router as reminders_router
+from routes.callbacks import router as callbacks_router
+import requests
 
 # Initialize DB tables
 Base.metadata.create_all(bind=engine)
@@ -51,9 +53,17 @@ app.include_router(auth_router)
 app.include_router(patients_router)
 app.include_router(dashboard_router)
 app.include_router(reminders_router)
+app.include_router(callbacks_router)
 
 # Setup Logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler("backend_debug.log"),
+        logging.StreamHandler(sys.stdout)
+    ]
+)
 logger = logging.getLogger(__name__)
 
 # --- Pydantic Models ---
@@ -146,7 +156,26 @@ def run_crew_background(crew_input: dict, patient_id_str: str):
         
         # Instantiate Crew with patient_id for Tool usage
         medical_crew = MedicalCrew(patient_id=patient_id_str)
-        crew_result = medical_crew.run(str(crew_input))
+        
+        # Format input for LLM clarity to avoid hallucinations/history confusion
+        history_str = json.dumps(crew_input.get('recent_vitals_history', []), indent=2)
+        formatted_input = (
+            f"Analyze this PATIENT DATA:\n\n"
+            f"[CURRENT VITALS]\n"
+            f"Name: {crew_input.get('name')}\n"
+            f"Age: {crew_input.get('age')}\n"
+            f"Gender: {crew_input.get('gender')}\n"
+            f"Blood Pressure: {crew_input.get('blood_pressure')}\n"
+            f"Heart Rate: {crew_input.get('heart_rate')}\n"
+            f"Blood Sugar: {crew_input.get('blood_sugar')}\n"
+            f"Meds Taken: {crew_input.get('meds_taken')}\n"
+            f"Known Conditions: {crew_input.get('known_conditions')}\n"
+            f"Reported Symptoms: {crew_input.get('reported_symptoms')}\n\n"
+            f"[RECENT VITALS HISTORY]\n"
+            f"{history_str}"
+        )
+        
+        crew_result = medical_crew.run(formatted_input)
         
         logger.info(f"raw crew_result type: {type(crew_result)}")
         logger.info(f"raw crew_result: {crew_result}")
@@ -187,8 +216,15 @@ def run_crew_background(crew_input: dict, patient_id_str: str):
         action = decision_output.get("action", "MONITOR")
         doctor_note = decision_output.get("doctor_note", "No specific note provided.")
         urgency = decision_output.get("urgency", "Normal")
+
+        # Ensure doctor_note is a string for DB
+        if isinstance(doctor_note, dict) or isinstance(doctor_note, list):
+            doctor_note = json.dumps(doctor_note)
+
         
-        if action in ["ALERT_DOCTOR", "EMERGENCY"] or urgency in ["High", "Critical"]:
+        is_critical = risk_level in ["HIGH", "CRITICAL"] or risk_score >= 80
+
+        if action in ["ALERT_DOCTOR", "EMERGENCY"] or urgency in ["High", "Critical"] or is_critical:
             new_alert = alerts(
                 patient_id=patient_id_str,
                 alert_type=action,
@@ -196,6 +232,7 @@ def run_crew_background(crew_input: dict, patient_id_str: str):
                 call_received=False 
             )
             db.add(new_alert)
+            # Automatic trigger removed as per user request. Use manual /escalate endpoint.
         
         db.commit()
         logger.info(f"Background analysis complete for {patient_id_str}")
@@ -205,6 +242,66 @@ def run_crew_background(crew_input: dict, patient_id_str: str):
         # Ideally, mark the status as FAILED in DB if we had a Job table.
     finally:
         db.close()
+
+class EscalateRequest(BaseModel):
+    patient_id: str
+
+@app.post("/api/v1/escalate")
+def escalate_to_doctor(
+    request: EscalateRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles([UserRole.ADMIN, UserRole.NURSE, UserRole.DOCTOR, UserRole.PATIENT]))
+):
+    """
+    Manually trigger n8n escalation for a patient.
+    """
+    # Fetch latest assessment
+    assessment = db.query(ai_assesments).filter(
+        ai_assesments.patient_id == request.patient_id
+    ).order_by(ai_assesments.created_at.desc()).first()
+
+    if not assessment:
+        raise HTTPException(status_code=404, detail="No assessment found for this patient")
+
+    patient = db.query(Patient).filter(Patient.id == request.patient_id).first()
+    if not patient:
+         raise HTTPException(status_code=404, detail="Patient not found")
+
+    try:
+        N8N_WEBHOOK = "https://modiop.app.n8n.cloud/webhook-test/escalate-risk" # Configurable via env
+        
+        # Prepare payload from stored assessment
+        # Note: We rely on the stored reasoning/risk level. 
+        # Ideally we'd store the 'doctor_note' specifically, but for now we use reasoning.
+        
+        risk_level = assessment.risk_level
+        risk_score = assessment.risk_score
+        reasoning = assessment.reasoning # DB stores JSON
+        
+        # safely get doctor note if it was stored contextually, or construct generic
+        summary_text = "Manual Escalation Requested"
+        if isinstance(reasoning, dict):
+             summary_text = reasoning.get("justification", "Manual Escalation")
+
+        payload = {
+            "patient_id": str(patient.id),
+            "patient_name": patient.name,
+            "age": patient.age,
+            "risk_level": risk_level,
+            "risk_score": risk_score,
+            "summary": summary_text, 
+            "doctor_name": "On-Call Physician",
+            "callback_url": "http://localhost:8000/api/v1/callbacks/doctor-advice" 
+        }
+        
+        logger.info(f"Triggering N8N Escalation (Manual): {N8N_WEBHOOK}")
+        response = requests.post(N8N_WEBHOOK, json=payload, timeout=10) # Increased timeout
+        return {"status": "success", "n8n_response": response.status_code}
+
+    except Exception as e:
+        logger.error(f"Failed to manually trigger n8n webhook: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 # --- Routes ---
 
@@ -285,13 +382,14 @@ def analyze_patient(
         ).order_by(monitoring_logs.created_at.desc()).limit(5).all()
 
         history_list = []
-        for log in recent_logs:
-            history_list.append({
-                "date": log.created_at.strftime("%Y-%m-%d %H:%M"),
-                "bp": log.blood_pressure,
-                "hr": log.heart_rate,
-                "sugar": log.blood_sugar
-            })
+        # DISABLE HISTORY FOR DEBUGGING - IT IS CAUSING HALLUCINATIONS
+        # for log in recent_logs:
+        #     history_list.append({
+        #         "date": log.created_at.strftime("%Y-%m-%d %H:%M"),
+        #         "bp": log.blood_pressure,
+        #         "hr": log.heart_rate,
+        #         "sugar": log.blood_sugar
+        #     })
 
         crew_input = {
             "name": request.name,

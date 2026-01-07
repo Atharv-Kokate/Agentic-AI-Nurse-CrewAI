@@ -11,6 +11,7 @@ import Layout from './components/Layout';
 import RegisterPatientPage from './pages/RegisterPatientPage';
 import PatientDashboardPage from './pages/PatientDashboardPage';
 import MedicineRemindersPage from './pages/MedicineRemindersPage';
+import DoctorAdvicePage from './pages/DoctorAdvicePage';
 import { useAuth } from './contexts/AuthContext';
 
 function App() {
@@ -31,6 +32,7 @@ function App() {
                             <Route path="/" element={<DashboardPage />} />
                             <Route path="/patients" element={<PatientsPage />} />
                             <Route path="/patients/register" element={<RegisterPatientPage />} />
+                            <Route path="/doctor-advice" element={<DoctorAdvicePage />} />
                         </Route>
 
                         {/* Patient Only Routes */}

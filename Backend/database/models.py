@@ -101,3 +101,15 @@ class Reminder(Base):
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
     updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+class DoctorRecommendation(Base):
+    __tablename__ = "doctor_recommendations"
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    patient_id = Column(UUID(as_uuid=True), ForeignKey("patients.id"), nullable=False)
+    doctor_name = Column(String, nullable=True) # "Dr. AI" or real name if provided
+    recommendation_summary = Column(String, nullable=False)
+    medication_advice = Column(String, nullable=True) # JSON or String
+    escalation_level = Column(String, default="Standard")
+    is_reviewed = Column(Boolean, default=False)
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)

@@ -3,6 +3,13 @@ from src.agents import MedicalAgents
 from src.tasks import MedicalTasks
 import time
 import sys
+import datetime
+
+def log_debug(msg):
+    with open("crew_debug.log", "a") as f:
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        f.write(f"[{timestamp}] {msg}\n")
+
 
 class MedicalCrew:
     def __init__(self, patient_id=None):
@@ -27,6 +34,7 @@ class MedicalCrew:
         raise Exception(f"Max retries exceeded for {step_name}.")
 
     def run(self, patient_data):
+        print(f"DEBUG: MedicalCrew.run called with: {patient_data}")
         # Instantiate Agents
         detective_agent = self.agents.vital_analysis_agent()
         interviewer_agent = self.agents.symptom_inquiry_agent()
@@ -44,32 +52,61 @@ class MedicalCrew:
         # Execution Chain with Retry Wrapper
         print("\n[1/5] Running Vital Analysis Agent...")
         c1 = Crew(agents=[detective_agent], tasks=[vital_analysis], verbose=True)
-        self.kickoff_with_retry(c1, "Vital Analysis")
+        res1 = self.kickoff_with_retry(c1, "Vital Analysis")
+        print(f"DEBUG: Vitals Output: {res1}")
         print("Analysis Complete. Cooling down (10s)...")
         time.sleep(10)
 
+        # Helper to safely get string content
+        def get_output_str(res):
+            if hasattr(res, 'raw'):
+                return res.raw
+            return str(res)
+
+        out1 = get_output_str(res1)
+
         print("\n[2/5] Running Symptom Inquiry Agent...")
+        # Manually inject context since separate Crews might break Task.context sharing
+        symptom_inquiry.description += f"\n\n[CONTEXT - VITAL ANALYSIS]:\n{out1}"
+        
         c2 = Crew(agents=[interviewer_agent], tasks=[symptom_inquiry], verbose=True)
-        self.kickoff_with_retry(c2, "Symptom Inquiry")
+        res2 = self.kickoff_with_retry(c2, "Symptom Inquiry")
+        print(f"DEBUG: Symptom Output: {res2}")
         print("Inquiry Complete. Cooling down (10s)...")
         time.sleep(10)
+        
+        out2 = get_output_str(res2)
 
         print("\n[3/5] Running Context Aggregation Agent...")
+        # Inject previous contexts
+        aggregation.description += f"\n\n[CONTEXT - VITAL ANALYSIS]:\n{out1}\n\n[CONTEXT - SYMPTOM INQUIRY]:\n{out2}"
+        
         c3 = Crew(agents=[aggregator_agent], tasks=[aggregation], verbose=True)
-        self.kickoff_with_retry(c3, "Context Aggregation")
+        res3 = self.kickoff_with_retry(c3, "Context Aggregation")
+        print(f"DEBUG: Aggregation Output: {res3}")
         print("Aggregation Complete. Cooling down (10s)...")
         time.sleep(10)
 
+        out3 = get_output_str(res3)
+
         print("\n[4/5] Running Risk Assessment Agent...")
-        c4 = Crew(agents=[risk_agent], tasks=[risk_assessment], verbose=True)
+        risk_assessment.description += f"\n\n[CONTEXT - CLINICAL AGGREGATION]:\n{out3}"
+        
         c4 = Crew(agents=[risk_agent], tasks=[risk_assessment], verbose=True)
         risk_result = self.kickoff_with_retry(c4, "Risk Assessment")
+        print(f"DEBUG: Risk Result: {risk_result}")
         print("Assessment Complete. Cooling down (10s)...")
         time.sleep(10)
 
+        out4 = get_output_str(risk_result)
+
         print("\n[5/5] Running Decision & Action Agent...")
+        decision_making.description += f"\n\n[CONTEXT - RISK ASSESSMENT]:\n{out4}"
+        
         c5 = Crew(agents=[decision_agent], tasks=[decision_making], verbose=True)
         decision_result = self.kickoff_with_retry(c5, "Decision Action")
+        print(f"DEBUG: Decision Result: {decision_result}")
+
         
         return {
             "risk_assessment": risk_result,
