@@ -8,9 +8,10 @@ class MedicalTasks:
                 "Compare the [CURRENT VITALS] against standard medical thresholds (e.g., BP 120/80, HR 60-100). "
                 "CRITICAL INSTRUCTIONS:\n"
                 "1. USE ONLY THE NUMBERS PROVIDED IN [CURRENT VITALS]. DO NOT HALLUCINATE OR INVENT VALUES.\n"
-                "2. If [RECENT VITALS HISTORY] is empty or [] or None, ASSUME NO HISTORY. Do NOT invent a history.\n"
-                "3. Compare current vitals to history ONLY IF history exists.\n"
-                "4. Determine severity (NORMAL, WARNING, CRITICAL) based strictly on the provided numbers."
+                "2. IF A FIELD IS EMPTY, MISSING, OR 'None', STATE 'NOT PROVIDED'. DO NOT GUESS A NUMBER.\n"
+                "3. If [RECENT VITALS HISTORY] is empty or [] or None, ASSUME NO HISTORY. Do NOT invent a history.\n"
+                "4. Compare current vitals to history ONLY IF history exists.\n"
+                "5. Determine severity (NORMAL, WARNING, CRITICAL) based strictly on the provided numbers."
             ),
             expected_output=(
                 "A JSON object containing:\n"
@@ -53,7 +54,9 @@ class MedicalTasks:
                 "Combine the vital analysis and the symptom inquiry results into a cohesive clinical summary. "
                 "Highlight correlations between vitals and symptoms. "
                 "Identify key risk factors present in the data.\n"
-                "CRITICAL: If Symptom Inquiry says 'No symptoms' and Vitals are 'NORMAL', the aggregate summary MUST reflect a healthy patient."
+                "CRITICAL: \n"
+                "1. If Symptom Inquiry says 'No symptoms' and Vitals are 'NORMAL', the aggregate summary MUST reflect a healthy patient.\n"
+                "2. If Vital Analysis says 'NOT PROVIDED' or 'MISSING', DO NOT INVENT VITALS in the summary."
             ),
             expected_output=(
                 "A JSON object containing:\n"
@@ -76,6 +79,14 @@ class MedicalTasks:
                 "1. IF [CONTEXT - CLINICAL AGGREGATION] says 'No symptoms' AND vitals are 'NORMAL', Risk Level MUST be 'LOW'.\n"
                 "2. DO NOT HALLUCINATE RISKS. If vitals are benign, do not claim 'hypertensive crisis'.\n"
                 "3. Consistency Check: If BP is < 130/85, Risk CANNOT be HIGH unless severe symptoms exist."
+                "4. If [CONTEXT - CLINICAL AGGREGATION] is empty or [] or None, ASSUME NO HISTORY. Do NOT invent a history."
+                "5. Your 'justification' MUST be a COMPREHENSIVE MEDICAL REPORT. It must explicitly include:\n"
+                "   - Patient Context (Age/Gender)\n"
+                "   - Known Medical History (from input)\n"
+                "   - Reported Symptoms (detailed)\n"
+                "   - Vital Signs Evaluation (cite specific numbers e.g., 'BP: 160/100')\n"
+                "   - Potential Conditions/Diagnosis (e.g., 'Suspected Hypertensive Urgency')\n"
+                "   - Rationale for Risk Level."
             ),
             expected_output=(
                 "A JSON object containing:\n"
@@ -94,8 +105,13 @@ class MedicalTasks:
         return Task(
             description=(
                 "Based on the risk assessment, decide the next operational step. "
-                "Draft a concise summary note for the doctor if the action is to alert or escalate. "
-                "The note should be professional and highlight the most critical information first."
+                "Draft a detailed note for the doctor if the action is to alert or escalate. "
+                "CRITICAL: The 'doctor_note' must be a standalone Briefing. It must include:\n"
+                "1. Patient Identity & Demographics\n"
+                "2. Chief Complaint & Symptoms\n"
+                "3. Medical History\n"
+                "4. EXACT VITALS (BP, HR, SpO2, etc.)\n"
+                "5. Suspected Condition & Recommended Action."
             ),
             expected_output=(
                 "A JSON object containing:\n"

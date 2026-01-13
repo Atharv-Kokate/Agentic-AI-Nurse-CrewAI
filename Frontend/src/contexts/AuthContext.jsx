@@ -14,12 +14,21 @@ export const AuthProvider = ({ children }) => {
         if (token) {
             try {
                 const decoded = jwtDecode(token);
-                // We could also fetch full profile here if needed: /auth/me
-                setUser({
-                    id: decoded.sub,
-                    email: decoded.email,
-                    role: decoded.role
-                });
+
+                // Check if token is expired
+                const currentTime = Date.now() / 1000;
+                if (decoded.exp < currentTime) {
+                    console.warn("Token expired, logging out");
+                    localStorage.removeItem('token');
+                    setUser(null);
+                } else {
+                    // Token valid
+                    setUser({
+                        id: decoded.sub,
+                        email: decoded.email,
+                        role: decoded.role
+                    });
+                }
             } catch (e) {
                 console.error("Invalid token", e);
                 localStorage.removeItem('token');

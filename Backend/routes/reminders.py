@@ -85,7 +85,7 @@ async def create_reminder(
 
     # 2. Trigger n8n Webhook
     # Using the test URL provided
-    webhook_url = "https://modiop.app.n8n.cloud/webhook-test/nurse-reminder"
+    webhook_url = "https://hackerr.app.n8n.cloud/webhook-test/nurse-reminder"
     if webhook_url:
         try:
             # Helper to get patient info. 

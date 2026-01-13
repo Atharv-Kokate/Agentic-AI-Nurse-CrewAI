@@ -127,12 +127,19 @@ class AnswerRequest(BaseModel):
 
 # --- Helper Functions ---
 
-def clean_json_string(json_str: str) -> Dict[str, Any]:
+def clean_json_string(json_str: Any) -> Dict[str, Any]:
     """
-    Cleans markdown code blocks from string to ensure valid JSON parsing.
+    Cleans markdown code blocks and handles mixed text/JSON content.
     """
+    # If already a dict, return it
+    if isinstance(json_str, dict):
+        return json_str
+
     if hasattr(json_str, 'raw'):
         json_str = json_str.raw
+        
+    # Ensure it's a string
+    json_str = str(json_str)
     
     # Remove markdown code blocks if present
     if "```json" in json_str:
@@ -140,11 +147,25 @@ def clean_json_string(json_str: str) -> Dict[str, Any]:
     elif "```" in json_str:
         json_str = json_str.split("```")[1].split("```")[0]
     
+    # Strategy 1: Direct Parse
     try:
         return json.loads(json_str.strip())
+    except json.JSONDecodeError:
+        pass
+        
+    # Strategy 2: Extract from first '{' to last '}'
+    try:
+        start_idx = json_str.find('{')
+        end_idx = json_str.rfind('}')
+        
+        if start_idx != -1 and end_idx != -1 and end_idx > start_idx:
+            potential_json = json_str[start_idx : end_idx + 1]
+            return json.loads(potential_json)
     except json.JSONDecodeError as e:
-        logger.error(f"Failed to parse JSON: {json_str}")
-        return {}
+        logger.error(f"Failed to parse JSON with strategy 2: {e}")
+    
+    logger.error(f"Failed to parse JSON: {json_str[:100]}...")
+    return {}
 
 def run_crew_background(crew_input: dict, patient_id_str: str):
     """
@@ -175,6 +196,7 @@ def run_crew_background(crew_input: dict, patient_id_str: str):
             f"{history_str}"
         )
         
+        logger.info(f"--- CREW INPUT START ---\n{formatted_input}\n--- CREW INPUT END ---")
         crew_result = medical_crew.run(formatted_input)
         
         logger.info(f"raw crew_result type: {type(crew_result)}")
@@ -268,7 +290,7 @@ def escalate_to_doctor(
          raise HTTPException(status_code=404, detail="Patient not found")
 
     try:
-        N8N_WEBHOOK = "https://modiop.app.n8n.cloud/webhook-test/escalate-risk" # Configurable via env
+        N8N_WEBHOOK = "https://hackerr.app.n8n.cloud/webhook-test/escalate-risk" # Configurable via env
         
         # Prepare payload from stored assessment
         # Note: We rely on the stored reasoning/risk level. 
@@ -280,18 +302,48 @@ def escalate_to_doctor(
         
         # safely get doctor note if it was stored contextually, or construct generic
         summary_text = "Manual Escalation Requested"
+        
+        logger.info(f"Escalation Reasoning Type: {type(reasoning)}")
+        logger.info(f"Escalation Reasoning Content: {reasoning}")
+
         if isinstance(reasoning, dict):
              summary_text = reasoning.get("justification", "Manual Escalation")
+        elif isinstance(reasoning, str):
+            try:
+                # Attempt to parse if it's a string
+                parsed = json.loads(reasoning)
+                if isinstance(parsed, dict):
+                    summary_text = parsed.get("justification", "Manual Escalation (Parsed)")
+            except:
+                summary_text = f"Manual Escalation (Raw): {reasoning}"
+        
+        logger.info(f"Final Escalation Summary: {summary_text}")
+
+        # Fetch latest vitals from monitoring_logs
+        latest_log = db.query(monitoring_logs).filter(
+            monitoring_logs.patient_id == request.patient_id
+        ).order_by(monitoring_logs.created_at.desc()).first()
+
+        vitals_data = {}
+        if latest_log:
+            vitals_data = {
+                "blood_pressure": latest_log.blood_pressure,
+                "heart_rate": latest_log.heart_rate,
+                "blood_sugar": latest_log.blood_sugar,
+                "meds_taken": latest_log.meds_taken
+            }
 
         payload = {
             "patient_id": str(patient.id),
             "patient_name": patient.name,
+            "patient_phone": patient.contact_number,
             "age": patient.age,
             "risk_level": risk_level,
             "risk_score": risk_score,
             "summary": summary_text, 
-            "doctor_name": "On-Call Physician",
-            "callback_url": "http://localhost:8000/api/v1/callbacks/doctor-advice" 
+            "doctor_name": "Dr kokate",
+            "callback_url": "http://localhost:8000/api/v1/callbacks/doctor-advice",
+            "vitals": vitals_data 
         }
         
         logger.info(f"Triggering N8N Escalation (Manual): {N8N_WEBHOOK}")

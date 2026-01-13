@@ -72,16 +72,16 @@ const RegisterPatientPage = () => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-sm font-medium text-slate-700">Full Name</label>
-                                <input {...register('name', { required: 'Name is required' })} className="mt-1 w-full rounded-md border border-slate-200 p-2.5 focus:border-sky-500 focus:outline-none" placeholder="Jane Doe" />
+                                <input {...register('name', { required: 'Name is required' })} className="mt-1 w-full rounded-md border border-slate-200 text-white p-2.5 focus:border-sky-500 focus:outline-none" placeholder="Jane Doe" />
                                 {errors.name && <p className="text-xs text-red-500">{errors.name.message}</p>}
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-slate-700">Age</label>
-                                <input type="number" {...register('age', { required: 'Required' })} className="mt-1 w-full rounded-md border border-slate-200 p-2.5 focus:border-sky-500 focus:outline-none" placeholder="30" />
+                                <input type="number" {...register('age', { required: 'Required' })} className="mt-1 w-full rounded-md border border-slate-200 text-white p-2.5 focus:border-sky-500 focus:outline-none" placeholder="30" />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-slate-700">Gender</label>
-                                <select {...register('gender')} className="mt-1 w-full rounded-md border border-slate-200 p-2.5 focus:border-sky-500 focus:outline-none">
+                                <select {...register('gender')} className="mt-1 w-full rounded-md border border-slate-200 text-white p-2.5 focus:border-sky-500 focus:outline-none">
                                     <option>Male</option>
                                     <option>Female</option>
                                     <option>Other</option>
@@ -89,15 +89,15 @@ const RegisterPatientPage = () => {
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-slate-700">Contact Number</label>
-                                <input {...register('contact_number', { required: 'Required' })} className="mt-1 w-full rounded-md border border-slate-200 p-2.5 focus:border-sky-500 focus:outline-none" placeholder="555-0000" />
+                                <input {...register('contact_number', { required: 'Required' })} className="mt-1 w-full rounded-md border border-slate-200 text-white p-2.5 focus:border-sky-500 focus:outline-none" placeholder="555-0000" />
                             </div>
                             <div className="md:col-span-2">
                                 <label className="block text-sm font-medium text-slate-700">Known Conditions</label>
-                                <textarea {...register('known_conditions')} className="mt-1 w-full rounded-md border border-slate-200 p-2.5 focus:border-sky-500 focus:outline-none" placeholder="e.g. Asthma, Hypertension (comma separated)" rows={2} />
+                                <textarea {...register('known_conditions')} className="mt-1 w-full rounded-md border border-slate-200 text-white p-2.5 focus:border-sky-500 focus:outline-none" placeholder="e.g. Asthma, Hypertension (comma separated)" rows={2} />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-slate-700">Assigned Doctor (Optional)</label>
-                                <input {...register('assigned_doctor')} className="mt-1 w-full rounded-md border border-slate-200 p-2.5 focus:border-sky-500 focus:outline-none" placeholder="Dr. Smith" />
+                                <input {...register('assigned_doctor')} className="mt-1 w-full rounded-md border border-slate-200 text-white p-2.5 focus:border-sky-500 focus:outline-none" placeholder="Dr. Smith" />
                             </div>
                         </div>
                     </div>
@@ -113,7 +113,7 @@ const RegisterPatientPage = () => {
                                 <label className="block text-sm font-medium text-slate-700">Email Address</label>
                                 <div className="relative mt-1">
                                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                                    <input type="email" {...register('email', { required: 'Email is required' })} className="w-full rounded-md border border-slate-200 pl-9 p-2.5 focus:border-sky-500 focus:outline-none" placeholder="patient@example.com" />
+                                    <input type="email" {...register('email', { required: 'Email is required' })} className="w-full rounded-md border border-slate-200 text-white pl-9 p-2.5 focus:border-sky-500 focus:outline-none" placeholder="patient@example.com" />
                                 </div>
                                 {errors.email && <p className="text-xs text-red-500">{errors.email.message}</p>}
                             </div>
@@ -121,7 +121,7 @@ const RegisterPatientPage = () => {
                                 <label className="block text-sm font-medium text-slate-700">Password</label>
                                 <div className="relative mt-1">
                                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                                    <input type="password" {...register('password', { required: 'Password is required', minLength: { value: 6, message: 'Min 6 chars' } })} className="w-full rounded-md border border-slate-200 pl-9 p-2.5 focus:border-sky-500 focus:outline-none" placeholder="••••••" />
+                                    <input type="password" {...register('password', { required: 'Password is required', minLength: { value: 6, message: 'Min 6 chars' } })} className="w-full rounded-md border border-slate-200 text-white pl-9 p-2.5 focus:border-sky-500 focus:outline-none" placeholder="••••••" />
                                 </div>
                                 {errors.password && <p className="text-xs text-red-500">{errors.password.message}</p>}
                             </div>

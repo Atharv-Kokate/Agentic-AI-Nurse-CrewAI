@@ -67,7 +67,7 @@ const LoginPage = () => {
                             <input
                                 {...register('email', { required: 'Email is required' })}
                                 type="email"
-                                placeholder="doctor@hospital.com"
+                                placeholder="       user@email.com"
                                 className={cn(
                                     "w-full rounded-lg border bg-white/50 pl-10 px-4 py-2.5 outline-none transition-all placeholder:text-slate-400 focus:bg-white",
                                     errors.email
@@ -88,7 +88,7 @@ const LoginPage = () => {
                             <input
                                 {...register('password', { required: 'Password is required' })}
                                 type="password"
-                                placeholder="••••••••"
+                                placeholder="       ••••••••"
                                 className={cn(
                                     "w-full rounded-lg border bg-white/50 pl-10 px-4 py-2.5 outline-none transition-all placeholder:text-slate-400 focus:bg-white",
                                     errors.password

@@ -42,7 +42,8 @@ const NewAssessmentPage = () => {
                         gender: patient.gender,
                         contact_number: patient.contact_number,
                         // Parse known_conditions (stored as JSON {conditions: []}) to string
-                        known_conditions: patient.known_conditions?.conditions?.join(', ') || '',
+                        // Parse known_conditions (stored as JSON {known_conditions: "str"} or {conditions: []}) to string
+                        known_conditions: patient.known_conditions?.known_conditions || patient.known_conditions?.conditions?.join(', ') || '',
                         initial_symptoms: '', // Keep empty for new input
                         meds_taken: false,
                         blood_pressure: '',
@@ -108,7 +109,7 @@ const NewAssessmentPage = () => {
                 <h1 className="text-2xl font-bold text-slate-900">New Health Assessment</h1>
                 <p className="mt-1 text-slate-500">Enter patient details to initiate AI analysis.</p>
             </div>
-
+            
             {/* Progress Steps */}
             <div className="mb-8 flex items-center justify-between px-10">
                 {steps.map((step, index) => (
@@ -189,14 +190,14 @@ const NewAssessmentPage = () => {
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-slate-700">Blood Sugar (mg/dL)</label>
-                                    <input {...register('blood_sugar', { required: 'Required' })} className="mt-1 w-full rounded-md border border-slate-200 p-2.5 focus:border-sky-500 focus:outline-none" placeholder="90" />
+                                    <input {...register('blood_sugar', { required: 'Required' })} className="mt-1 w-full rounded-md border border-slate-200 bg-slate-800 text-white p-2.5 focus:border-sky-500 focus:outline-none" placeholder="90" />
                                     {errors.blood_sugar && <p className="text-xs text-red-500">{errors.blood_sugar.message}</p>}
                                 </div>
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium text-slate-700">Hours Slept</label>
-                                    <input type="number" {...register('sleep_hours')} className="mt-1 w-full rounded-md border border-slate-200 p-2.5 focus:border-sky-500 focus:outline-none" placeholder="8" />
+                                    <input type="number" {...register('sleep_hours')} className="mt-1 w-full rounded-md border border-slate-200 bg-slate-800 text-white p-2.5 focus:border-sky-500 focus:outline-none" placeholder="8" />
                                 </div>
                                 <div className="flex items-center pt-8">
                                     <input type="checkbox" {...register('meds_taken')} className="h-4 w-4 rounded border-slate-300 text-sky-500 focus:ring-sky-500" id="meds" />
@@ -211,12 +212,12 @@ const NewAssessmentPage = () => {
                         <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
                             <div>
                                 <label className="block text-sm font-medium text-slate-700">Known Conditions</label>
-                                <textarea {...register('known_conditions', { required: 'Required' })} rows={3} className="mt-1 w-full rounded-md border border-slate-200 p-2.5 focus:border-sky-500 focus:outline-none" placeholder="e.g. Hypertension, Diabetes Type 2..." />
+                                <textarea {...register('known_conditions', { required: 'Required' })} rows={3} className="mt-1 w-full rounded-md border border-slate-200 text-white bg-slate-800 p-2.5 focus:border-sky-500 focus:outline-none" placeholder="e.g. Hypertension, Diabetes Type 2..." />
                                 {errors.known_conditions && <p className="text-xs text-red-500">{errors.known_conditions.message}</p>}
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-slate-700">Current Symptoms</label>
-                                <textarea {...register('initial_symptoms', { required: 'Required' })} rows={3} className="mt-1 w-full rounded-md border border-slate-200 p-2.5 focus:border-sky-500 focus:outline-none" placeholder="Describe what the patient is feeling..." />
+                                <textarea {...register('initial_symptoms', { required: 'Required' })} rows={3} className="mt-1 w-full rounded-md border border-slate-200 text-white bg-slate-800 p-2.5 focus:border-sky-500 focus:outline-none" placeholder="Describe what the patient is feeling..." />
                                 {errors.initial_symptoms && <p className="text-xs text-red-500">{errors.initial_symptoms.message}</p>}
                             </div>
                         </motion.div>

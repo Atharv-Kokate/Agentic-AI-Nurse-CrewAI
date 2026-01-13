@@ -1,8 +1,9 @@
 import axios from 'axios';
 
 // Create axios instance
+// Create axios instance
 const client = axios.create({
-    baseURL: '/api/v1', // Using Vite proxy to avoid CORS issues in dev
+    baseURL: import.meta.env.VITE_API_URL || '/api/v1',
     headers: {
         'Content-Type': 'application/json',
     },
