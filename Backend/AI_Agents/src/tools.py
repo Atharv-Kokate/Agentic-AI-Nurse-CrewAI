@@ -36,8 +36,8 @@ class AskPatientTool(BaseTool):
              
         # 1. Create Question Record
         db = SessionLocal()
+        interaction_id = uuid.uuid4()
         try:
-            interaction_id = uuid.uuid4()
             interaction = AgentInteraction(
                 id=interaction_id,
                 patient_id=self.patient_id,
@@ -47,13 +47,33 @@ class AskPatientTool(BaseTool):
             db.add(interaction)
             db.commit()
             print(f"[AskPatientTool] Question logged: {question} (ID: {interaction_id})")
+            
+            # 2. Notify Frontend via WebSocket (Thread-Safe via requests)
+            try:
+                # We use a direct HTTP call to our own server to trigger the broadcast
+                # This avoids messing with asyncio loops from a thread
+                import requests
+                payload = {
+                    "patient_id": self.patient_id,
+                    "status": "WAITING_FOR_INPUT",
+                    "pending_interaction": {
+                        "interaction_id": str(interaction_id),
+                        "question": question
+                    }
+                }
+                # Assuming localhost running on 8000. 
+                # Ideally config url, but hardcoding for this fix.
+                requests.post("http://localhost:8000/api/v1/internal/broadcast", json=payload, timeout=2)
+            except Exception as wse:
+                print(f"[AskPatientTool] Failed to trigger broadcast: {wse}")
+
         except Exception as e:
             db.close()
             return f"Error logging question: {e}"
         finally:
             db.close()
 
-        # 2. Poll for Answer
+        # 3. Poll for Answer
         # Wait for up to 5 minutes (150 * 2s)
         max_retries = 150 
         

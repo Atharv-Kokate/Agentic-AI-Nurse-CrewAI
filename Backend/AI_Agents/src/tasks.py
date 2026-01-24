@@ -1,4 +1,19 @@
 from crewai import Task
+from pydantic import BaseModel, Field
+from typing import List, Optional, Dict, Any
+
+# --- Pydantic Output Models ---
+
+class RiskAssessmentOutput(BaseModel):
+    risk_level: str = Field(..., description="Overall risk level: LOW, MODERATE, HIGH, or CRITICAL")
+    risk_score: int = Field(..., description="Risk score from 0-100")
+    justification: Dict[str, Any] = Field(..., description="Detailed medical justification as a nested object (Patient Context, History, Symptoms, Vitals Evaluation, Potential Diagnosis)")
+    requires_immediate_action: bool = Field(..., description="True if immediate medical intervention is needed")
+
+class ActionDecisionOutput(BaseModel):
+    action: str = Field(..., description="MONITOR | ALERT_DOCTOR | EMERGENCY")
+    urgency: str = Field(..., description="Normal | High | Critical")
+    doctor_note: str = Field(..., description="Concise briefing note for the doctor")
 
 class MedicalTasks:
     def analyze_vitals_task(self, agent, patient_data):
@@ -78,15 +93,16 @@ class MedicalTasks:
                 "CRITICAL INSTRUCTIONS:\n"
                 "1. IF [CONTEXT - CLINICAL AGGREGATION] says 'No symptoms' AND vitals are 'NORMAL', Risk Level MUST be 'LOW'.\n"
                 "2. DO NOT HALLUCINATE RISKS. If vitals are benign, do not claim 'hypertensive crisis'.\n"
-                "3. Consistency Check: If BP is < 130/85, Risk CANNOT be HIGH unless severe symptoms exist."
-                "4. If [CONTEXT - CLINICAL AGGREGATION] is empty or [] or None, ASSUME NO HISTORY. Do NOT invent a history."
+                "3. Consistency Check: If BP is < 130/85, Risk CANNOT be HIGH unless severe symptoms exist.\n"
+                "4. If [CONTEXT - CLINICAL AGGREGATION] is empty or [] or None, ASSUME NO HISTORY. Do NOT invent a history.\n"
                 "5. Your 'justification' MUST be a COMPREHENSIVE MEDICAL REPORT. It must explicitly include:\n"
                 "   - Patient Context (Age/Gender)\n"
                 "   - Known Medical History (from input)\n"
                 "   - Reported Symptoms (detailed)\n"
                 "   - Vital Signs Evaluation (cite specific numbers e.g., 'BP: 160/100')\n"
                 "   - Potential Conditions/Diagnosis (e.g., 'Suspected Hypertensive Urgency')\n"
-                "   - Rationale for Risk Level."
+                "   - Rationale for Risk Level.\n"
+                "6. OUTPUT FORMAT RULE: You MUST return ONLY the raw JSON object. Do NOT wrap it in markdown codes (like ```json), and do NOT add any conversational text like 'Here is the output'. Just the JSON."
             ),
             expected_output=(
                 "A JSON object containing:\n"
@@ -98,7 +114,8 @@ class MedicalTasks:
                 "}"
             ),
             agent=agent,
-            context=context
+            context=context,
+            output_pydantic=RiskAssessmentOutput
         )
 
     def decide_action_task(self, agent, context):
@@ -111,7 +128,8 @@ class MedicalTasks:
                 "2. Chief Complaint & Symptoms\n"
                 "3. Medical History\n"
                 "4. EXACT VITALS (BP, HR, SpO2, etc.)\n"
-                "5. Suspected Condition & Recommended Action."
+                "5. Suspected Condition & Recommended Action.\n"
+                "6. OUTPUT FORMAT RULE: You MUST return ONLY the raw JSON object. Do NOT wrap it in markdown codes (like ```json), and do NOT add any conversational text like 'Here is the output'. Just the JSON."
             ),
             expected_output=(
                 "A JSON object containing:\n"
@@ -122,5 +140,6 @@ class MedicalTasks:
                 "}"
             ),
             agent=agent,
-            context=context
+            context=context,
+            output_pydantic=ActionDecisionOutput
         )

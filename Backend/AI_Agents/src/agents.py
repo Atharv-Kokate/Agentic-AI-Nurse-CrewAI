@@ -48,13 +48,23 @@ class MedicalAgents:
         )
 
     def symptom_inquiry_agent(self):
-        # Load Knowledge Base
+        # Initialize RAG Tool
+        # We use absolute path to ensure robustness regardless of where the script is run from
+        kb_path = os.path.join(os.path.dirname(__file__), 'knowledge_base.md')
+        
+        # Note: MDXSearchTool might require 'openai' by default for embeddings if not configured otherwise.
+        # Since we are using Ollama/Groq, we need to be careful. 
+        # Ideally, we should pass a config for the embedder. 
+        # For this prototype steps, we will try default. If it fails due to missing OpenAI key, 
+        # we might need to configure it to use Ollama embeddings.
         try:
-            kb_path = os.path.join(os.path.dirname(__file__), 'knowledge_base.md')
-            with open(kb_path, 'r', encoding='utf-8') as f:
-                knowledge_base = f.read()
-        except Exception:
-            knowledge_base = "Error loading knowledge base. relied on general medical knowledge."
+            from crewai_tools import MDXSearchTool
+            knowledge_tool = MDXSearchTool(mdx=kb_path)
+            tools_list = [AskPatientTool(patient_id=self.patient_id), knowledge_tool]
+        except Exception as e:
+            print(f"❌ CRITICAL ERROR: Failed to load RAG Tool (crewai_tools). Details: {e}")
+            # Fallback to just the AskPatientTool if RAG fails, so the app doesn't crash entirely on load
+            tools_list = [AskPatientTool(patient_id=self.patient_id)]
 
         return Agent(
             role='Symptom Inquiry Agent',
@@ -62,15 +72,16 @@ class MedicalAgents:
             backstory=(
                 "You are an empathetic and thorough medical assistant. "
                 "Your role is to interview the patient when their vitals are abnormal or when they report symptoms. "
-                "You have access to a Medical Knowledge Base which you must strictly follow:\n\n"
-                f"{knowledge_base}\n\n"
-                "Use the 'Ask Patient' tool. IMPORANT: Ask ONLY the most critical 3-4 questions needed to assess immediate risk. "
-                "Do not be exhaustive. Once you have enough information to determine if this is an emergency or not, STOP asking questions."
+                "You DO NOT memorize all medical protocols. Instead, you MUST use your 'Search a mdx' tool "
+                "to look up specific protocols in the Knowledge Base based on the patient's vitals , symptoms or patient's known conditions.\n"
+                "1. First, SEARCH the knowledge base for the relevant condition (e.g., 'Hypertension protocols', 'Chest pain protocols').\n"
+                "2. Then, based on what you find, use the 'Ask Patient' tool to ask the critical questions.\n"
+                "3. Stop identifying if this is an emergency."
             ),
             verbose=True,
             allow_delegation=False,
             max_rpm=10,
-            tools=[AskPatientTool(patient_id=self.patient_id)],
+            tools=tools_list,
             llm=ollama_llama3
         )
 

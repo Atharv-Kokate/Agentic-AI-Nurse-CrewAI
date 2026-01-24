@@ -9,6 +9,7 @@ const AssessmentMonitorPage = () => {
     const { patientId } = useParams();
     const navigate = useNavigate();
     const [status, setStatus] = useState('RUNNING');
+    const [statusMessage, setStatusMessage] = useState('Initializing...');
     const [pollingData, setPollingData] = useState(null);
     const [userAnswer, setUserAnswer] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -17,28 +18,65 @@ const AssessmentMonitorPage = () => {
     const lastInteractionIdRef = useRef(null);
 
     useEffect(() => {
-        let intervalId;
+        // WebSocket Connection
+        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${wsProtocol}//127.0.0.1:8000/ws/${patientId}`;
+        const ws = new WebSocket(wsUrl);
 
-        const pollStatus = async () => {
+        ws.onopen = () => {
+            console.log("Connected to Analysis WebSocket");
+        };
+
+        ws.onmessage = (event) => {
             try {
-                const response = await client.get(`/status/${patientId}`);
-                const data = response.data;
-                setStatus(data.status);
-                setPollingData(data);
+                const data = JSON.parse(event.data);
+                console.log("WS Status Update:", data);
 
-                if (data.status === 'COMPLETED') {
-                    clearInterval(intervalId);
+                if (data.status) {
+                    setStatus(data.status);
                 }
-            } catch (error) {
-                console.error("Polling error", error);
+
+                if (data.message) {
+                    setStatusMessage(data.message);
+                }
+
+                // If 'result' is present, it means COMPLETED
+                if (data.result) {
+                    setPollingData({ status: 'COMPLETED', result: data.result });
+                }
+
+                // Keep pollingData structure compatible for now
+                if (data.status === 'WAITING_FOR_INPUT') {
+                    setPollingData(data);
+                }
+
+            } catch (err) {
+                console.error("Failed to parse WS message", err);
             }
         };
 
-        // Poll every 2 seconds
-        pollStatus();
-        intervalId = setInterval(pollStatus, 2000);
+        ws.onclose = () => {
+            console.log("Disconnected from WebSocket");
+        };
 
-        return () => clearInterval(intervalId);
+        // Fallback: Initial check (in case we re-connected to an already finished job)
+        const checkInitialStatus = async () => {
+            try {
+                const response = await client.get(`/status/${patientId}`);
+                const data = response.data;
+                if (data.status !== 'RUNNING') {
+                    setStatus(data.status);
+                    setPollingData(data);
+                }
+            } catch (e) {
+                console.error("Initial status check failed", e);
+            }
+        };
+        checkInitialStatus();
+
+        return () => {
+            ws.close();
+        };
     }, [patientId]);
 
     const handleSubmitAnswer = async (e) => {
@@ -73,8 +111,8 @@ const AssessmentMonitorPage = () => {
                             </div>
                         </div>
                         <h2 className="mt-8 text-xl font-semibold text-slate-800">AI Agents Working...</h2>
-                        <p className="mt-2 text-center text-slate-500 max-w-md">
-                            The medical crew is analyzing the patient's vitals and comparing them against known conditions.
+                        <p className="mt-2 text-center text-slate-500 max-w-md animate-pulse">
+                            {statusMessage}
                         </p>
                         <div className="mt-8 flex gap-2">
                             <span className="h-2 w-2 rounded-full bg-sky-500 animate-bounce delay-75" />

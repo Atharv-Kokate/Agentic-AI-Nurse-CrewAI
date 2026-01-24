@@ -1,7 +1,7 @@
 import json
 import logging
 from typing import Optional, Dict, Any, List
-from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks
+from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
@@ -127,9 +127,12 @@ class AnswerRequest(BaseModel):
 
 # --- Helper Functions ---
 
+import re
+
 def clean_json_string(json_str: Any) -> Dict[str, Any]:
     """
     Cleans markdown code blocks and handles mixed text/JSON content.
+    Includes robust regex fallback for multi-line strings and single quotes.
     """
     # If already a dict, return it
     if isinstance(json_str, dict):
@@ -147,33 +150,70 @@ def clean_json_string(json_str: Any) -> Dict[str, Any]:
     elif "```" in json_str:
         json_str = json_str.split("```")[1].split("```")[0]
     
+    json_str = json_str.strip()
+
     # Strategy 1: Direct Parse
     try:
-        return json.loads(json_str.strip())
+        return json.loads(json_str)
     except json.JSONDecodeError:
         pass
         
-    # Strategy 2: Extract from first '{' to last '}'
+    # Strategy 2: Pre-process Regex to escape newlines inside double quotes
+    # Matches double-quoted strings, accounting for escaped quotes
     try:
-        start_idx = json_str.find('{')
-        end_idx = json_str.rfind('}')
+        pattern = r'"((?:[^"\\]|\\.)*)"'
+        def replace_newlines(match):
+            content = match.group(1)
+            if '\n' in content:
+                # Replace literal newlines with escaped generic newline
+                return '"' + content.replace('\n', '\\n').replace('\r', '') + '"'
+            return match.group(0)
+
+        fixed_str = re.sub(pattern, replace_newlines, json_str, flags=re.DOTALL)
+        return json.loads(fixed_str)
+    except Exception as e:
+        logger.warning(f"Strategy 2 (Regex Fix) failed: {e}")
+
+    # Strategy 3: Extract from first '{' to last '}' from the FIXED string
+    try:
+        start_idx = fixed_str.find('{')
+        end_idx = fixed_str.rfind('}')
         
         if start_idx != -1 and end_idx != -1 and end_idx > start_idx:
-            potential_json = json_str[start_idx : end_idx + 1]
+            potential_json = fixed_str[start_idx : end_idx + 1]
             return json.loads(potential_json)
-    except json.JSONDecodeError as e:
-        logger.error(f"Failed to parse JSON with strategy 2: {e}")
+    except Exception as e:
+        logger.warning(f"Strategy 3 (Regex + Extract) failed: {e}")
+
+    # Strategy 4: Fallback for single quotes (ast.literal_eval) - Rare
+    try:
+        # Re-use extract logic on original string just in case regex broke something
+        start_idx = json_str.find('{')
+        end_idx = json_str.rfind('}')
+        if start_idx != -1 and end_idx != -1 and end_idx > start_idx:
+            potential_val = json_str[start_idx : end_idx + 1]
+            if potential_val.startswith("{") and potential_val.endswith("}"):
+                val = ast.literal_eval(potential_val)
+                if isinstance(val, dict):
+                    return val
+    except Exception:
+        pass
     
-    logger.error(f"Failed to parse JSON: {json_str[:100]}...")
+    logger.error(f"All JSON parse strategies failed for: {json_str[:100]}...")
     return {}
 
-def run_crew_background(crew_input: dict, patient_id_str: str):
+# --- WebSocket Manager ---
+from websocket_manager import manager
+import asyncio
+
+async def run_crew_background(crew_input: dict, patient_id_str: str):
     """
     Background task to run the crew and save results.
     """
     db = SessionLocal()
     try:
         logger.info(f"Starting background analysis for patient {patient_id_str}")
+        await manager.broadcast({"status": "RUNNING", "message": "Starting analysis..."}, patient_id_str)
         
         # Instantiate Crew with patient_id for Tool usage
         medical_crew = MedicalCrew(patient_id=patient_id_str)
@@ -197,7 +237,13 @@ def run_crew_background(crew_input: dict, patient_id_str: str):
         )
         
         logger.info(f"--- CREW INPUT START ---\n{formatted_input}\n--- CREW INPUT END ---")
-        crew_result = medical_crew.run(formatted_input)
+        
+        # NOTE: Run in separate thread to avoid blocking main event loop (WebSocket heartbeats)
+        await manager.broadcast({"status": "RUNNING", "message": "AI Agents analyzing vitals..."}, patient_id_str)
+        
+        crew_result = await asyncio.to_thread(medical_crew.run, formatted_input)
+        
+        await manager.broadcast({"status": "RUNNING", "message": "Processing results..."}, patient_id_str)
         
         logger.info(f"raw crew_result type: {type(crew_result)}")
         logger.info(f"raw crew_result: {crew_result}")
@@ -254,14 +300,24 @@ def run_crew_background(crew_input: dict, patient_id_str: str):
                 call_received=False 
             )
             db.add(new_alert)
-            # Automatic trigger removed as per user request. Use manual /escalate endpoint.
         
         db.commit()
         logger.info(f"Background analysis complete for {patient_id_str}")
+        
+        # Broadcast Final Success
+        final_payload = {
+            "status": "COMPLETED",
+            "result": {
+                "risk_level": risk_level,
+                "risk_score": risk_score,
+                "reasoning": reasoning
+            }
+        }
+        await manager.broadcast(final_payload, patient_id_str)
 
     except Exception as e:
         logger.error(f"Background task failed for {patient_id_str}: {e}")
-        # Ideally, mark the status as FAILED in DB if we had a Job table.
+        await manager.broadcast({"status": "FAILED", "error": str(e)}, patient_id_str)
     finally:
         db.close()
 
@@ -561,6 +617,48 @@ def provide_answer(
     db.commit()
 
     return {"message": "Answer recorded. Agent will resume shortly."}
+
+@app.websocket("/ws/{patient_id}")
+async def websocket_endpoint(websocket: WebSocket, patient_id: str):
+    await manager.connect(websocket, patient_id)
+    try:
+        while True:
+            # We just listen to keep connection open. 
+            # We could handle incoming "answers" here too if we wanted full bidirectional,
+            # but for now we primarily push updates.
+            data = await websocket.receive_text()
+            # If we receive a ping/pong, ignore.
+    except WebSocketDisconnect:
+        manager.disconnect(websocket, patient_id)
+    except Exception as e:
+        logger.error(f"WebSocket error for {patient_id}: {e}")
+        manager.disconnect(websocket, patient_id)
+
+class BroadcastRequest(BaseModel):
+    patient_id: str
+    status: str
+    message: Optional[str] = None
+    pending_interaction: Optional[Dict] = None
+    result: Optional[Dict] = None
+
+@app.post("/api/v1/internal/broadcast")
+async def internal_broadcast(req: BroadcastRequest):
+    """
+    Internal endpoint to allow background threads (like Tools) to trigger WS broadcasts.
+    """
+    payload = {
+        "status": req.status,
+    }
+    if req.message:
+        payload["message"] = req.message
+    if req.pending_interaction:
+        payload["pending_interaction"] = req.pending_interaction
+    if req.result:
+        payload["result"] = req.result
+        
+    logger.info(f"Internal broadcast request for {req.patient_id}: {req.status}")
+    await manager.broadcast(payload, req.patient_id)
+    return {"status": "broadcasted"}
 
 if __name__ == "__main__":
     import uvicorn

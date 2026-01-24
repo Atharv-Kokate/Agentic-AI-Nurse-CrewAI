@@ -54,8 +54,7 @@ class MedicalCrew:
         c1 = Crew(agents=[detective_agent], tasks=[vital_analysis], verbose=True)
         res1 = self.kickoff_with_retry(c1, "Vital Analysis")
         print(f"DEBUG: Vitals Output: {res1}")
-        print("Analysis Complete. Cooling down (10s)...")
-        time.sleep(10)
+        print("Analysis Complete.")
 
         # Helper to safely get string content
         def get_output_str(res):
@@ -73,8 +72,7 @@ class MedicalCrew:
         c2 = Crew(agents=[interviewer_agent], tasks=[symptom_inquiry], verbose=True)
         res2 = self.kickoff_with_retry(c2, "Symptom Inquiry")
         print(f"DEBUG: Symptom Output: {res2}")
-        print("Inquiry Complete. Cooling down (10s)...")
-        time.sleep(10)
+        print("Inquiry Complete.")
         
         out2 = get_output_str(res2)
 
@@ -85,8 +83,7 @@ class MedicalCrew:
         c3 = Crew(agents=[aggregator_agent], tasks=[aggregation], verbose=True)
         res3 = self.kickoff_with_retry(c3, "Context Aggregation")
         print(f"DEBUG: Aggregation Output: {res3}")
-        print("Aggregation Complete. Cooling down (10s)...")
-        time.sleep(10)
+        print("Aggregation Complete.")
 
         out3 = get_output_str(res3)
 
@@ -97,8 +94,7 @@ class MedicalCrew:
         c4 = Crew(agents=[risk_agent], tasks=[risk_assessment], verbose=True)
         risk_result = self.kickoff_with_retry(c4, "Risk Assessment")
         print(f"DEBUG: Risk Result: {risk_result}")
-        print("Assessment Complete. Cooling down (10s)...")
-        time.sleep(10)
+        print("Assessment Complete.")
 
         out4 = get_output_str(risk_result)
 

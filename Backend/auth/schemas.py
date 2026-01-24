@@ -51,7 +51,6 @@ class UserLogin(BaseModel):
         }
     }
 
-
 # --- Response Schemas ---
 
 class Token(BaseModel):
