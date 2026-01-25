@@ -10,8 +10,14 @@ import sys
 import os
 
 # Add Shared and AI_Agents to sys.path
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'Shared'))
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'Shared', 'AI_Agents'))
+from pathlib import Path
+current_file = Path(__file__).resolve()
+backend_dir = current_file.parent.parent
+shared_dir = backend_dir / "Shared"
+ai_agents_dir = shared_dir / "AI_Agents"
+
+sys.path.append(str(shared_dir))
+sys.path.append(str(ai_agents_dir))
 
 # Database imports
 from database.session import engine, Base, get_db, SessionLocal
