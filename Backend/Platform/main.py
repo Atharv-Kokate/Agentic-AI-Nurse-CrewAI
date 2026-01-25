@@ -16,8 +16,17 @@ backend_dir = current_file.parent.parent
 shared_dir = backend_dir / "Shared"
 ai_agents_dir = shared_dir / "AI_Agents"
 
-sys.path.append(str(shared_dir))
-sys.path.append(str(ai_agents_dir))
+# Use insert(0) to prioritize our paths over potential system conflicts
+sys.path.insert(0, str(shared_dir))
+sys.path.insert(0, str(ai_agents_dir))
+
+# DEBUG: Print sys.path to logs to verify on deployment
+print(f"DEBUG: Current File: {current_file}")
+print(f"DEBUG: Backend Dir: {backend_dir}")
+print(f"DEBUG: Shared Dir: {shared_dir} (Exists: {shared_dir.exists()})")
+print(f"DEBUG: AI_Agents Dir: {ai_agents_dir} (Exists: {ai_agents_dir.exists()})")
+print(f"DEBUG: sys.path[0]: {sys.path[0]}")
+print(f"DEBUG: sys.path[1]: {sys.path[1]}")
 
 # Database imports
 from database.session import engine, Base, get_db, SessionLocal
