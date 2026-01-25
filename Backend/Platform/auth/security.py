@@ -13,27 +13,18 @@ ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "10080"))
 
 # Password hashing context
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# Password hashing context
+# Switched to argon2 to avoid bcrypt's 72-byte limit and library conflicts
+pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 
 
 def hash_password(password: str) -> str:
-    """Hash a password using bcrypt. Handles passwords > 72 bytes."""
-    # Bcrypt has a 72 byte limit. If password is longer, pre-hash it.
-    if len(password.encode('utf-8')) > 71:
-        import hashlib
-        # Use SHA256 to condense the password into a fixed length string
-        password = hashlib.sha256(password.encode('utf-8')).hexdigest()
-    
+    """Hash a password using argon2."""
     return pwd_context.hash(password)
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a password against its hash."""
-    # Match the hashing logic: if plain password is long, pre-hash it before verifying
-    if len(plain_password.encode('utf-8')) > 71:
-        import hashlib
-        plain_password = hashlib.sha256(plain_password.encode('utf-8')).hexdigest()
-        
     return pwd_context.verify(plain_password, hashed_password)
 
 
