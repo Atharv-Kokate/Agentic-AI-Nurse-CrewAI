@@ -12,6 +12,7 @@ httpx
 pydantic
 python-jose[cryptography]
 passlib[bcrypt]
+bcrypt
 python-multipart
 email-validator
 json_repair
