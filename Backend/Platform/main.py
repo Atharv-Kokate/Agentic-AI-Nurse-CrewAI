@@ -19,6 +19,7 @@ ai_agents_dir = shared_dir / "AI_Agents"
 # Use insert(0) to prioritize our paths over potential system conflicts
 sys.path.insert(0, str(shared_dir))
 sys.path.insert(0, str(ai_agents_dir))
+sys.path.insert(0, str(current_file.parent)) # Add Platform dir to allow 'from auth import ...'
 
 # DEBUG: Print sys.path to logs to verify on deployment
 print(f"DEBUG: Current File: {current_file}")
