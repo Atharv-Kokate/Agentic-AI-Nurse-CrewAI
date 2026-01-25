@@ -31,7 +31,7 @@ print(f"DEBUG: sys.path[1]: {sys.path[1]}")
 # Database imports
 from database.session import engine, Base, get_db, SessionLocal
 from database.models import Patient, monitoring_logs, ai_assesments, alerts, AgentInteraction, User, UserRole
-from src.crew import MedicalCrew
+from medical_agents.crew import MedicalCrew
 
 # Auth imports
 from auth.dependencies import get_current_active_user, require_roles
