@@ -269,3 +269,41 @@ LiteLLM completion() model= phi3; provider = ollama
 2026-01-23 09:19:27,155 - main - INFO - Parsed Risk Output: {'risk_level': 'MODERATE', 'risk_score': 65, 'justification': {'Patient Context': {'Age': 69, 'Gender': 'Male'}, 'Known Medical History': {'Diabetes': {'Condition': 'Diabetes'}}, 'Reported Symptoms': {'Reported': 'Fatigue that comes and goes, no symptoms of pain or discomfort', 'Description': 'Potential angina risk in a patient with known diabetes'}, 'Vitals Evaluation': {'BP': '110/80 mmHg', 'Heart Rate': 72, 'Blood Sugar': 90}, 'Potential Conditions/Diagnosis': {'Suspected Conditions': ['Hypertension risk', 'Angina risk']}, 'Rationale for Risk Level': "The patient has a known medical condition of diabetes, which can affect blood pressure levels and increase the risk for cardiovascular disease. The reported fatigue may indicate potential angina risk. However, the patient's blood pressure was within the normal limits (110/80 mmHg)."}, 'requires_immediate_action': True}
 2026-01-23 09:19:27,164 - main - INFO - Background analysis complete for 20db2051-0b2a-4556-b13c-e420bf76680f
 2026-01-23 09:26:09,340 - websocket_manager - INFO - WebSocket disconnected for patient 20db2051-0b2a-4556-b13c-e420bf76680f
+2026-01-25 10:54:59,371 - main - INFO - Received analysis request for patient: Atharv Sudhir Kokate
+2026-01-25 10:54:59,406 - main - INFO - Starting background analysis for patient 4c8958f8-7512-4512-8ac7-1458c1a82d5c
+2026-01-25 10:54:59,407 - main - INFO - --- CREW INPUT START ---
+Analyze this PATIENT DATA:
+
+[CURRENT VITALS]
+Name: Atharv Sudhir Kokate
+Age: 69
+Gender: Male
+Blood Pressure: 190/160
+Heart Rate: 100
+Blood Sugar: 160
+Meds Taken: False
+Known Conditions: diabetes
+Reported Symptoms: extreme chest pain difficulty in breathing and extreme sweaty body and difficult to move
+
+[RECENT VITALS HISTORY]
+[]
+--- CREW INPUT END ---
+2026-01-25 10:54:59,426 - websocket_manager - INFO - WebSocket connected for patient 4c8958f8-7512-4512-8ac7-1458c1a82d5c
+2026-01-25 10:54:59,427 - websocket_manager - INFO - WebSocket disconnected for patient 4c8958f8-7512-4512-8ac7-1458c1a82d5c
+2026-01-25 10:54:59,448 - websocket_manager - INFO - WebSocket connected for patient 4c8958f8-7512-4512-8ac7-1458c1a82d5c
+2026-01-25 10:55:01,823 - LiteLLM - INFO - 
+LiteLLM completion() model= llama3:8b; provider = ollama
+2026-01-25 10:55:21,515 - LiteLLM - INFO - Wrapper: Completed Call, calling success_handler
+2026-01-25 10:55:21,559 - LiteLLM - INFO - 
+LiteLLM completion() model= llama3:8b; provider = ollama
+2026-01-25 10:55:24,536 - LiteLLM - INFO - Wrapper: Completed Call, calling success_handler
+2026-01-25 10:55:24,571 - LiteLLM - INFO - 
+LiteLLM completion() model= llama-3.1-8b-instant; provider = groq
+2026-01-25 10:55:25,195 - LiteLLM - INFO - Wrapper: Completed Call, calling success_handler
+2026-01-25 10:55:25,236 - LiteLLM - INFO - 
+LiteLLM completion() model= llama-3.1-8b-instant; provider = groq
+2026-01-25 10:55:26,024 - LiteLLM - INFO - Wrapper: Completed Call, calling success_handler
+2026-01-25 10:55:26,032 - main - ERROR - Background task failed for 4c8958f8-7512-4512-8ac7-1458c1a82d5c: 1 validation error for RiskAssessmentOutput
+  Invalid JSON: expected `:` at line 23 column 38 [type=json_invalid, input_value='{\n  "risk_level": "CRIT...ediate_action": true\n}', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.11/v/json_invalid
+2026-01-25 11:13:13,397 - websocket_manager - INFO - WebSocket disconnected for patient 4c8958f8-7512-4512-8ac7-1458c1a82d5c

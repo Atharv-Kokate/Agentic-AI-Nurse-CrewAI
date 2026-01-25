@@ -2,9 +2,8 @@ import sys
 import os
 
 # Ensure backend root is in path to import database modules
-current_dir = os.path.dirname(os.path.abspath(__file__)) # .../Backend/AI_Agents/src
-backend_root = os.path.dirname(os.path.dirname(os.path.dirname(current_dir))) # .../Backend (hopefully)
-# Actually, let's just use relative to this file
+current_dir = os.path.dirname(os.path.abspath(__file__)) # .../Backend/Shared/AI_Agents/medical_agents
+# .../Backend/Shared/AI_Agents -> .../Backend/Shared
 backend_path = os.path.abspath(os.path.join(current_dir, '..', '..'))
 if backend_path not in sys.path:
     sys.path.append(backend_path)
@@ -90,3 +89,20 @@ class AskPatientTool(BaseTool):
                 db.close()
         
         return "Timeout: Patient did not provide an answer in time. Proceed with available information."
+
+from medical_agents.rag_manager import RAGManager
+
+class KnowledgeBaseSearchTool(BaseTool):
+    name: str = "Search Knowledge Base"
+    description: str = (
+        "Useful for searching medical protocols and guidelines for specific symptoms or conditions. "
+        "Input should be a specific symptom or condition (e.g., 'Chest Pain', 'Hypertension'). "
+        "Returns the relevant protocol sections."
+    )
+    
+    def _run(self, query: str) -> str:
+        try:
+            rag = RAGManager()
+            return rag.search(query)
+        except Exception as e:
+            return f"Error searching knowledge base: {str(e)}"

@@ -1,6 +1,6 @@
 import os
 from crewai import Agent, LLM
-from src.tools import AskPatientTool
+from medical_agents.tools import AskPatientTool
 # Initialize Native CrewAI LLMs
 # 1. Ollama (Llama 3 8B) - Running Locally
 ollama_llama3 = LLM(
@@ -48,22 +48,14 @@ class MedicalAgents:
         )
 
     def symptom_inquiry_agent(self):
-        # Initialize RAG Tool
-        # We use absolute path to ensure robustness regardless of where the script is run from
-        kb_path = os.path.join(os.path.dirname(__file__), 'knowledge_base.md')
+        # Custom Knowledge Base Search Tool (Lightweight & Reliable)
+        from medical_agents.tools import AskPatientTool, KnowledgeBaseSearchTool
         
-        # Note: MDXSearchTool might require 'openai' by default for embeddings if not configured otherwise.
-        # Since we are using Ollama/Groq, we need to be careful. 
-        # Ideally, we should pass a config for the embedder. 
-        # For this prototype steps, we will try default. If it fails due to missing OpenAI key, 
-        # we might need to configure it to use Ollama embeddings.
         try:
-            from crewai_tools import MDXSearchTool
-            knowledge_tool = MDXSearchTool(mdx=kb_path)
+            knowledge_tool = KnowledgeBaseSearchTool()
             tools_list = [AskPatientTool(patient_id=self.patient_id), knowledge_tool]
         except Exception as e:
-            print(f"❌ CRITICAL ERROR: Failed to load RAG Tool (crewai_tools). Details: {e}")
-            # Fallback to just the AskPatientTool if RAG fails, so the app doesn't crash entirely on load
+            print(f"❌ CRITICAL ERROR: Failed to load Tools. Details: {e}")
             tools_list = [AskPatientTool(patient_id=self.patient_id)]
 
         return Agent(

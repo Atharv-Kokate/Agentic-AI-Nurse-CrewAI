@@ -1,6 +1,6 @@
 from crewai import Crew, Process
-from src.agents import MedicalAgents
-from src.tasks import MedicalTasks
+from medical_agents.agents import MedicalAgents
+from medical_agents.tasks import MedicalTasks
 import time
 import sys
 import datetime
@@ -63,7 +63,7 @@ class MedicalCrew:
             return str(res)
 
         out1 = get_output_str(res1)
-
+        
         print("\n[2/5] Running Symptom Inquiry Agent...")
         # Manually inject context since separate Crews might break Task.context sharing
         # CRITICAL FIX: Inject ORIGINAL PATIENT DATA so this agent doesn't rely solely on the previous agent's summary

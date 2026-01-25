@@ -3,14 +3,21 @@ import sys
 from dotenv import load_dotenv
 
 # Load environment variables
+# Load environment variables
 load_dotenv()
+
+# Add current directory to sys.path to allow src import
+from pathlib import Path
+current_file = Path(__file__).resolve()
+current_dir = current_file.parent
+sys.path.append(str(current_dir))
 
 # Check for API Key
 if not os.getenv("GROQ_API_KEY"):
     print("Error: GROQ_API_KEY not found. Please set it in a .env file or environment variables.")
     sys.exit(1)
 
-from src.crew import MedicalCrew
+from medical_agents.crew import MedicalCrew
 
 def get_patient_input():
     print("\n--- AI Agent Nurse: Patient Intake ---")

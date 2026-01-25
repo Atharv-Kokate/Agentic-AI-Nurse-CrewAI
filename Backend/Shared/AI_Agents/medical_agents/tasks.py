@@ -47,9 +47,12 @@ class MedicalTasks:
                 "CRITICAL INSTRUCTIONS:\n"
                 "1. CHECK [CONTEXT - VITAL ANALYSIS]. If status is 'NORMAL' AND input reported_symptoms is 'None' or empty, DO NOT ASK QUESTIONS.\n"
                 "2. If no questions needed, return \"symptom_summary\": \"No symptoms reported, patient healthy\".\n"
-                "3. DO NOT INVENT SYMPTOMS like 'chest pain' if the user did not report them. STRICTLY USE REPORTED SYMPTOMS ONLY.\n"
-                "4. Only ask questions if 'requires_symptom_check' is true or explicit symptoms were provided.\n"
-                "5. Stop immediately if you identify a medical emergency or have enough info."
+                "3. SEARCH KNOWLEDGE BASE: You MUST use the 'Search Knowledge Base' tool to find the specific protocol for the patient's symptoms (e.g., 'Chest Pain', 'Hypertension').\n"
+                "4. CHECK CONTEXT FIRST (CRITICAL): Before asking a question from the protocol, CHECK [ORIGINAL PATIENT DATA].\n"
+                "   - If the patient has already provided the answer (e.g., 'known_conditions' answers 'history'), DO NOT ASK IT AGAIN.\n"
+                "   - If the patient's 'reported_symptoms' already covers the question (e.g., they said 'chest pain', don't ask 'do you have chest pain'), DO NOT ASK IT AGAIN.\n"
+                "5. ASK ONLY NEW QUESTIONS: Formulate your questions based ONLY on missing information from the protocol.\n"
+                "6. Stop immediately if you identify a medical emergency or have enough info."
             ),
             expected_output=(
                 "A JSON object containing:\n"
@@ -102,7 +105,7 @@ class MedicalTasks:
                 "   - Vital Signs Evaluation (cite specific numbers e.g., 'BP: 160/100')\n"
                 "   - Potential Conditions/Diagnosis (e.g., 'Suspected Hypertensive Urgency')\n"
                 "   - Rationale for Risk Level.\n"
-                "6. OUTPUT FORMAT RULE: You MUST return ONLY the raw JSON object. Do NOT wrap it in markdown codes (like ```json), and do NOT add any conversational text like 'Here is the output'. Just the JSON."
+                "6. OUTPUT FORMAT RULE: You MUST return ONLY the raw JSON object. Do NOT wrap it in markdown codes (like ```json). Ensure all strings use \\n for newlines. Valid JSON only."
             ),
             expected_output=(
                 "A JSON object containing:\n"
@@ -115,7 +118,7 @@ class MedicalTasks:
             ),
             agent=agent,
             context=context,
-            output_pydantic=RiskAssessmentOutput
+            # output_pydantic=RiskAssessmentOutput # DISABLED: Processed by robust clean_json_string in main.py
         )
 
     def decide_action_task(self, agent, context):
@@ -129,7 +132,7 @@ class MedicalTasks:
                 "3. Medical History\n"
                 "4. EXACT VITALS (BP, HR, SpO2, etc.)\n"
                 "5. Suspected Condition & Recommended Action.\n"
-                "6. OUTPUT FORMAT RULE: You MUST return ONLY the raw JSON object. Do NOT wrap it in markdown codes (like ```json), and do NOT add any conversational text like 'Here is the output'. Just the JSON."
+                "6. OUTPUT FORMAT RULE: You MUST return ONLY the raw JSON object. Do NOT wrap it in markdown codes (like ```json). Ensure all strings use \\n for newlines. Valid JSON only."
             ),
             expected_output=(
                 "A JSON object containing:\n"
@@ -141,5 +144,5 @@ class MedicalTasks:
             ),
             agent=agent,
             context=context,
-            output_pydantic=ActionDecisionOutput
+            # output_pydantic=ActionDecisionOutput # DISABLED: Processed by robust clean_json_string in main.py
         )

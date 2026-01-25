@@ -15,13 +15,15 @@ logger = logging.getLogger("mcp_server")
 # --- Path Setup ---
 # Ensure Backend root is in sys.path
 current_dir = os.path.dirname(os.path.abspath(__file__))
+shared_dir = os.path.join(current_dir, '..', 'Shared')
+ai_agents_dir = os.path.join(shared_dir, 'AI_Agents')
+
 if current_dir not in sys.path:
     sys.path.append(current_dir)
-
-# Add AI_Agents to sys.path so that 'from src.agents import ...' works
-ai_agents_path = os.path.join(current_dir, 'AI_Agents')
-if ai_agents_path not in sys.path:
-    sys.path.append(ai_agents_path)
+if shared_dir not in sys.path:
+    sys.path.append(shared_dir)
+if ai_agents_dir not in sys.path:
+    sys.path.append(ai_agents_dir)
 
 # --- Import Project Modules ---
 try:
@@ -103,7 +105,8 @@ async def consult_knowledge_base(query: str) -> str:
         query: The medical topic or symptom to look up.
     """
     try:
-        kb_path = os.path.join(current_dir, 'AI_Agents', 'src', 'knowledge_base.md')
+        # Updated to point to Shared/AI_Agents
+        kb_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'Shared', 'AI_Agents', 'src', 'knowledge_base.md')
         
         if not os.path.exists(kb_path):
             return "Error: Knowledge base file not found."
