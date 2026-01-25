@@ -65,6 +65,21 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Global Exception Handler for debugging
+from fastapi import Request
+from fastapi.responses import JSONResponse
+import traceback
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    error_msg = str(exc)
+    tb = traceback.format_exc()
+    print(f"CRITICAL ERROR: {error_msg}\n{tb}") # Print to server logs
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal Server Error", "error": error_msg, "traceback": tb.splitlines()}
+    )
+
 # Include Routers
 app.include_router(auth_router)
 app.include_router(patients_router)
