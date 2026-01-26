@@ -44,7 +44,7 @@ class MedicalAgents:
             verbose=True,
             allow_delegation=False,
             max_rpm=10,
-            llm=ollama_llama3
+            llm=groq_llama70
         )
 
     def symptom_inquiry_agent(self):
@@ -74,7 +74,7 @@ class MedicalAgents:
             allow_delegation=False,
             max_rpm=10,
             tools=tools_list,
-            llm=ollama_llama3
+            llm=groq_llama70
         )
 
     def context_aggregation_agent(self):
@@ -121,5 +121,5 @@ class MedicalAgents:
             verbose=True,
             allow_delegation=False,
             max_rpm=10,
-            llm=ollama_phi
+            llm=groq_gemma
         )
