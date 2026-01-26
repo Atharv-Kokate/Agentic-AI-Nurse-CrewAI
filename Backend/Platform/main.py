@@ -153,6 +153,7 @@ class StatusResponse(BaseModel):
     status: str # RUNNING, WAITING_FOR_INPUT, COMPLETED, FAILED
     pending_interaction: Optional[InteractionResponse] = None
     result: Optional[Dict[str, Any]] = None
+    patient_data: Optional[Dict[str, Any]] = None
 
 class AnswerRequest(BaseModel):
     answer: str
@@ -551,6 +552,17 @@ def check_status(
     Check the status of the analysis.
     Requires authentication: ADMIN, NURSE, or DOCTOR role.
     """
+    # 0. Fetch patient data for UI context
+    patient = db.query(Patient).filter(Patient.id == patient_id).first()
+    patient_info = {}
+    if patient:
+        patient_info = {
+            "name": patient.name,
+            "age": patient.age,
+            "gender": patient.gender,
+            "conditions": patient.known_conditions if patient.known_conditions else ""
+        }
+
     # 1. Check for Pending Interactions (HITL)
     pending_interaction = db.query(AgentInteraction).filter(
         AgentInteraction.patient_id == patient_id,
@@ -565,7 +577,8 @@ def check_status(
                 question=pending_interaction.question,
                 status=pending_interaction.status,
                 created_at=pending_interaction.created_at
-            )
+            ),
+            patient_data=patient_info
         )
 
     # 2. Check for Completion (Assessment Exists)
@@ -589,7 +602,8 @@ def check_status(
                     "risk_level": assessment.risk_level,
                     "risk_score": assessment.risk_score,
                     "reasoning": assessment.reasoning
-                }
+                },
+                patient_data=patient_info
             )
     else:
         # Fallback if no log found (rare)
@@ -604,11 +618,12 @@ def check_status(
                     "risk_level": assessment.risk_level,
                     "risk_score": assessment.risk_score,
                     "reasoning": assessment.reasoning
-                }
+                },
+                patient_data=patient_info
             )
 
     # 3. Default: Running
-    return StatusResponse(status="RUNNING")
+    return StatusResponse(status="RUNNING", patient_data=patient_info)
 
 @app.post("/api/v1/interaction/{interaction_id}")
 def provide_answer(
