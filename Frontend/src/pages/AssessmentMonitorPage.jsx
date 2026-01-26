@@ -18,71 +18,54 @@ const AssessmentMonitorPage = () => {
     const lastInteractionIdRef = useRef(null);
 
     useEffect(() => {
-        // WebSocket Connection
-        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        let isMounted = true;
 
-        // Dynamic WS Host:
-        // 1. If in production (Render), use the current window host (same domain)
-        // 2. If in local dev (localhost), point to port 8000 explicitly
-        const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-        const wsHost = isLocal ? '127.0.0.1:8000' : window.location.host;
-
-        const wsUrl = `${wsProtocol}//${wsHost}/ws/${patientId}`;
-        const ws = new WebSocket(wsUrl);
-
-        ws.onopen = () => {
-            console.log("Connected to Analysis WebSocket");
-        };
-
-        ws.onmessage = (event) => {
+        const fetchStatus = async () => {
             try {
-                const data = JSON.parse(event.data);
-                console.log("WS Status Update:", data);
-
-                if (data.status) {
-                    setStatus(data.status);
-                }
-
-                if (data.message) {
-                    setStatusMessage(data.message);
-                }
-
-                // If 'result' is present, it means COMPLETED
-                if (data.result) {
-                    setPollingData({ status: 'COMPLETED', result: data.result });
-                }
-
-                // Keep pollingData structure compatible for now
-                if (data.status === 'WAITING_FOR_INPUT') {
-                    setPollingData(data);
-                }
-
-            } catch (err) {
-                console.error("Failed to parse WS message", err);
-            }
-        };
-
-        ws.onclose = () => {
-            console.log("Disconnected from WebSocket");
-        };
-
-        // Fallback: Initial check (in case we re-connected to an already finished job)
-        const checkInitialStatus = async () => {
-            try {
-                const response = await client.get(`/status/${patientId}`);
+                const response = await client.get(`/api/v1/status/${patientId}`);
                 const data = response.data;
-                if (data.status !== 'RUNNING') {
-                    setStatus(data.status);
-                    setPollingData(data);
+
+                if (isMounted) {
+                    console.log("Polling Status:", data);
+
+                    if (data.status) {
+                        setStatus(data.status);
+                    }
+
+                    // If we have patient_data in response, we could store it if needed
+                    // (Currently handled via status updates)
+
+                    // Check for completion
+                    if (data.status === 'COMPLETED' && data.result) {
+                        setPollingData({ status: 'COMPLETED', result: data.result });
+                    }
+                    // Check for pending interaction
+                    else if (data.status === 'WAITING_FOR_INPUT' && data.pending_interaction) {
+                        // Check if this is a new interaction to avoid jitter
+                        if (data.pending_interaction.interaction_id !== lastInteractionIdRef.current) {
+                            setPollingData(data);
+                            lastInteractionIdRef.current = data.pending_interaction.interaction_id;
+                        }
+                    }
+                    else {
+                        // Running state
+                        setPollingData(null);
+                    }
                 }
-            } catch (e) {
-                console.error("Initial status check failed", e);
+            } catch (error) {
+                console.error("Polling failed", error);
             }
         };
-        checkInitialStatus();
+
+        // Initial fetch
+        fetchStatus();
+
+        // Poll every 2 seconds
+        const intervalId = setInterval(fetchStatus, 2000);
 
         return () => {
-            ws.close();
+            isMounted = false;
+            clearInterval(intervalId);
         };
     }, [patientId]);
 
