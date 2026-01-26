@@ -4,7 +4,7 @@ langchain-groq
 python-dotenv
 litellm
 langchain-google-genai
-psycopg2
+psycopg2-binary
 sqlalchemy
 fastapi
 uvicorn[standard]
@@ -19,20 +19,10 @@ python-multipart
 email-validator
 json_repair
 chromadb
-sentence-transformers
-# Pre-loading common dependencies to prevent future crashes
+# Common dependencies (explicitly listed to ensure availability)
 tqdm
 tiktoken
-tokenizers
 requests
 aiohttp
-jinja2
-huggingface_hub
-google-generativeai
-boto3
-opentelemetry-api
-opentelemetry-sdk
-opentelemetry-exporter-otlp
-prisma
-tenacity
-cachetools
+# Production Server
+gunicorn

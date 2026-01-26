@@ -1,9 +1,63 @@
 import os
 import logging
+import requests
 import chromadb
 from chromadb.utils import embedding_functions
 
+
 logger = logging.getLogger("rag_manager")
+
+class GoogleGeminiEmbeddingFunction(embedding_functions.EmbeddingFunction):
+    """
+    Custom embedding function using Google Gemini API (REST).
+    Avoids dependency hell with langchain/google-genai libraries.
+    """
+    def __init__(self, api_key: str, model_name: str = "models/text-embedding-004"):
+        self.api_key = api_key
+        self.model_name = model_name
+        self.api_url = f"https://generativelanguage.googleapis.com/v1beta/{model_name}:batchEmbedContents?key={api_key}"
+
+    def __call__(self, input: list[str]) -> list[list[float]]:
+        try:
+            # Gemini Batch API format
+            # requests: [{model: ..., content: {parts: [{text: ...}]}}]
+            payload = {
+                "requests": [
+                    {
+                        "model": self.model_name,
+                        "content": {"parts": [{"text": text}]}
+                    }
+                    for text in input
+                ]
+            }
+            
+            response = requests.post(
+                self.api_url,
+                json=payload,
+                headers={"Content-Type": "application/json"},
+                timeout=30
+            )
+            
+            data = response.json()
+            
+            if "error" in data:
+                raise Exception(f"Gemini API Error: {data['error']}")
+            
+            # Extract embeddings
+            # Response: {embeddings: [{values: [...]}, ...]}
+            # Note: The structure might be 'embeddings' key in older API, or list of results.
+            # verify_rag.py will test this. 
+            # Current v1beta batch response typically matches order.
+            
+            if "embeddings" in data:
+                 return [e["values"] for e in data["embeddings"]]
+            
+            # Fallback for different response shape if any (usually 'embeddings')
+            raise Exception(f"Unexpected API response: {data.keys()}")
+
+        except Exception as e:
+            logger.error(f"Gemini embedding failed: {e}")
+            raise e
 
 class RAGManager:
     _instance = None
@@ -17,7 +71,7 @@ class RAGManager:
     def initialize(self):
         """
         Initialize ChromaDB client and collection.
-        Uses the default all-MiniLM-L6-v2 model via Chroma's wrapper for simplicity and performance.
+        Uses Google Gemini API for embeddings (Free, Fast, Reliable).
         """
         try:
             # Persist data in a folder named 'chroma_db' inside AI_Agents
@@ -27,9 +81,18 @@ class RAGManager:
             
             self.client = chromadb.PersistentClient(path=self.persist_directory)
             
-            # Use default embedding function (all-MiniLM-L6-v2)
-            # This requires 'sentence-transformers' to be installed
-            self.embedding_fn = embedding_functions.SentenceTransformerEmbeddingFunction(model_name="all-MiniLM-L6-v2")
+            # --- GOOGLE GEMINI EMBEDDINGS ---
+            google_api_key = os.getenv("GOOGLE_API_KEY")
+            if not google_api_key:
+                logger.error("GOOGLE_API_KEY is missing!")
+                raise ValueError("Missing GOOGLE_API_KEY in .env. Cannot run RAG.")
+
+            logger.info("Using Google Gemini API for embeddings (Custom Rest)")
+            
+            # Use Custom Function
+            self.embedding_fn = GoogleGeminiEmbeddingFunction(
+                api_key=google_api_key
+            )
             
             self.collection_name = "medical_knowledge"
             self.collection = self.client.get_or_create_collection(
@@ -100,6 +163,11 @@ class RAGManager:
         Returns a formatted string of the top-k results.
         """
         try:
+            # Note: For search queries, we should ideally use task_type="RETRIEVAL_QUERY"
+            # but Chroma's function wrapper handles what it can. 
+            # If strictly needed, we can re-instantiate embedding function with RETRIEVAL_QUERY for the query call.
+            # For simplicity, we use the default or document one as the difference is often minor for this scale.
+            
             results = self.collection.query(
                 query_texts=[query],
                 n_results=k

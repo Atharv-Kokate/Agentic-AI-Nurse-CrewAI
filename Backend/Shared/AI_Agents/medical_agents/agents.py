@@ -16,14 +16,22 @@ ollama_phi = LLM(
 
 # 3. Groq (Llama 3.1 8B Instant) - Cloud
 # Ensure GROQ_API_KEY is in .env
+# 3. Groq (Llama 3.3 70B Versatile) - Cloud
+# Ensure GROQ_API_KEY is in .env
 groq_llama70 = LLM(
-    model="groq/llama-3.1-8b-instant",
+    model="groq/llama-3.3-70b-versatile",
     api_key=os.getenv("GROQ_API_KEY")
 )
 
-# 4. Groq (Gemma 9B) - Cloud
+# 4. Groq (Secondary Key to double rate limits)
+groq_llama70_2 = LLM(
+    model="groq/llama-3.3-70b-versatile",
+    api_key=os.getenv("GROQ_API_KEY_2")
+)
+
+# 4. Groq (Llama 3.3 70B Versatile) - Cloud
 groq_gemma = LLM(
-    model="groq/gemma2-9b-it",
+    model="groq/llama-3.3-70b-versatile",
     api_key=os.getenv("GROQ_API_KEY")
 )
 
@@ -44,7 +52,7 @@ class MedicalAgents:
             verbose=True,
             allow_delegation=False,
             max_rpm=10,
-            llm=groq_llama70
+            llm=groq_llama70 # Key 1
         )
 
     def symptom_inquiry_agent(self):
@@ -74,7 +82,7 @@ class MedicalAgents:
             allow_delegation=False,
             max_rpm=10,
             tools=tools_list,
-            llm=groq_llama70
+            llm=groq_llama70_2 # Key 2 (Heavy Tool Usage)
         )
 
     def context_aggregation_agent(self):
@@ -90,7 +98,7 @@ class MedicalAgents:
             verbose=True,
             allow_delegation=False,
             max_rpm=10,
-            llm=groq_llama70
+            llm=groq_llama70 # Key 1
         )
 
     def risk_assessment_agent(self):
@@ -105,7 +113,7 @@ class MedicalAgents:
             verbose=True,
             allow_delegation=False,
             max_rpm=10,
-            llm=groq_llama70
+            llm=groq_llama70_2 # Key 2
         )
 
     def decision_action_agent(self):
@@ -121,5 +129,5 @@ class MedicalAgents:
             verbose=True,
             allow_delegation=False,
             max_rpm=10,
-            llm=groq_gemma
+            llm=groq_llama70 # Key 1
         )
