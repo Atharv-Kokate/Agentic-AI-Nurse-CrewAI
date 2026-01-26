@@ -13,6 +13,7 @@ pydantic
 python-jose[cryptography]
 passlib[argon2]
 argon2-cffi
+apscheduler
 python-multipart
 email-validator
 json_repair
