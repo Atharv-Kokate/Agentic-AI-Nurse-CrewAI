@@ -22,7 +22,8 @@ const AssessmentMonitorPage = () => {
 
         const fetchStatus = async () => {
             try {
-                const response = await client.get(`/api/v1/status/${patientId}`);
+                // client base URL already includes /api/v1, so we just need /status/{id}
+                const response = await client.get(`/status/${patientId}`);
                 const data = response.data;
 
                 if (isMounted) {
