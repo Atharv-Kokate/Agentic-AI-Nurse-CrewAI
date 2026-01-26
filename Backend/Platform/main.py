@@ -463,6 +463,19 @@ def analyze_patient(
             patient.updated_at = datetime.utcnow()
             db.commit()
 
+        # 1.5. CLEANUP: Invalidate any stuck/pending interactions from previous runs
+        stuck_interactions = db.query(AgentInteraction).filter(
+            AgentInteraction.patient_id == patient.id,
+            AgentInteraction.status == "PENDING"
+        ).all()
+        
+        if stuck_interactions:
+            logger.warning(f"Found {len(stuck_interactions)} stuck interactions for {patient.name}. Cancelling them.")
+            for interaction in stuck_interactions:
+                interaction.status = "CANCELLED"
+                interaction.answer = "Analysis Restarted"
+            db.commit()
+
         # 2. Create Monitoring Log
         log_entry = {
             "source": "api_request",
@@ -542,7 +555,7 @@ def check_status(
     pending_interaction = db.query(AgentInteraction).filter(
         AgentInteraction.patient_id == patient_id,
         AgentInteraction.status == "PENDING"
-    ).first()
+    ).order_by(AgentInteraction.created_at.desc()).first()
 
     if pending_interaction:
         return StatusResponse(
