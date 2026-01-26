@@ -20,7 +20,14 @@ const AssessmentMonitorPage = () => {
     useEffect(() => {
         // WebSocket Connection
         const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const wsUrl = `${wsProtocol}//127.0.0.1:8000/ws/${patientId}`;
+
+        // Dynamic WS Host:
+        // 1. If in production (Render), use the current window host (same domain)
+        // 2. If in local dev (localhost), point to port 8000 explicitly
+        const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        const wsHost = isLocal ? '127.0.0.1:8000' : window.location.host;
+
+        const wsUrl = `${wsProtocol}//${wsHost}/ws/${patientId}`;
         const ws = new WebSocket(wsUrl);
 
         ws.onopen = () => {
