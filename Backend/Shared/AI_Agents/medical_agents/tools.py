@@ -60,9 +60,9 @@ class AskPatientTool(BaseTool):
                         "question": question
                     }
                 }
-                # Assuming localhost running on 8000. 
-                # Ideally config url, but hardcoding for this fix.
-                requests.post("http://localhost:8000/api/v1/internal/broadcast", json=payload, timeout=2)
+                # Construct dynamic URL based on PORT env var (Default 8000, Render uses 10000+)
+                port = os.getenv("PORT", "8000")
+                requests.post(f"http://localhost:{port}/api/v1/internal/broadcast", json=payload, timeout=2)
             except Exception as wse:
                 print(f"[AskPatientTool] Failed to trigger broadcast: {wse}")
 
