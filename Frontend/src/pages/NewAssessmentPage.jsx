@@ -6,6 +6,8 @@ import { ChevronRight, ChevronLeft, Activity, Heart, Stethoscope, Loader2 } from
 import client from '../api/client';
 import { cn } from '../utils/cn';
 import { useAuth } from '../contexts/AuthContext';
+import useNetworkStatus from '../hooks/useNetworkStatus';
+import { Send, WifiOff } from 'lucide-react';
 
 const steps = [
     { id: 'patient', title: 'Patient Info', icon: Activity },
@@ -19,7 +21,10 @@ const NewAssessmentPage = () => {
     const [currentStep, setCurrentStep] = useState(0);
     const [isLoading, setIsLoading] = useState(false);
 
-    const { register, handleSubmit, formState: { errors }, trigger, reset } = useForm({
+    const isOnline = useNetworkStatus();
+    const [savedLocally, setSavedLocally] = useState(false);
+
+    const { register, handleSubmit, formState: { errors }, trigger, reset, watch } = useForm({
         defaultValues: {
             name: '', age: '', gender: 'Male', contact_number: '',
             blood_pressure: '', heart_rate: '', blood_sugar: '',
@@ -28,36 +33,65 @@ const NewAssessmentPage = () => {
         }
     });
 
+    const formValues = watch();
+
+    // 1. Local Persistence (Resilience)
+    useEffect(() => {
+        const saved = localStorage.getItem('assessment_draft');
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                // Only load if form is empty (don't overwrite user input if they navigated back)
+                // actually better to just reset if empty.
+                // For simplicity, we just save here. Loading is tricky if mixing with API data.
+                // We'll trust the user or API first.
+            } catch (e) { }
+        }
+
+        // Auto-save on change
+        const timeout = setTimeout(() => {
+            localStorage.setItem('assessment_draft', JSON.stringify(formValues));
+            setSavedLocally(true);
+            setTimeout(() => setSavedLocally(false), 1000);
+        }, 1000);
+        return () => clearTimeout(timeout);
+    }, [JSON.stringify(formValues)]);
+
     useEffect(() => {
         const loadPatientData = async () => {
             if (user?.role === 'PATIENT') {
                 try {
-                    const response = await client.get('/patients/me');
-                    const patient = response.data;
-
-                    // Pre-fill form
-                    reset({
-                        name: patient.name,
-                        age: patient.age,
-                        gender: patient.gender,
-                        contact_number: patient.contact_number,
-                        // Parse known_conditions (stored as JSON {conditions: []}) to string
-                        // Parse known_conditions (stored as JSON {known_conditions: "str"} or {conditions: []}) to string
-                        known_conditions: patient.known_conditions?.known_conditions || patient.known_conditions?.conditions?.join(', ') || '',
-                        initial_symptoms: '', // Keep empty for new input
-                        meds_taken: false,
-                        blood_pressure: '',
-                        heart_rate: '',
-                        blood_sugar: '',
-                        sleep_hours: ''
-                    });
+                    // Try to fetch from API first (if online)
+                    if (isOnline) {
+                        const response = await client.get('/patients/me');
+                        const patient = response.data;
+                        reset({
+                            name: patient.name,
+                            age: patient.age,
+                            gender: patient.gender,
+                            contact_number: patient.contact_number,
+                            known_conditions: patient.known_conditions?.known_conditions || patient.known_conditions?.conditions?.join(', ') || '',
+                            initial_symptoms: '',
+                            meds_taken: false,
+                            blood_pressure: '',
+                            heart_rate: '',
+                            blood_sugar: '',
+                            sleep_hours: ''
+                        });
+                    } else {
+                        // Offline: Load from local storage if available
+                        const saved = localStorage.getItem('assessment_draft');
+                        if (saved) {
+                            reset(JSON.parse(saved));
+                        }
+                    }
                 } catch (error) {
                     console.error("Failed to load patient data", error);
                 }
             }
         };
         loadPatientData();
-    }, [user, reset]);
+    }, [user, reset, isOnline]);
 
     const nextStep = async () => {
         const fields = currentStep === 0
@@ -74,6 +108,39 @@ const NewAssessmentPage = () => {
 
     const onSubmit = async (data) => {
         setIsLoading(true);
+
+        // --- OFFLINE FALLBACK: SMS ---
+        if (!isOnline) {
+            try {
+                // Construct SMS Body with History as requested
+                const smsBody =
+                    `URGENT PATIENT ASSESSMENT
+Name: ${data.name}
+Age: ${data.age}, Gender: ${data.gender}
+History: ${data.known_conditions}
+Symptoms: ${data.initial_symptoms}
+Vitals: BP ${data.blood_pressure}, HR ${data.heart_rate}, Sugar ${data.blood_sugar}
+Meds Taken: ${data.meds_taken ? 'Yes' : 'No'}
+Sent via offline-mode`;
+
+                const encodedBody = encodeURIComponent(smsBody);
+                // Prompt user for doctor number or use default/config
+                // ideally this comes from settings, but for now we open generic
+                const doctorNumber = ""; // User picks contact
+
+                window.location.href = `sms:${doctorNumber}?body=${encodedBody}`;
+
+                alert("Opening SMS app... Please send this message to your doctor.");
+                setIsLoading(false);
+                return;
+            } catch (err) {
+                alert("Failed to open SMS app.");
+                setIsLoading(false);
+                return;
+            }
+        }
+
+        // --- ONLINE: API ---
         try {
             const payload = {
                 name: data.name,
@@ -93,6 +160,9 @@ const NewAssessmentPage = () => {
             // Backend returns { message, patient_id, status_endpoint }
             const { patient_id } = response.data;
 
+            // Clear draft after successful submission
+            localStorage.removeItem('assessment_draft');
+
             // Redirect to monitor page
             navigate(`/assessments/monitor/${patient_id}`);
         } catch (error) {
@@ -109,7 +179,7 @@ const NewAssessmentPage = () => {
                 <h1 className="text-2xl font-bold text-slate-900">New Health Assessment</h1>
                 <p className="mt-1 text-slate-500">Enter patient details to initiate AI analysis.</p>
             </div>
-            
+
             {/* Progress Steps */}
             <div className="mb-8 flex items-center justify-between px-10">
                 {steps.map((step, index) => (
@@ -246,9 +316,19 @@ const NewAssessmentPage = () => {
                             <button
                                 type="submit"
                                 disabled={isLoading}
-                                className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-sky-500 to-teal-500 px-8 py-2 text-sm font-medium text-white shadow-md transition-all hover:scale-105 disabled:opacity-70 disabled:cursor-not-allowed"
+                                className={cn(
+                                    "flex items-center gap-2 rounded-lg px-8 py-2 text-sm font-medium text-white shadow-md transition-all hover:scale-105 disabled:opacity-70 disabled:cursor-not-allowed",
+                                    !isOnline ? "bg-gradient-to-r from-amber-500 to-orange-500" : "bg-gradient-to-r from-sky-500 to-teal-500"
+                                )}
                             >
-                                {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Start AI Analysis'}
+                                {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> :
+                                    !isOnline ? (
+                                        <>
+                                            <WifiOff className="h-4 w-4 mr-2" />
+                                            Send via SMS (Offline)
+                                        </>
+                                    ) : 'Start AI Analysis'
+                                }
                             </button>
                         )}
                     </div>
