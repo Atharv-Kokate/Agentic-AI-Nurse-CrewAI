@@ -29,7 +29,31 @@ groq_llama70_2 = LLM(
     api_key=os.getenv("GROQ_API_KEY_2")
 )
 
-# ... (omitted definitions)
+# 4. Groq (Llama 3.3 70B Versatile) - Cloud
+groq_gemma = LLM(
+    model="groq/llama-3.3-70b-versatile",
+    api_key=os.getenv("GROQ_API_KEY")
+)
+
+class MedicalAgents:
+    def __init__(self, patient_id=None):
+        self.patient_id = patient_id
+
+    def vital_analysis_agent(self):
+        return Agent(
+            role='Vital Analysis Agent',
+            goal='Evaluate patient vital signs and identify abnormalities.',
+            backstory=(
+                "You are a medical diagnostician specializing in vital sign analysis. "
+                "Your job is to strictly analyze the provided vital signs (Blood Pressure, Heart Rate, Blood Sugar, etc.) "
+                "against standard medical thresholds. You classify the status as NORMAL, WARNING, or CRITICAL "
+                "and identify specific abnormal findings. You are the first line of defense."
+            ),
+            verbose=True,
+            allow_delegation=False,
+            max_rpm=10,
+            llm=groq_llama70 # Key 1
+        )
 
     def symptom_inquiry_agent(self):
         # Custom Knowledge Base Search Tool (Lightweight & Reliable)
