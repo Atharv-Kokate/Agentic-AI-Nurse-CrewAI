@@ -16,12 +16,18 @@ import uuid
 from database.session import SessionLocal
 from database.models import AgentInteraction
 
+from pydantic import BaseModel, Field
+
+class AskPatientInput(BaseModel):
+    question: str = Field(..., description="The specific question to ask the patient to clarify symptoms or condition.")
+
 class AskPatientTool(BaseTool):
-    name: str = "Ask Patient"
+    name: str = "ask_patient"
     description: str = (
         "Useful for asking the patient follow-up questions to clarify their symptoms. "
-        "Input should be the question you want to ask."
+        "Use this tool when you need more information to assess the risk."
     )
+    args_schema: type[BaseModel] = AskPatientInput
     patient_id: str = None
     
     def __init__(self, patient_id: str = None):
@@ -47,11 +53,10 @@ class AskPatientTool(BaseTool):
             db.commit()
             print(f"[AskPatientTool] Question logged: {question} (ID: {interaction_id})")
             
-            # 2. Notify Frontend via WebSocket (Thread-Safe via requests)
+            # 2. Notify Frontend via WebSocket
             try:
-                # We use a direct HTTP call to our own server to trigger the broadcast
-                # This avoids messing with asyncio loops from a thread
                 import requests
+                # Construct payload for broadcast
                 payload = {
                     "patient_id": self.patient_id,
                     "status": "WAITING_FOR_INPUT",
@@ -60,7 +65,7 @@ class AskPatientTool(BaseTool):
                         "question": question
                     }
                 }
-                # Construct dynamic URL based on PORT env var (Default 8000, Render uses 10000+)
+                # Use default port 8000 if not set, typical for local dev
                 port = os.getenv("PORT", "8000")
                 requests.post(f"http://localhost:{port}/api/v1/internal/broadcast", json=payload, timeout=2)
             except Exception as wse:
@@ -73,8 +78,7 @@ class AskPatientTool(BaseTool):
             db.close()
 
         # 3. Poll for Answer
-        # Wait for up to 5 minutes (150 * 2s)
-        max_retries = 150 
+        max_retries = 150 # 5 minutes
         
         print(f"[AskPatientTool] Waiting for answer for Interaction {interaction_id}...")
         for _ in range(max_retries):
@@ -92,13 +96,16 @@ class AskPatientTool(BaseTool):
 
 from medical_agents.rag_manager import RAGManager
 
+class SearchKnowledgeBaseInput(BaseModel):
+    query: str = Field(..., description="The medical condition, symptom, or protocol to search for (e.g., 'Chest Pain protocols').")
+
 class KnowledgeBaseSearchTool(BaseTool):
-    name: str = "Search Knowledge Base"
+    name: str = "search_knowledge_base"
     description: str = (
         "Useful for searching medical protocols and guidelines for specific symptoms or conditions. "
-        "Input should be a specific symptom or condition (e.g., 'Chest Pain', 'Hypertension'). "
-        "Returns the relevant protocol sections."
+        "Returns the relevant protocol sections from the trusted knowledge base."
     )
+    args_schema: type[BaseModel] = SearchKnowledgeBaseInput
     
     def _run(self, query: str) -> str:
         try:
