@@ -16,44 +16,20 @@ ollama_phi = LLM(
 
 # 3. Groq (Llama 3.1 8B Instant) - Cloud
 # Ensure GROQ_API_KEY is in .env
-# 3. Groq (Llama 3.3 70B Versatile) - Cloud
+# 3. Groq (Llama 3.1 8B Instant) - Cloud
 # Ensure GROQ_API_KEY is in .env
 groq_llama70 = LLM(
-    model="groq/llama-3.3-70b-versatile",
+    model="groq/llama-3.1-8b-instant",
     api_key=os.getenv("GROQ_API_KEY")
 )
 
 # 4. Groq (Secondary Key to double rate limits)
 groq_llama70_2 = LLM(
-    model="groq/llama-3.3-70b-versatile",
+    model="groq/llama-3.1-8b-instant",
     api_key=os.getenv("GROQ_API_KEY_2")
 )
 
-# 4. Groq (Llama 3.3 70B Versatile) - Cloud
-groq_gemma = LLM(
-    model="groq/llama-3.3-70b-versatile",
-    api_key=os.getenv("GROQ_API_KEY")
-)
-
-class MedicalAgents:
-    def __init__(self, patient_id=None):
-        self.patient_id = patient_id
-
-    def vital_analysis_agent(self):
-        return Agent(
-            role='Vital Analysis Agent',
-            goal='Evaluate patient vital signs and identify abnormalities.',
-            backstory=(
-                "You are a medical diagnostician specializing in vital sign analysis. "
-                "Your job is to strictly analyze the provided vital signs (Blood Pressure, Heart Rate, Blood Sugar, etc.) "
-                "against standard medical thresholds. You classify the status as NORMAL, WARNING, or CRITICAL "
-                "and identify specific abnormal findings. You are the first line of defense."
-            ),
-            verbose=True,
-            allow_delegation=False,
-            max_rpm=10,
-            llm=groq_llama70 # Key 1
-        )
+# ... (omitted definitions)
 
     def symptom_inquiry_agent(self):
         # Custom Knowledge Base Search Tool (Lightweight & Reliable)
@@ -73,10 +49,11 @@ class MedicalAgents:
                 "You are an empathetic and thorough medical assistant. "
                 "Your role is to interview the patient when their vitals are abnormal or when they report symptoms. "
                 "You DO NOT memorize all medical protocols. Instead, you MUST use your 'Search a mdx' tool "
-                "to look up specific protocols in the Knowledge Base based on the patient's vitals , symptoms or patient's known conditions.\n"
-                "1. First, SEARCH the knowledge base for the relevant condition (e.g., 'Hypertension protocols', 'Chest pain protocols').\n"
+                "to look up specific protocols in the Knowledge Base.\n"
+                "1. First, SEARCH the knowledge base.\n"
                 "2. Then, based on what you find, use the 'Ask Patient' tool to ask the critical questions.\n"
-                "3. Stop identifying if this is an emergency."
+                "3. Stop identifying if this is an emergency.\n"
+                "IMPORTANT: When calling tools, ensure you use strictly JSON format. Do NOT use fake XML tags like <function>."
             ),
             verbose=True,
             allow_delegation=False,
