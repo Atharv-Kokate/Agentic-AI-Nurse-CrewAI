@@ -8,8 +8,9 @@ const useLocationTracking = () => {
     const [status, setStatus] = useState('idle'); // idle, connecting, connected, error, disconnected
 
     useEffect(() => {
-        // Only run for PATIENT role
-        if (!user || user.role !== 'PATIENT') {
+        // Only run for PATIENT role (Case insensitive check)
+        const role = user?.role?.toUpperCase();
+        if (!user || role !== 'PATIENT') {
             setStatus('idle');
             return;
         }
