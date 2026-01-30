@@ -45,7 +45,20 @@ const PatientDashboardPage = () => {
 
         // Connect WS
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const host = 'localhost:8000'; // Hardcoded for dev, should be envar
+
+        // Determine WS Host
+        let host = window.location.host;
+
+        const apiUrl = import.meta.env.VITE_API_URL;
+        if (apiUrl) {
+            try {
+                const url = new URL(apiUrl);
+                host = url.host;
+            } catch (e) {
+                console.warn("Invalid VITE_API_URL, falling back to window.location.host");
+            }
+        }
+
         const token = localStorage.getItem('token');
         const wsUrl = `${protocol}//${host}/ws/${patientId}?token=${token}`;
 

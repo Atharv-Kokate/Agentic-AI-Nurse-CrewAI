@@ -37,8 +37,24 @@ const AssessmentMonitorPage = () => {
         fetchStatus();
 
         // 2. WebSocket Connection
+        // 2. WebSocket Connection
+        // Determine WS Protocol
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const host = 'localhost:8000'; // Hardcoded for dev
+
+        // Determine WS Host
+        let host = window.location.host; // Default to current host (for same-domain deployment)
+
+        // If VITE_API_URL is set (e.g. separate backend), extract host from it
+        const apiUrl = import.meta.env.VITE_API_URL;
+        if (apiUrl) {
+            try {
+                const url = new URL(apiUrl);
+                host = url.host;
+            } catch (e) {
+                console.warn("Invalid VITE_API_URL, falling back to window.location.host");
+            }
+        }
+
         const token = localStorage.getItem('token');
         const wsUrl = `${protocol}//${host}/ws/${patientId}?token=${token}`;
 
