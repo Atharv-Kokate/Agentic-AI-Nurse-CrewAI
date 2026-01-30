@@ -559,6 +559,8 @@ def check_status(
     # 0. Fetch patient data for UI context
     patient = db.query(Patient).filter(Patient.id == patient_id).first()
     patient_info = {}
+    current_location = None
+
     if patient:
         patient_info = {
             "name": patient.name,
@@ -566,16 +568,14 @@ def check_status(
             "gender": patient.gender,
             "conditions": patient.known_conditions if patient.known_conditions else ""
         }
-        
-    current_location = None
-    if patient and patient.last_latitude and patient.last_longitude:
-        try:
-           current_location = {
-               "lat": float(patient.last_latitude),
-               "lng": float(patient.last_longitude)
-           }
-        except:
-            pass
+        if patient.last_latitude and patient.last_longitude:
+            try:
+                current_location = {
+                    "lat": float(patient.last_latitude),
+                    "lng": float(patient.last_longitude)
+                }
+            except:
+                pass
 
     # 1. Check for Pending Interactions (HITL)
     pending_interaction = db.query(AgentInteraction).filter(
@@ -592,8 +592,6 @@ def check_status(
                 status=pending_interaction.status,
                 created_at=pending_interaction.created_at
             ),
-                created_at=pending_interaction.created_at
-            ),
             patient_data=patient_info,
             current_location=current_location
         )
@@ -605,47 +603,35 @@ def check_status(
         monitoring_logs.patient_id == patient_id
     ).order_by(monitoring_logs.created_at.desc()).first()
 
+    assessment = None
     if latest_log:
         # Check for assessment created AFTER the log
         assessment = db.query(ai_assesments).filter(
             ai_assesments.patient_id == patient_id,
             ai_assesments.created_at >= latest_log.created_at
         ).first()
-
-        if assessment:
-            return StatusResponse(
-                status="COMPLETED",
-                result={
-                    "risk_level": assessment.risk_level,
-                    "risk_score": assessment.risk_score,
-                    "reasoning": assessment.reasoning
-                },
-                patient_data=patient_info
-            )
-    else:
-        # Fallback if no log found (rare)
+    
+    # Fallback/Safety: Get latest assessment generally
+    if not assessment:
         assessment = db.query(ai_assesments).filter(
             ai_assesments.patient_id == patient_id
         ).order_by(ai_assesments.created_at.desc()).first()
-        
-        if assessment:
-             return StatusResponse(
-                status="COMPLETED",
-                result={
-                    "risk_level": assessment.risk_level,
-                    "risk_score": assessment.risk_score,
-                    "reasoning": assessment.reasoning
-                },
-                patient_data=patient_info
-            )
+
+    if assessment:
+        return StatusResponse(
+            status="COMPLETED",
+            result={
+                "risk_level": assessment.risk_level,
+                "risk_score": assessment.risk_score,
+                "reasoning": assessment.reasoning
+            },
+            patient_data=patient_info,
+            current_location=current_location
+        )
 
     # 3. Default: Completed (Stable/Idle)
-    # If we return RUNNING, the UI spins forever if no analysis is actually happening.
     return StatusResponse(
         status="COMPLETED", 
-        result={
-            "risk_level": "STABLE",
-            "risk_score": 0,
         result={
             "risk_level": "STABLE",
             "risk_score": 0,
