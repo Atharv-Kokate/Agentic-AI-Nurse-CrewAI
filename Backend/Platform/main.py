@@ -406,7 +406,7 @@ def escalate_to_doctor(
             "risk_score": risk_score,
             "summary": summary_text, 
             "doctor_name": "Dr kokate",
-            "callback_url": f"{os.getenv('API_BASE_URL', 'http://localhost:8000')}/api/v1/callbacks/doctor-advice",
+            "callback_url": f"{os.getenv('API_BASE_URL', 'https://agentic-nurse.onrender.com')}/api/v1/callbacks/doctor-advice",
             "vitals": vitals_data 
         }
         
