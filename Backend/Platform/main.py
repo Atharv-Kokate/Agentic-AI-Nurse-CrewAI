@@ -568,14 +568,15 @@ def check_status(
             "gender": patient.gender,
             "conditions": patient.known_conditions if patient.known_conditions else ""
         }
-        if patient.last_latitude and patient.last_longitude:
-            try:
-                current_location = {
-                    "lat": float(patient.last_latitude),
-                    "lng": float(patient.last_longitude)
-                }
-            except:
-                pass
+        # Location temporarily disabled due to DB schema mismatch
+        # if patient.last_latitude and patient.last_longitude:
+        #     try:
+        #         current_location = {
+        #             "lat": float(patient.last_latitude),
+        #             "lng": float(patient.last_longitude)
+        #         }
+        #     except:
+        #         pass
 
     # 1. Check for Pending Interactions (HITL)
     pending_interaction = db.query(AgentInteraction).filter(
@@ -737,9 +738,9 @@ async def websocket_endpoint(websocket: WebSocket, patient_id: str, db: Session 
                         def update_location():
                             patient = db.query(Patient).filter(Patient.id == patient_id).first()
                             if patient:
-                                patient.last_latitude = str(lat)
-                                patient.last_longitude = str(lng)
-                                db.commit() # Important: Save changes!
+                                # patient.last_latitude = str(lat)
+                                # patient.last_longitude = str(lng)
+                                # db.commit() # Important: Save changes!
                                 db.commit()
                         
                         await asyncio.to_thread(update_location)
