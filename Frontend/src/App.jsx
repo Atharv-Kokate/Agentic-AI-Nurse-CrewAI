@@ -27,13 +27,13 @@ function App() {
                         {/* Shared Routes */}
                         <Route path="/assessments/new" element={<NewAssessmentPage />} />
                         <Route path="/assessments/monitor/:patientId" element={<AssessmentMonitorPage />} />
+                        <Route path="/doctor-advice" element={<DoctorAdvicePage />} />
 
                         {/* Staff Only Routes */}
                         <Route element={<ProtectedRoute roles={['ADMIN', 'NURSE', 'DOCTOR']} />}>
                             <Route path="/" element={<DashboardPage />} />
                             <Route path="/patients" element={<PatientsPage />} />
                             <Route path="/patients/register" element={<RegisterPatientPage />} />
-                            <Route path="/doctor-advice" element={<DoctorAdvicePage />} />
                         </Route>
 
                         {/* Patient Only Routes */}

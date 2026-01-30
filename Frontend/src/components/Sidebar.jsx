@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Users, Activity, LogOut, Bell, X } from 'lucide-react';
+import { LayoutDashboard, Users, Activity, LogOut, Bell, X, FileText } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 const Sidebar = ({ isOpen, onClose }) => {
@@ -15,6 +15,7 @@ const Sidebar = ({ isOpen, onClose }) => {
             { icon: LayoutDashboard, label: 'My Dashboard', path: '/my-dashboard' },
             { icon: Activity, label: 'New Check-up', path: '/assessments/new' },
             { icon: Bell, label: 'Reminders', path: '/reminders' },
+            { icon: FileText, label: 'Doctor Advice', path: '/doctor-advice' },
         ];
     } else if (isCaretaker) {
         navItems = [
@@ -26,6 +27,7 @@ const Sidebar = ({ isOpen, onClose }) => {
             { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
             { icon: Users, label: 'Patients', path: '/patients' },
             { icon: Activity, label: 'New Assessment', path: '/assessments/new' },
+            { icon: FileText, label: 'Doctor Advice', path: '/doctor-advice' },
         ];
     }
 
