@@ -136,7 +136,17 @@ const AssessmentMonitorPage = () => {
     };
 
     const renderMap = () => {
-        if (!location) return null;
+        if (!location) {
+            return (
+                <div className="mb-6 h-64 rounded-xl border border-slate-200 bg-slate-50 flex flex-col items-center justify-center text-slate-400">
+                    <div className="rounded-full bg-slate-100 p-4 mb-2">
+                        <Activity className="h-8 w-8 opacity-50" />
+                    </div>
+                    <p className="font-medium">Waiting for Patient Location...</p>
+                    <p className="text-xs mt-1">Patient must be logged in with location enabled.</p>
+                </div>
+            );
+        }
         return (
             <div className="mb-6 rounded-xl overflow-hidden border border-slate-200 shadow-sm relative">
                 <div className="absolute top-2 right-2 z-10 bg-white/90 px-2 py-1 rounded text-xs font-bold text-slate-700 shadow-sm">
@@ -262,9 +272,14 @@ const AssessmentMonitorPage = () => {
                             <h3 className="text-lg font-bold text-slate-900 mb-4">Clinical Reasoning</h3>
                             <div className="prose prose-slate max-w-none">
                                 <p className="text-slate-700 leading-relaxed">
-                                    {typeof result.reasoning === 'string'
-                                        ? result.reasoning
-                                        : JSON.stringify(result.reasoning, null, 2)}
+                                    {(() => {
+                                        try {
+                                            const r = typeof result.reasoning === 'string' ? JSON.parse(result.reasoning) : result.reasoning;
+                                            return r.justification || r.reasoning || JSON.stringify(r, null, 2);
+                                        } catch (e) {
+                                            return result.reasoning;
+                                        }
+                                    })()}
                                 </p>
                             </div>
 
