@@ -23,7 +23,8 @@ const PatientDashboardPage = () => {
                     setHistory(historyRes.data);
 
                     // 3. Start Location Tracking (Patient Only)
-                    startLocationTracking(meRes.data.id);
+                    // REMOVED: Now handled globally in Layout.jsx via useLocationTracking hook
+                    // startLocationTracking(meRes.data.id);
                 }
             } catch (error) {
                 console.error("Failed to fetch dashboard data", error);
