@@ -7,15 +7,27 @@ const Sidebar = ({ isOpen, onClose }) => {
     const { logout, user } = useAuth();
     const isPatient = user?.role === 'PATIENT';
 
-    const navItems = isPatient ? [
-        { icon: LayoutDashboard, label: 'My Dashboard', path: '/my-dashboard' },
-        { icon: Activity, label: 'New Check-up', path: '/assessments/new' },
-        { icon: Bell, label: 'Reminders', path: '/reminders' },
-    ] : [
-        { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
-        { icon: Users, label: 'Patients', path: '/patients' },
-        { icon: Activity, label: 'New Assessment', path: '/assessments/new' },
-    ];
+    const isCaretaker = user?.role === 'CARETAKER';
+
+    let navItems = [];
+    if (isPatient) {
+        navItems = [
+            { icon: LayoutDashboard, label: 'My Dashboard', path: '/my-dashboard' },
+            { icon: Activity, label: 'New Check-up', path: '/assessments/new' },
+            { icon: Bell, label: 'Reminders', path: '/reminders' },
+        ];
+    } else if (isCaretaker) {
+        navItems = [
+            { icon: LayoutDashboard, label: 'My Patients', path: '/caretaker-dashboard' },
+        ];
+    } else {
+        // Admin, Nurse, Doctor
+        navItems = [
+            { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
+            { icon: Users, label: 'Patients', path: '/patients' },
+            { icon: Activity, label: 'New Assessment', path: '/assessments/new' },
+        ];
+    }
 
     return (
         <>
