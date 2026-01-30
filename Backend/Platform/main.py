@@ -334,7 +334,7 @@ class EscalateRequest(BaseModel):
 def escalate_to_doctor(
     request: EscalateRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles([UserRole.ADMIN, UserRole.NURSE, UserRole.DOCTOR, UserRole.PATIENT]))
+    current_user: User = Depends(require_roles([UserRole.ADMIN, UserRole.NURSE, UserRole.DOCTOR, UserRole.PATIENT, UserRole.CARETAKER]))
 ):
     """
     Manually trigger n8n escalation for a patient.
@@ -549,7 +549,7 @@ def analyze_patient(
 def check_status(
     patient_id: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles([UserRole.ADMIN, UserRole.NURSE, UserRole.DOCTOR, UserRole.PATIENT]))
+    current_user: User = Depends(require_roles([UserRole.ADMIN, UserRole.NURSE, UserRole.DOCTOR, UserRole.PATIENT, UserRole.CARETAKER]))
 ):
     """
     Check the status of the analysis.
@@ -625,15 +625,24 @@ def check_status(
                 patient_data=patient_info
             )
 
-    # 3. Default: Running
-    return StatusResponse(status="RUNNING", patient_data=patient_info)
+    # 3. Default: Completed (Stable/Idle)
+    # If we return RUNNING, the UI spins forever if no analysis is actually happening.
+    return StatusResponse(
+        status="COMPLETED", 
+        result={
+            "risk_level": "STABLE",
+            "risk_score": 0,
+            "reasoning": "Patient is being monitored. No active analysis detected."
+        },
+        patient_data=patient_info
+    )
 
 @app.post("/api/v1/interaction/{interaction_id}")
 def provide_answer(
     interaction_id: str,
     request: AnswerRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles([UserRole.ADMIN, UserRole.NURSE, UserRole.DOCTOR, UserRole.PATIENT]))
+    current_user: User = Depends(require_roles([UserRole.ADMIN, UserRole.NURSE, UserRole.DOCTOR, UserRole.PATIENT, UserRole.CARETAKER]))
 ):
     """
     Provide an answer to a pending question.
