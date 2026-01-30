@@ -165,6 +165,7 @@ def get_patient(
     Get a specific patient by ID.
     - Medical staff can view any patient
     - Patients can only view their own record
+    - Caretakers can view their linked patients
     """
     patient = db.query(Patient).filter(Patient.id == patient_id).first()
     
@@ -180,6 +181,20 @@ def get_patient(
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="You can only view your own patient record"
+            )
+            
+    if current_user.role == UserRole.CARETAKER:
+        # Check if linked
+        from database.models import CaretakerPatientLink
+        link = db.query(CaretakerPatientLink).filter(
+            CaretakerPatientLink.caretaker_id == current_user.id,
+            CaretakerPatientLink.patient_id == patient_id
+        ).first()
+        
+        if not link:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You are not linked to this patient"
             )
     
     return patient
@@ -264,6 +279,19 @@ def get_patient_history(
              raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="You can only view your own history"
+            )
+            
+    if current_user.role == UserRole.CARETAKER:
+        from database.models import CaretakerPatientLink
+        link = db.query(CaretakerPatientLink).filter(
+            CaretakerPatientLink.caretaker_id == current_user.id,
+            CaretakerPatientLink.patient_id == patient_id
+        ).first()
+        
+        if not link:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You are not linked to this patient"
             )
 
     history = db.query(ai_assesments).filter(

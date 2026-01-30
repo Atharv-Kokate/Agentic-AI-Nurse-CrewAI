@@ -14,61 +14,86 @@ const AssessmentMonitorPage = () => {
     const [userAnswer, setUserAnswer] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    const [location, setLocation] = useState(null);
+    const wsRef = useRef(null);
+
     // Ref to track last seen interaction ID to avoid reprocessing same q
     const lastInteractionIdRef = useRef(null);
 
     useEffect(() => {
         let isMounted = true;
 
+        // 1. Initial REST Fetch (for immediate state)
         const fetchStatus = async () => {
             try {
-                // client base URL already includes /api/v1, so we just need /status/{id}
                 const response = await client.get(`/status/${patientId}`);
                 const data = response.data;
-
-                if (isMounted) {
-                    console.log("Polling Status:", data);
-
-                    if (data.status) {
-                        setStatus(data.status);
-                    }
-
-                    // If we have patient_data in response, we could store it if needed
-                    // (Currently handled via status updates)
-
-                    // Check for completion
-                    if (data.status === 'COMPLETED' && data.result) {
-                        setPollingData({ status: 'COMPLETED', result: data.result });
-                    }
-                    // Check for pending interaction
-                    else if (data.status === 'WAITING_FOR_INPUT' && data.pending_interaction) {
-                        // Check if this is a new interaction to avoid jitter
-                        if (data.pending_interaction.interaction_id !== lastInteractionIdRef.current) {
-                            setPollingData(data);
-                            lastInteractionIdRef.current = data.pending_interaction.interaction_id;
-                        }
-                    }
-                    else {
-                        // Running state
-                        setPollingData(null);
-                    }
-                }
+                if (isMounted) handleStatusUpdate(data);
             } catch (error) {
                 console.error("Polling failed", error);
             }
         };
 
-        // Initial fetch
         fetchStatus();
 
-        // Poll every 2 seconds
-        const intervalId = setInterval(fetchStatus, 2000);
+        // 2. WebSocket Connection
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const host = 'localhost:8000'; // Hardcoded for dev
+        const token = localStorage.getItem('token');
+        const wsUrl = `${protocol}//${host}/ws/${patientId}?token=${token}`;
+
+        const ws = new WebSocket(wsUrl);
+        wsRef.current = ws;
+
+        ws.onopen = () => {
+            console.log("Connected to Monitor Stream");
+        };
+
+        ws.onmessage = (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                if (data.type === "LOCATION_UPDATE") {
+                    setLocation({ lat: data.latitude, lng: data.longitude });
+                } else if (data.status) {
+                    handleStatusUpdate(data);
+                }
+            } catch (e) {
+                console.error("WS Parse Error", e);
+            }
+        };
+
+        ws.onclose = () => console.log("Monitor Stream Closed");
+
+        // Keep polling as backup (every 5s instead of 2s)
+        const intervalId = setInterval(fetchStatus, 5000);
 
         return () => {
             isMounted = false;
             clearInterval(intervalId);
+            if (wsRef.current) wsRef.current.close();
         };
     }, [patientId]);
+
+    const handleStatusUpdate = (data) => {
+        if (data.status) {
+            setStatus(data.status);
+        }
+
+        if (data.status === 'COMPLETED' && data.result) {
+            setPollingData({ status: 'COMPLETED', result: data.result });
+        }
+        else if (data.status === 'WAITING_FOR_INPUT' && data.pending_interaction) {
+            if (data.pending_interaction.interaction_id !== lastInteractionIdRef.current) {
+                setPollingData(data);
+                lastInteractionIdRef.current = data.pending_interaction.interaction_id;
+            }
+        }
+        else {
+            // If running, we might want to clear old result
+            // setPollingData(null); 
+            // Actually, don't clear logic to prevent flashing if we just get a "RUNNING" ping
+        }
+    };
 
     const handleSubmitAnswer = async (e) => {
         e.preventDefault();
@@ -90,11 +115,44 @@ const AssessmentMonitorPage = () => {
         }
     };
 
+    const renderMap = () => {
+        if (!location) return null;
+        return (
+            <div className="mb-6 rounded-xl overflow-hidden border border-slate-200 shadow-sm relative">
+                <div className="absolute top-2 right-2 z-10 bg-white/90 px-2 py-1 rounded text-xs font-bold text-slate-700 shadow-sm">
+                    LIVE LOCATION
+                </div>
+                <iframe
+                    width="100%"
+                    height="300"
+                    frameBorder="0"
+                    scrolling="no"
+                    marginHeight="0"
+                    marginWidth="0"
+                    src={`https://maps.google.com/maps?q=${location.lat},${location.lng}&z=15&output=embed`}
+                >
+                </iframe>
+                <div className="bg-slate-50 px-4 py-2 text-xs text-slate-500 flex justify-between">
+                    <span>Lat: {location.lat}, Lng: {location.lng}</span>
+                    <a
+                        href={`https://www.google.com/maps/search/?api=1&query=${location.lat},${location.lng}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-blue-600 font-bold hover:underline"
+                    >
+                        Open in Google Maps
+                    </a>
+                </div>
+            </div>
+        );
+    };
+
     const renderContent = () => {
         switch (status) {
             case 'RUNNING':
                 return (
                     <div className="flex flex-col items-center justify-center py-20">
+                        {renderMap()}
                         <div className="relative h-24 w-24">
                             <div className="absolute inset-0 animate-ping rounded-full bg-sky-400 opacity-20"></div>
                             <div className="flex h-full w-full items-center justify-center rounded-full bg-sky-50 text-sky-500 shadow-inner">
@@ -105,11 +163,6 @@ const AssessmentMonitorPage = () => {
                         <p className="mt-2 text-center text-slate-500 max-w-md animate-pulse">
                             {statusMessage}
                         </p>
-                        <div className="mt-8 flex gap-2">
-                            <span className="h-2 w-2 rounded-full bg-sky-500 animate-bounce delay-75" />
-                            <span className="h-2 w-2 rounded-full bg-sky-500 animate-bounce delay-150" />
-                            <span className="h-2 w-2 rounded-full bg-sky-500 animate-bounce delay-300" />
-                        </div>
                     </div>
                 );
 
@@ -120,6 +173,7 @@ const AssessmentMonitorPage = () => {
                         animate={{ opacity: 1, scale: 1 }}
                         className="rounded-2xl border border-sky-100 bg-sky-50/50 p-8 shadow-sm"
                     >
+                        {renderMap()}
                         <div className="flex items-start gap-4">
                             <div className="rounded-full bg-white p-3 shadow-sm text-sky-600">
                                 <MessageSquare className="h-6 w-6" />
@@ -170,6 +224,7 @@ const AssessmentMonitorPage = () => {
                         animate={{ opacity: 1, y: 0 }}
                         className="space-y-6"
                     >
+                        {renderMap()}
                         <div className={cn("glass-panel rounded-2xl border-2 p-8 text-center", riskBorder)}>
                             <div className={cn("mb-4 inline-flex items-center justify-center rounded-full p-4", riskColor)}>
                                 {isHighRisk ? <ShieldAlert className="h-10 w-10" /> : <CheckCircle className="h-10 w-10" />}
@@ -227,7 +282,10 @@ const AssessmentMonitorPage = () => {
                 );
 
             default:
-                return <div>Unknown Status</div>;
+                return <div>
+                    {renderMap()}
+                    <div>Unknown Status</div>
+                </div>;
         }
     };
 

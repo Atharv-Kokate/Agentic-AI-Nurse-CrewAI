@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Activity, Calendar, Clock, AlertTriangle, CheckCircle, Plus } from 'lucide-react';
+import { Activity, Calendar, Clock, AlertTriangle, CheckCircle, Plus, Copy } from 'lucide-react';
 import { format } from 'date-fns';
 import client from '../api/client';
 
@@ -21,6 +21,9 @@ const PatientDashboardPage = () => {
                 if (meRes.data.id) {
                     const historyRes = await client.get(`/patients/${meRes.data.id}/history`);
                     setHistory(historyRes.data);
+
+                    // 3. Start Location Tracking (Patient Only)
+                    startLocationTracking(meRes.data.id);
                 }
             } catch (error) {
                 console.error("Failed to fetch dashboard data", error);
@@ -29,7 +32,58 @@ const PatientDashboardPage = () => {
             }
         };
         fetchData();
+
+        return () => {
+            if (wsRef.current) wsRef.current.close();
+        };
     }, []);
+
+    const wsRef = React.useRef(null);
+
+    const startLocationTracking = (patientId) => {
+        if (!navigator.geolocation) return;
+
+        // Connect WS
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const host = 'localhost:8000'; // Hardcoded for dev, should be envar
+        const token = localStorage.getItem('token');
+        const wsUrl = `${protocol}//${host}/ws/${patientId}?token=${token}`;
+
+        wsRef.current = new WebSocket(wsUrl);
+
+        wsRef.current.onopen = () => {
+            console.log("Connected to Location Stream");
+            // Send initial location
+            paramsNavigator(wsRef.current);
+        };
+
+        // Watch Position
+        navigator.geolocation.watchPosition(
+            (position) => {
+                if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+                    wsRef.current.send(JSON.stringify({
+                        type: "LOCATION_UPDATE",
+                        latitude: position.coords.latitude,
+                        longitude: position.coords.longitude
+                    }));
+                }
+            },
+            (err) => console.error("Geo Error", err),
+            { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+        );
+    };
+
+    const paramsNavigator = (ws) => {
+        navigator.geolocation.getCurrentPosition(pos => {
+            if (ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({
+                    type: "LOCATION_UPDATE",
+                    latitude: pos.coords.latitude,
+                    longitude: pos.coords.longitude
+                }));
+            }
+        });
+    };
 
     if (loading) return <div className="p-10 text-center">Loading dashboard...</div>;
     if (!patient) return <div className="p-10 text-center">No patient record found. Please contact your nurse.</div>;
@@ -40,6 +94,20 @@ const PatientDashboardPage = () => {
                 <div>
                     <h1 className="text-2xl font-bold text-slate-900">Welcome, {patient.name}</h1>
                     <p className="text-slate-500">Track your health status and run new check-ups.</p>
+                    <div className="mt-2 flex items-center gap-2 text-sm text-slate-500 bg-slate-100 px-3 py-1 rounded-lg w-fit">
+                        <span className="font-semibold">Patient ID:</span>
+                        <span className="font-mono text-slate-700 select-all">{patient.id}</span>
+                        <button
+                            onClick={() => {
+                                navigator.clipboard.writeText(patient.id);
+                                // Optional: You could add a toast here, but for now simple is fine or just relying on UI feedback
+                            }}
+                            className="hover:text-sky-600 transition-colors p-1"
+                            title="Copy ID"
+                        >
+                            <Copy className="w-4 h-4" />
+                        </button>
+                    </div>
                 </div>
                 <button
                     onClick={() => navigate('/assessments/new')}
@@ -108,8 +176,8 @@ const PatientDashboardPage = () => {
                                     </td>
                                     <td className="px-6 py-4">
                                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${record.risk_level === 'High' ? 'bg-red-100 text-red-800' :
-                                                record.risk_level === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
-                                                    'bg-green-100 text-green-800'
+                                            record.risk_level === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
+                                                'bg-green-100 text-green-800'
                                             }`}>
                                             {record.risk_level}
                                         </span>

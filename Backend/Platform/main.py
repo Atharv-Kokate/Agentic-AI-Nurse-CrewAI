@@ -42,7 +42,9 @@ from routes.auth import router as auth_router
 from routes.patients import router as patients_router 
 from routes.dashboard import router as dashboard_router
 from routes.reminders import router as reminders_router
+from routes.reminders import router as reminders_router
 from routes.callbacks import router as callbacks_router
+from routes.caretaker import router as caretaker_router
 import requests
 
 # Initialize DB tables
@@ -86,6 +88,7 @@ app.include_router(patients_router)
 app.include_router(dashboard_router)
 app.include_router(reminders_router)
 app.include_router(callbacks_router)
+app.include_router(caretaker_router)
 
 # Setup Logging
 logging.basicConfig(
@@ -650,20 +653,112 @@ def provide_answer(
     return {"message": "Answer recorded. Agent will resume shortly."}
 
 @app.websocket("/ws/{patient_id}")
-async def websocket_endpoint(websocket: WebSocket, patient_id: str):
-    await manager.connect(websocket, patient_id)
+async def websocket_endpoint(websocket: WebSocket, patient_id: str, db: Session = Depends(get_db)):
+    # 1. Auth via Token (Query Param)
+    token = websocket.query_params.get("token")
+    if not token:
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        return
+
     try:
-        while True:
-            # We just listen to keep connection open. 
-            # We could handle incoming "answers" here too if we wanted full bidirectional,
-            # but for now we primarily push updates.
-            data = await websocket.receive_text()
-            # If we receive a ping/pong, ignore.
-    except WebSocketDisconnect:
-        manager.disconnect(websocket, patient_id)
+        from jwt import decode, PyJWTError
+        SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key") # Ensure this matches auth
+        ALGORITHM = "HS256"
+        payload = decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("sub")
+        role = payload.get("role")
+        
+        # Verify Access
+        has_access = False
+        if role == "ADMIN" or role == "DOCTOR" or role == "NURSE":
+             has_access = True
+        elif role == "PATIENT":
+             # Use string comparison for safety if IDs are UUIDs
+             if str(payload.get("sub")) == str(user_id): # Logic check: User ID vs Patient ID?
+                 # Wait, user_id is the USER Table ID. patient_id is PATIENT Table ID.
+                 # We need to fetch the user to check linkage.
+                 # For speed, let's assume if role is PATIENT, we check if their linked patient_id matches.
+                 # But we can't query inside async WS easily with sync DB unless we wrap it?
+                 # Actually FastAPI Depends(get_db) gives us a session.
+                 pass
+        
+        # Let's do a robust check
+        # We need to be careful with blocking DB calls in async. 
+        # Using run_in_executor or just assuming quick query.
+        
+        from database.models import User, CaretakerPatientLink
+        
+        # Helper to run sync query
+        def check_permission():
+            user = db.query(User).filter(User.id == user_id).first()
+            if not user: return False
+            
+            if user.role in [UserRole.ADMIN, UserRole.NURSE, UserRole.DOCTOR]:
+                return True
+            
+            if user.role == UserRole.PATIENT:
+                return str(user.patient_id) == str(patient_id)
+            
+            if user.role == UserRole.CARETAKER:
+                link = db.query(CaretakerPatientLink).filter(
+                    CaretakerPatientLink.caretaker_id == user.id,
+                    CaretakerPatientLink.patient_id == patient_id
+                ).first()
+                return link is not None
+                
+            return False
+
+        has_access = await asyncio.to_thread(check_permission)
+
+        if not has_access:
+            logger.warning(f"WS Auth Failed for user {user_id} on patient {patient_id}")
+            await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+            return
+
+        # 2. Accept
+        await manager.connect(websocket, patient_id)
+        
+        try:
+            while True:
+                # Receive Message
+                data = await websocket.receive_json()
+                
+                # Handle Message Types
+                if data.get("type") == "LOCATION_UPDATE":
+                    lat = data.get("latitude")
+                    lng = data.get("longitude")
+                    
+                    if lat and lng:
+                        # Update DB (Last Known Location)
+                        def update_location():
+                            patient = db.query(Patient).filter(Patient.id == patient_id).first()
+                            if patient:
+                                patient.last_latitude = str(lat)
+                                patient.last_longitude = str(lng)
+                                db.commit()
+                        
+                        await asyncio.to_thread(update_location)
+                        
+                        # Broadcast to all listeners (Caretakers)
+                        await manager.broadcast({
+                            "type": "LOCATION_UPDATE",
+                            "latitude": lat,
+                            "longitude": lng,
+                            "timestamp": datetime.utcnow().isoformat()
+                        }, patient_id)
+                        
+                elif data.get("type") == "PING":
+                    await websocket.send_json({"type": "PONG"})
+                    
+        except WebSocketDisconnect:
+            manager.disconnect(websocket, patient_id)
+            
     except Exception as e:
         logger.error(f"WebSocket error for {patient_id}: {e}")
-        manager.disconnect(websocket, patient_id)
+        try:
+            await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        except:
+            pass
 
 class BroadcastRequest(BaseModel):
     patient_id: str

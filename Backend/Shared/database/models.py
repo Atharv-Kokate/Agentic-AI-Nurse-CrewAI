@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, JSON, Boolean, Enum
 from sqlalchemy.dialects.postgresql import UUID, JSONB
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship as sa_relationship
 from database.session import Base
 import enum
 
@@ -12,6 +12,7 @@ class UserRole(str, enum.Enum):
     NURSE = "NURSE"
     DOCTOR = "DOCTOR"
     PATIENT = "PATIENT"
+    CARETAKER = "CARETAKER"
 
 
 class User(Base):
@@ -28,7 +29,10 @@ class User(Base):
     updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationship to Patient
-    patient = relationship("Patient", back_populates="user_account")
+    patient = sa_relationship("Patient", back_populates="user_account")
+    
+    # Relationship for Caretakers
+    linked_patients = sa_relationship("CaretakerPatientLink", back_populates="caretaker")
 
 
 class Patient(Base):
@@ -41,12 +45,17 @@ class Patient(Base):
     next_appointment_date = Column(DateTime, nullable=True)    
     known_conditions = Column(JSONB, nullable=False)
     reported_symptoms = Column(JSONB, nullable=False)
-    assigned_doctor = Column(String, nullable=True)  # Doctor's name (optional)
+    assigned_doctor = Column(String, nullable=True)
+    last_latitude = Column(String, nullable=True)
+    last_longitude = Column(String, nullable=True)
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
     updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationship to User account (for patient login)
-    user_account = relationship("User", back_populates="patient", uselist=False)
+    user_account = sa_relationship("User", back_populates="patient", uselist=False)
+
+    # Relationship to Caretakers
+    linked_caretakers = sa_relationship("CaretakerPatientLink", back_populates="patient")
     
 class monitoring_logs(Base):
     __tablename__ = "monitoring_logs"
@@ -58,6 +67,8 @@ class monitoring_logs(Base):
     meds_taken = Column(Boolean, nullable=False)
     sleep_hours = Column(Integer, nullable=True)
     symptoms = Column(JSONB, nullable=True)
+    latitude = Column(String, nullable=True)
+    longitude = Column(String, nullable=True)
     log = Column(JSONB, nullable=False)
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
     updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -113,3 +124,14 @@ class DoctorRecommendation(Base):
     is_reviewed = Column(Boolean, default=False)
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
     updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+class CaretakerPatientLink(Base):
+    __tablename__ = "caretaker_patient_links"
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    caretaker_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    patient_id = Column(UUID(as_uuid=True), ForeignKey("patients.id"), nullable=False)
+    relationship = Column(String, nullable=False) # e.g. "Son", "Mom"
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+
+    caretaker = sa_relationship("User", back_populates="linked_patients")
+    patient = sa_relationship("Patient", back_populates="linked_caretakers")

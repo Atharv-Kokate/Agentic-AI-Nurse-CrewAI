@@ -307,3 +307,14 @@ LiteLLM completion() model= llama-3.1-8b-instant; provider = groq
   Invalid JSON: expected `:` at line 23 column 38 [type=json_invalid, input_value='{\n  "risk_level": "CRIT...ediate_action": true\n}', input_type=str]
     For further information visit https://errors.pydantic.dev/2.11/v/json_invalid
 2026-01-25 11:13:13,397 - websocket_manager - INFO - WebSocket disconnected for patient 4c8958f8-7512-4512-8ac7-1458c1a82d5c
+2026-01-30 15:59:37,051 - Platform.main - INFO - Received analysis request for patient: Atharv Sudhir Kokate
+2026-01-30 15:59:37,055 - Platform.main - ERROR - Error starting analysis: (psycopg2.errors.UndefinedColumn) column patients.last_latitude does not exist
+LINE 1: ...ents.assigned_doctor AS patients_assigned_doctor, patients.l...
+                                                             ^
+
+[SQL: SELECT patients.id AS patients_id, patients.name AS patients_name, patients.age AS patients_age, patients.gender AS patients_gender, patients.contact_number AS patients_contact_number, patients.next_appointment_date AS patients_next_appointment_date, patients.known_conditions AS patients_known_conditions, patients.reported_symptoms AS patients_reported_symptoms, patients.assigned_doctor AS patients_assigned_doctor, patients.last_latitude AS patients_last_latitude, patients.last_longitude AS patients_last_longitude, patients.created_at AS patients_created_at, patients.updated_at AS patients_updated_at 
+FROM patients 
+WHERE patients.contact_number = %(contact_number_1)s 
+ LIMIT %(param_1)s]
+[parameters: {'contact_number_1': '9767060415', 'param_1': 1}]
+(Background on this error at: https://sqlalche.me/e/20/f405)

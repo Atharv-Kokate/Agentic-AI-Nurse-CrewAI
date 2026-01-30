@@ -34,10 +34,10 @@ def register_user(
     
     # Validate role permissions
     if current_user.role == UserRole.NURSE:
-        if user_data.role not in [UserRole.PATIENT, UserRole.NURSE]:
+        if user_data.role not in [UserRole.PATIENT, UserRole.NURSE, UserRole.CARETAKER]:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Nurses can only create PATIENT or NURSE accounts"
+                detail="Nurses can only create PATIENT, NURSE or CARETAKER accounts"
             )
     
     # If role is PATIENT, validate patient_id exists

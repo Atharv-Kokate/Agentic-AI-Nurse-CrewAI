@@ -12,6 +12,7 @@ import RegisterPatientPage from './pages/RegisterPatientPage';
 import PatientDashboardPage from './pages/PatientDashboardPage';
 import MedicineRemindersPage from './pages/MedicineRemindersPage';
 import DoctorAdvicePage from './pages/DoctorAdvicePage';
+import CaretakerDashboardPage from './pages/CaretakerDashboardPage';
 import { useAuth } from './contexts/AuthContext';
 
 function App() {
@@ -21,7 +22,7 @@ function App() {
                 <Route path="/login" element={<LoginPage />} />
 
                 {/* Protected Routes for All Authenticated Users */}
-                <Route element={<ProtectedRoute roles={['ADMIN', 'NURSE', 'DOCTOR', 'PATIENT']} />}>
+                <Route element={<ProtectedRoute roles={['ADMIN', 'NURSE', 'DOCTOR', 'PATIENT', 'CARETAKER']} />}>
                     <Route element={<Layout />}>
                         {/* Shared Routes */}
                         <Route path="/assessments/new" element={<NewAssessmentPage />} />
@@ -39,6 +40,12 @@ function App() {
                         <Route element={<ProtectedRoute roles={['PATIENT']} />}>
                             <Route path="/my-dashboard" element={<PatientDashboardPage />} />
                             <Route path="/reminders" element={<MedicineRemindersPage />} />
+                        </Route>
+
+
+                        {/* Caretaker Only Routes */}
+                        <Route element={<ProtectedRoute roles={['CARETAKER']} />}>
+                            <Route path="/caretaker-dashboard" element={<CaretakerDashboardPage />} />
                         </Route>
                     </Route>
                 </Route>

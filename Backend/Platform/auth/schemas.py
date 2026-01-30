@@ -10,6 +10,7 @@ class UserRole(str, Enum):
     NURSE = "NURSE"
     DOCTOR = "DOCTOR"
     PATIENT = "PATIENT"
+    CARETAKER = "CARETAKER"
 
 
 # --- Request Schemas ---
