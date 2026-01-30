@@ -95,6 +95,10 @@ const AssessmentMonitorPage = () => {
             setStatus(data.status);
         }
 
+        if (data.current_location && !location) {
+            setLocation(data.current_location);
+        }
+
         if (data.status === 'COMPLETED' && data.result) {
             setPollingData({ status: 'COMPLETED', result: data.result });
         }

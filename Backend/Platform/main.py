@@ -157,6 +157,7 @@ class StatusResponse(BaseModel):
     pending_interaction: Optional[InteractionResponse] = None
     result: Optional[Dict[str, Any]] = None
     patient_data: Optional[Dict[str, Any]] = None
+    current_location: Optional[Dict[str, float]] = None
 
 class AnswerRequest(BaseModel):
     answer: str
@@ -565,6 +566,16 @@ def check_status(
             "gender": patient.gender,
             "conditions": patient.known_conditions if patient.known_conditions else ""
         }
+        
+    current_location = None
+    if patient and patient.last_latitude and patient.last_longitude:
+        try:
+           current_location = {
+               "lat": float(patient.last_latitude),
+               "lng": float(patient.last_longitude)
+           }
+        except:
+            pass
 
     # 1. Check for Pending Interactions (HITL)
     pending_interaction = db.query(AgentInteraction).filter(
@@ -581,7 +592,10 @@ def check_status(
                 status=pending_interaction.status,
                 created_at=pending_interaction.created_at
             ),
-            patient_data=patient_info
+                created_at=pending_interaction.created_at
+            ),
+            patient_data=patient_info,
+            current_location=current_location
         )
 
     # 2. Check for Completion (Assessment Exists)
@@ -632,9 +646,13 @@ def check_status(
         result={
             "risk_level": "STABLE",
             "risk_score": 0,
+        result={
+            "risk_level": "STABLE",
+            "risk_score": 0,
             "reasoning": "Patient is being monitored. No active analysis detected."
         },
-        patient_data=patient_info
+        patient_data=patient_info,
+        current_location=current_location
     )
 
 @app.post("/api/v1/interaction/{interaction_id}")
