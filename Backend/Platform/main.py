@@ -682,18 +682,9 @@ async def websocket_endpoint(websocket: WebSocket, patient_id: str, db: Session 
         role = payload.get("role")
         
         # Verify Access
-        has_access = False
-        if role == "ADMIN" or role == "DOCTOR" or role == "NURSE":
-             has_access = True
-        elif role == "PATIENT":
-             # Use string comparison for safety if IDs are UUIDs
-             if str(payload.get("sub")) == str(user_id): # Logic check: User ID vs Patient ID?
-                 # Wait, user_id is the USER Table ID. patient_id is PATIENT Table ID.
-                 # We need to fetch the user to check linkage.
-                 # For speed, let's assume if role is PATIENT, we check if their linked patient_id matches.
-                 # But we can't query inside async WS easily with sync DB unless we wrap it?
-                 # Actually FastAPI Depends(get_db) gives us a session.
-                 pass
+        # We define the check_permission function and run it. 
+        # The previous 'if role == ...' block was incomplete and is now removed.
+
         
         # Let's do a robust check
         # We need to be careful with blocking DB calls in async. 
@@ -748,6 +739,7 @@ async def websocket_endpoint(websocket: WebSocket, patient_id: str, db: Session 
                             if patient:
                                 patient.last_latitude = str(lat)
                                 patient.last_longitude = str(lng)
+                                db.commit() # Important: Save changes!
                                 db.commit()
                         
                         await asyncio.to_thread(update_location)
