@@ -7,7 +7,7 @@ import client from '../api/client';
 import { cn } from '../utils/cn';
 import { useAuth } from '../contexts/AuthContext';
 import useNetworkStatus from '../hooks/useNetworkStatus';
-import { Send, WifiOff } from 'lucide-react';
+import { Send, WifiOff, Phone } from 'lucide-react';
 
 const steps = [
     { id: 'patient', title: 'Patient Info', icon: Activity },
@@ -313,23 +313,35 @@ Sent via offline-mode`;
                                 Next <ChevronRight className="h-4 w-4" />
                             </button>
                         ) : (
-                            <button
-                                type="submit"
-                                disabled={isLoading}
-                                className={cn(
-                                    "flex items-center gap-2 rounded-lg px-8 py-2 text-sm font-medium text-white shadow-md transition-all hover:scale-105 disabled:opacity-70 disabled:cursor-not-allowed",
-                                    !isOnline ? "bg-gradient-to-r from-amber-500 to-orange-500" : "bg-gradient-to-r from-sky-500 to-teal-500"
+                            <div className="flex gap-2">
+                                {!isOnline && (
+                                    <button
+                                        type="button"
+                                        onClick={() => window.location.href = 'tel:'} // Opens dialer
+                                        className="flex items-center gap-2 rounded-lg bg-green-500 px-4 py-2 text-sm font-medium text-white shadow-md transition-all hover:bg-green-600"
+                                    >
+                                        <Phone className="h-4 w-4" />
+                                        <span>Call Doctor</span>
+                                    </button>
                                 )}
-                            >
-                                {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> :
-                                    !isOnline ? (
-                                        <>
-                                            <WifiOff className="h-4 w-4 mr-2" />
-                                            Send via SMS (Offline)
-                                        </>
-                                    ) : 'Start AI Analysis'
-                                }
-                            </button>
+                                <button
+                                    type="submit"
+                                    disabled={isLoading}
+                                    className={cn(
+                                        "flex items-center gap-2 rounded-lg px-8 py-2 text-sm font-medium text-white shadow-md transition-all hover:scale-105 disabled:opacity-70 disabled:cursor-not-allowed",
+                                        !isOnline ? "bg-gradient-to-r from-amber-500 to-orange-500" : "bg-gradient-to-r from-sky-500 to-teal-500"
+                                    )}
+                                >
+                                    {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> :
+                                        !isOnline ? (
+                                            <>
+                                                <WifiOff className="h-4 w-4 mr-2" />
+                                                Send via SMS (Offline)
+                                            </>
+                                        ) : 'Start AI Analysis'
+                                    }
+                                </button>
+                            </div>
                         )}
                     </div>
                 </form>
