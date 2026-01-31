@@ -684,10 +684,12 @@ async def websocket_endpoint(websocket: WebSocket, patient_id: str, db: Session 
         return
 
     try:
-        from jwt import decode, PyJWTError
-        SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key") # Ensure this matches auth
-        ALGORITHM = "HS256"
-        payload = decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        from auth.security import decode_token
+        payload = decode_token(token)
+        if not payload:
+             logger.warning(f"WS Token Invalid: {token[:10]}...")
+             await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+             return
         user_id = payload.get("sub")
         role = payload.get("role")
         

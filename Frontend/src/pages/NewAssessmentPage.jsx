@@ -29,7 +29,8 @@ const NewAssessmentPage = () => {
             name: '', age: '', gender: 'Male', contact_number: '',
             blood_pressure: '', heart_rate: '', blood_sugar: '',
             meds_taken: false, sleep_hours: '',
-            known_conditions: '', initial_symptoms: ''
+            known_conditions: '', initial_symptoms: '',
+            current_medications: ''
         }
     });
 
@@ -71,6 +72,7 @@ const NewAssessmentPage = () => {
                             gender: patient.gender,
                             contact_number: patient.contact_number,
                             known_conditions: patient.known_conditions?.known_conditions || patient.known_conditions?.conditions?.join(', ') || '',
+                            current_medications: patient.current_medications?.medications?.join(', ') || patient.current_medications || '',
                             initial_symptoms: '',
                             meds_taken: false,
                             blood_pressure: '',
@@ -98,7 +100,7 @@ const NewAssessmentPage = () => {
             ? ['name', 'age', 'gender', 'contact_number']
             : currentStep === 1
                 ? ['blood_pressure', 'heart_rate', 'blood_sugar', 'meds_taken', 'sleep_hours']
-                : ['known_conditions', 'initial_symptoms'];
+                : ['known_conditions', 'current_medications', 'initial_symptoms'];
 
         const isValid = await trigger(fields);
         if (isValid) setCurrentStep((prev) => Math.min(prev + 1, steps.length - 1));
@@ -121,6 +123,7 @@ History: ${data.known_conditions}
 Symptoms: ${data.initial_symptoms}
 Vitals: BP ${data.blood_pressure}, HR ${data.heart_rate}, Sugar ${data.blood_sugar}
 Meds Taken: ${data.meds_taken ? 'Yes' : 'No'}
+Current Meds: ${data.current_medications}
 Sent via offline-mode`;
 
                 const encodedBody = encodeURIComponent(smsBody);
@@ -153,6 +156,7 @@ Sent via offline-mode`;
                 meds_taken: data.meds_taken,
                 sleep_hours: data.sleep_hours ? parseInt(data.sleep_hours) : null,
                 known_conditions: data.known_conditions,
+                current_medications: data.current_medications,
                 initial_symptoms: data.initial_symptoms
             };
 
@@ -284,6 +288,10 @@ Sent via offline-mode`;
                                 <label className="block text-sm font-medium text-slate-700">Known Conditions</label>
                                 <textarea {...register('known_conditions', { required: 'Required' })} rows={3} className="mt-1 w-full rounded-md border border-slate-200 text-white bg-slate-800 p-2.5 focus:border-sky-500 focus:outline-none" placeholder="e.g. Hypertension, Diabetes Type 2..." />
                                 {errors.known_conditions && <p className="text-xs text-red-500">{errors.known_conditions.message}</p>}
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700">Current Medications</label>
+                                <textarea {...register('current_medications')} rows={2} className="mt-1 w-full rounded-md border border-slate-200 text-white bg-slate-800 p-2.5 focus:border-sky-500 focus:outline-none" placeholder="e.g. Metformin 500mg, Lisinopril..." />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-slate-700">Current Symptoms</label>
