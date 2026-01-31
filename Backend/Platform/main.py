@@ -705,26 +705,28 @@ async def websocket_endpoint(websocket: WebSocket, patient_id: str, db: Session 
         # Using run_in_executor or just assuming quick query.
         
         from database.models import User, CaretakerPatientLink
+        from database.session import SessionLocal # Import for thread safety
         
         # Helper to run sync query
         def check_permission():
-            user = db.query(User).filter(User.id == user_id).first()
-            if not user: return False
-            
-            if user.role in [UserRole.ADMIN, UserRole.NURSE, UserRole.DOCTOR]:
-                return True
-            
-            if user.role == UserRole.PATIENT:
-                return str(user.patient_id) == str(patient_id)
-            
-            if user.role == UserRole.CARETAKER:
-                link = db.query(CaretakerPatientLink).filter(
-                    CaretakerPatientLink.caretaker_id == user.id,
-                    CaretakerPatientLink.patient_id == patient_id
-                ).first()
-                return link is not None
+            with SessionLocal() as session:
+                user = session.query(User).filter(User.id == user_id).first()
+                if not user: return False
                 
-            return False
+                if user.role in [UserRole.ADMIN, UserRole.NURSE, UserRole.DOCTOR]:
+                    return True
+                
+                if user.role == UserRole.PATIENT:
+                    return str(user.patient_id) == str(patient_id)
+                
+                if user.role == UserRole.CARETAKER:
+                    link = session.query(CaretakerPatientLink).filter(
+                        CaretakerPatientLink.caretaker_id == user.id,
+                        CaretakerPatientLink.patient_id == patient_id
+                    ).first()
+                    return link is not None
+                    
+                return False
 
         has_access = await asyncio.to_thread(check_permission)
 
@@ -749,12 +751,14 @@ async def websocket_endpoint(websocket: WebSocket, patient_id: str, db: Session 
                     
                     if lat and lng:
                         # Update DB (Last Known Location)
+                        # CRITICAL FIX: Use fresh session for thread safety
                         def update_location():
-                            patient = db.query(Patient).filter(Patient.id == patient_id).first()
-                            if patient:
-                                patient.last_latitude = str(lat)
-                                patient.last_longitude = str(lng)
-                                db.commit() # Important: Save changes!
+                            with SessionLocal() as session:
+                                patient = session.query(Patient).filter(Patient.id == patient_id).first()
+                                if patient:
+                                    patient.last_latitude = str(lat)
+                                    patient.last_longitude = str(lng)
+                                    session.commit()
                         
                         await asyncio.to_thread(update_location)
                         
