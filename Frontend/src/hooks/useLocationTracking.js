@@ -177,7 +177,7 @@ const useLocationTracking = () => {
             watchId = navigator.geolocation.watchPosition(
                 (position) => sendLocation(position.coords),
                 (err) => console.error("Geo Error", err),
-                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+                { enableHighAccuracy: true, timeout: 30000, maximumAge: 10000 }
             );
         };
 
@@ -191,7 +191,7 @@ const useLocationTracking = () => {
                 wsRef.current = null;
             }
         };
-    }, [user, status]); // Added status to dependency array to ensure reconnect logic can read latest status
+    }, [user]); // Removed 'status' to prevent re-connect loop
 
     return { status };
 };

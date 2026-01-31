@@ -43,7 +43,6 @@ from routes.auth import router as auth_router
 from routes.patients import router as patients_router 
 from routes.dashboard import router as dashboard_router
 from routes.reminders import router as reminders_router
-from routes.reminders import router as reminders_router
 from routes.callbacks import router as callbacks_router
 from routes.caretaker import router as caretaker_router
 import requests
