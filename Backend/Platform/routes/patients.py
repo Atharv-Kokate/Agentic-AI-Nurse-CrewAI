@@ -23,6 +23,7 @@ class PatientCreate(BaseModel):
     reported_symptoms: dict = Field(default_factory=dict)
     assigned_doctor: Optional[str] = None
     next_appointment_date: Optional[datetime] = None
+    current_medications: Optional[dict] = Field(default_factory=dict)
 
     model_config = {
         "json_schema_extra": {
@@ -35,7 +36,9 @@ class PatientCreate(BaseModel):
                     "known_conditions": {"conditions": ["hypertension", "diabetes"]},
                     "reported_symptoms": {"symptoms": ["headache", "fatigue"]},
                     "assigned_doctor": "Dr. Smith",
-                    "next_appointment_date": None
+                    "next_appointment_date": None,
+                    "current_medications": {"medications": ["Metformin 500mg", "Lisinopril 10mg"]}
+                }
                 }
             ]
         }
@@ -51,6 +54,7 @@ class PatientUpdate(BaseModel):
     reported_symptoms: Optional[dict] = None
     assigned_doctor: Optional[str] = None
     next_appointment_date: Optional[datetime] = None
+    current_medications: Optional[dict] = None
 
 
 class PatientResponse(BaseModel):
@@ -63,6 +67,7 @@ class PatientResponse(BaseModel):
     reported_symptoms: dict
     assigned_doctor: Optional[str] = None
     next_appointment_date: Optional[datetime] = None
+    current_medications: Optional[dict] = None
     created_at: datetime
     updated_at: datetime
 
@@ -101,7 +106,8 @@ def create_patient(
         known_conditions=patient_data.known_conditions,
         reported_symptoms=patient_data.reported_symptoms,
         assigned_doctor=patient_data.assigned_doctor,
-        next_appointment_date=patient_data.next_appointment_date
+        next_appointment_date=patient_data.next_appointment_date,
+        current_medications=patient_data.current_medications
     )
     
     db.add(new_patient)

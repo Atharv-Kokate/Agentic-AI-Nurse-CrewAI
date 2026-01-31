@@ -46,8 +46,9 @@ class Patient(Base):
     known_conditions = Column(JSONB, nullable=False)
     reported_symptoms = Column(JSONB, nullable=False)
     assigned_doctor = Column(String, nullable=True)
-    # last_latitude = Column(String, nullable=True)
-    # last_longitude = Column(String, nullable=True)
+    last_latitude = Column(String, nullable=True)
+    last_longitude = Column(String, nullable=True)
+    current_medications = Column(JSONB, nullable=True) # List of doc prescribed meds
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
     updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
     
@@ -67,8 +68,8 @@ class monitoring_logs(Base):
     meds_taken = Column(Boolean, nullable=False)
     sleep_hours = Column(Integer, nullable=True)
     symptoms = Column(JSONB, nullable=True)
-    # latitude = Column(String, nullable=True)
-    # longitude = Column(String, nullable=True)
+    latitude = Column(String, nullable=True)
+    longitude = Column(String, nullable=True)
     log = Column(JSONB, nullable=False)
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
     updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)

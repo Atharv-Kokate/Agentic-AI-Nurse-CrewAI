@@ -21,7 +21,8 @@ const RegisterPatientPage = () => {
                 contact_number: data.contact_number,
                 known_conditions: { conditions: data.known_conditions.split(',').map(c => c.trim()) },
                 reported_symptoms: {}, // Empty initially
-                assigned_doctor: data.assigned_doctor
+                assigned_doctor: data.assigned_doctor,
+                current_medications: { medications: data.current_medications ? data.current_medications.split(',').map(m => m.trim()) : [] }
             };
 
             const patientResponse = await client.post('/patients/', patientPayload);
@@ -94,6 +95,10 @@ const RegisterPatientPage = () => {
                             <div className="md:col-span-2">
                                 <label className="block text-sm font-medium text-slate-700">Known Conditions</label>
                                 <textarea {...register('known_conditions')} className="mt-1 w-full rounded-md border border-slate-200 text-white p-2.5 focus:border-sky-500 focus:outline-none" placeholder="e.g. Asthma, Hypertension (comma separated)" rows={2} />
+                            </div>
+                            <div className="md:col-span-2">
+                                <label className="block text-sm font-medium text-slate-700">Current Medications (Doctor Prescribed)</label>
+                                <textarea {...register('current_medications')} className="mt-1 w-full rounded-md border border-slate-200 text-white p-2.5 focus:border-sky-500 focus:outline-none" placeholder="e.g. Metformin 500mg, Lisinopril 10mg (comma separated)" rows={2} />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-slate-700">Assigned Doctor (Optional)</label>

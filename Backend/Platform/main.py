@@ -120,6 +120,7 @@ class PatientRequest(BaseModel):
     # Clinical Info
     known_conditions: str
     initial_symptoms: str
+    current_medications: Optional[str] = None # JSON string or comma separated
 
     model_config = {
         "json_schema_extra": {
@@ -135,6 +136,7 @@ class PatientRequest(BaseModel):
                     "meds_taken": False,
                     "known_conditions": "history of high BP, cardiac failure or heart attack",
                     "initial_symptoms": "difficulties in breathing",
+                    "current_medications": "Metformin 500mg, Lisinopril 10mg",
                     "sleep_hours": 6
                 }
             ]
@@ -238,6 +240,7 @@ async def run_crew_background(crew_input: dict, patient_id_str: str):
             f"Blood Sugar: {crew_input.get('blood_sugar')}\n"
             f"Meds Taken: {crew_input.get('meds_taken')}\n"
             f"Known Conditions: {crew_input.get('known_conditions')}\n"
+            f"Current Medications: {crew_input.get('current_medications')}\n"
             f"Reported Symptoms: {crew_input.get('reported_symptoms')}\n\n"
             f"[RECENT VITALS HISTORY]\n"
             f"{history_str}"
@@ -440,6 +443,7 @@ def analyze_patient(
         
         symptoms_json = {"initial_symptoms": request.initial_symptoms}
         conditions_json = {"known_conditions": request.known_conditions}
+        medications_json = {"medications": request.current_medications} if request.current_medications else {}
 
         if not patient:
             patient = Patient(
@@ -448,7 +452,8 @@ def analyze_patient(
                 gender=request.gender,
                 contact_number=request.contact_number,
                 known_conditions=conditions_json,
-                reported_symptoms=symptoms_json
+                reported_symptoms=symptoms_json,
+                current_medications=medications_json
             )
             db.add(patient)
             db.commit()
@@ -464,6 +469,9 @@ def analyze_patient(
             
             # Always update reported_symptoms as these are current
             patient.reported_symptoms = symptoms_json
+            
+            if request.current_medications:
+                 patient.current_medications = medications_json
             
             patient.updated_at = datetime.utcnow()
             db.commit()
@@ -528,6 +536,7 @@ def analyze_patient(
             "heart_rate": request.heart_rate,
             "blood_sugar": request.blood_sugar,
             "known_conditions": request.known_conditions,
+            "current_medications": request.current_medications,
             "reported_symptoms": request.initial_symptoms,
             "meds_taken": request.meds_taken,
             "recent_vitals_history": history_list
@@ -568,15 +577,15 @@ def check_status(
             "gender": patient.gender,
             "conditions": patient.known_conditions if patient.known_conditions else ""
         }
-        # Location temporarily disabled due to DB schema mismatch
-        # if patient.last_latitude and patient.last_longitude:
-        #     try:
-        #         current_location = {
-        #             "lat": float(patient.last_latitude),
-        #             "lng": float(patient.last_longitude)
-        #         }
-        #     except:
-        #         pass
+        # Location
+        if patient.last_latitude and patient.last_longitude:
+            try:
+                current_location = {
+                    "lat": float(patient.last_latitude),
+                    "lng": float(patient.last_longitude)
+                }
+            except:
+                pass
 
     # 1. Check for Pending Interactions (HITL)
     pending_interaction = db.query(AgentInteraction).filter(
@@ -738,10 +747,9 @@ async def websocket_endpoint(websocket: WebSocket, patient_id: str, db: Session 
                         def update_location():
                             patient = db.query(Patient).filter(Patient.id == patient_id).first()
                             if patient:
-                                # patient.last_latitude = str(lat)
-                                # patient.last_longitude = str(lng)
-                                # db.commit() # Important: Save changes!
-                                db.commit()
+                                patient.last_latitude = str(lat)
+                                patient.last_longitude = str(lng)
+                                db.commit() # Important: Save changes!
                         
                         await asyncio.to_thread(update_location)
                         
