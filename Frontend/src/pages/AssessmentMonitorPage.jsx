@@ -91,7 +91,9 @@ const AssessmentMonitorPage = () => {
             }
         };
 
-        ws.onclose = () => console.log("Monitor Stream Closed");
+        ws.onclose = (event) => {
+            console.log(`Monitor Stream Closed: Code=${event.code}, Reason=${event.reason}, WasClean=${event.wasClean}`);
+        };
 
         // Keep polling as backup (every 5s instead of 2s)
         const intervalId = setInterval(() => {

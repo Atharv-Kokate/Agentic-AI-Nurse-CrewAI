@@ -77,8 +77,8 @@ const useLocationTracking = () => {
                 );
             };
 
-            wsRef.current.onclose = () => {
-                console.log("Location WS Disconnected");
+            wsRef.current.onclose = (event) => {
+                console.log(`Location WS Disconnected: Code=${event.code}, Reason=${event.reason}, WasClean=${event.wasClean}`);
                 if (status !== 'idle') setStatus('disconnected');
             };
 
