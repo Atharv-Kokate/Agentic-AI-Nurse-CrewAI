@@ -26,7 +26,8 @@ class MedicalTasks:
                 "2. IF A FIELD IS EMPTY, MISSING, OR 'None', STATE 'NOT PROVIDED'. DO NOT GUESS A NUMBER.\n"
                 "3. If [RECENT VITALS HISTORY] is empty or [] or None, ASSUME NO HISTORY. Do NOT invent a history.\n"
                 "4. Compare current vitals to history ONLY IF history exists.\n"
-                "5. Determine severity (NORMAL, WARNING, CRITICAL) based strictly on the provided numbers."
+                "5. Determine severity (NORMAL, WARNING, CRITICAL) based strictly on the provided numbers.\n"
+                "6. CHECK [CURRENT MEDICATIONS]. If provided, consider their effect on vitals (e.g., 'BP controlled by medication')."
             ),
             expected_output=(
                 "A JSON object containing:\n"
@@ -74,7 +75,8 @@ class MedicalTasks:
                 "Identify key risk factors present in the data.\n"
                 "CRITICAL: \n"
                 "1. If Symptom Inquiry says 'No symptoms' and Vitals are 'NORMAL', the aggregate summary MUST reflect a healthy patient.\n"
-                "2. If Vital Analysis says 'NOT PROVIDED' or 'MISSING', DO NOT INVENT VITALS in the summary."
+                "2. If Vital Analysis says 'NOT PROVIDED' or 'MISSING', DO NOT INVENT VITALS in the summary.\n"
+                "3. REVIEW [CURRENT MEDICATIONS]. explicitly mention them in the clinical summary if relevant (e.g. 'Patient on Metformin')."
             ),
             expected_output=(
                 "A JSON object containing:\n"
@@ -101,6 +103,7 @@ class MedicalTasks:
                 "5. Your 'justification' MUST be a COMPREHENSIVE MEDICAL REPORT. It must explicitly include:\n"
                 "   - Patient Context (Age/Gender)\n"
                 "   - Known Medical History (from input)\n"
+                "   - Current Medications (from input)\n"
                 "   - Reported Symptoms (detailed)\n"
                 "   - Vital Signs Evaluation (cite specific numbers e.g., 'BP: 160/100')\n"
                 "   - Potential Conditions/Diagnosis (e.g., 'Suspected Hypertensive Urgency')\n"

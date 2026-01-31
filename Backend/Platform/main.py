@@ -741,6 +741,7 @@ async def websocket_endpoint(websocket: WebSocket, patient_id: str, db: Session 
                 if data.get("type") == "LOCATION_UPDATE":
                     lat = data.get("latitude")
                     lng = data.get("longitude")
+                    logger.info(f"Received LOCATION_UPDATE for {patient_id}: {lat}, {lng}")
                     
                     if lat and lng:
                         # Update DB (Last Known Location)
@@ -760,6 +761,8 @@ async def websocket_endpoint(websocket: WebSocket, patient_id: str, db: Session 
                             "longitude": lng,
                             "timestamp": datetime.utcnow().isoformat()
                         }, patient_id)
+                        logger.info(f"Broadcasted LOCATION_UPDATE for {patient_id}")
+                        
                         
                 elif data.get("type") == "PING":
                     await websocket.send_json({"type": "PONG"})

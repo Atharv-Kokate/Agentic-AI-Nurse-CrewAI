@@ -68,6 +68,7 @@ const AssessmentMonitorPage = () => {
         ws.onmessage = (event) => {
             try {
                 const data = JSON.parse(event.data);
+                console.log("Monitor WS Received:", data);
                 if (data.type === "LOCATION_UPDATE") {
                     setLocation({ lat: data.latitude, lng: data.longitude });
                 } else if (data.status) {
