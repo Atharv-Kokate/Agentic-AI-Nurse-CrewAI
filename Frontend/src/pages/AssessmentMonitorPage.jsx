@@ -13,10 +13,6 @@ const AssessmentMonitorPage = () => {
     const [pollingData, setPollingData] = useState(null);
     const [userAnswer, setUserAnswer] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [medicationLogs, setMedicationLogs] = useState([]);
-
-    // Add Patient Data State
-    const [patientData, setPatientData] = useState(null);
 
     const [location, setLocation] = useState(null);
     const wsRef = useRef(null);
@@ -40,17 +36,6 @@ const AssessmentMonitorPage = () => {
 
         fetchStatus();
 
-        // 1b. Fetch Medication Logs (Adherence)
-        const fetchMedLogs = async () => {
-            try {
-                const res = await client.get(`/medication/adherence/${patientId}`);
-                setMedicationLogs(res.data);
-            } catch (error) {
-                console.error("Failed to fetch med logs", error);
-            }
-        };
-        fetchMedLogs();
-
         // 2. WebSocket Connection
         // 2. WebSocket Connection
         // Determine WS Protocol
@@ -70,75 +55,39 @@ const AssessmentMonitorPage = () => {
             }
         }
 
-        const connectWebSocket = () => {
-            const token = localStorage.getItem('token');
-            const wsUrl = `${protocol}//${host}/ws/${patientId}?token=${token}`;
+        const token = localStorage.getItem('token');
+        const wsUrl = `${protocol}//${host}/ws/${patientId}?token=${token}`;
 
-            console.log("Connecting to Monitor Stream:", wsUrl);
-            const ws = new WebSocket(wsUrl);
-            wsRef.current = ws;
+        const ws = new WebSocket(wsUrl);
+        wsRef.current = ws;
 
-            let pingInterval;
-
-            ws.onopen = () => {
-                console.log("Connected to Monitor Stream");
-                // Start Ping Loop to keep connection alive
-                pingInterval = setInterval(() => {
-                    if (ws.readyState === WebSocket.OPEN) {
-                        ws.send(JSON.stringify({ type: "PING" }));
-                    }
-                }, 25000); // 25s keep-alive
-            };
-
-            ws.onmessage = (event) => {
-                try {
-                    const data = JSON.parse(event.data);
-                    // console.log("Monitor WS Received:", data);
-                    if (data.type === "LOCATION_UPDATE") {
-                        setLocation({ lat: data.latitude, lng: data.longitude });
-                    } else if (data.status) {
-                        handleStatusUpdate(data);
-                    } else if (data.type === "PONG") {
-                        // console.log("PONG received");
-                    }
-                } catch (e) {
-                    console.error("WS Parse Error", e);
-                }
-            };
-
-            ws.onclose = (event) => {
-                console.log(`Monitor Stream Closed: Code=${event.code}, Reason=${event.reason}, WasClean=${event.wasClean}`);
-                clearInterval(pingInterval);
-
-                // Attempt Reconnect if not clean close
-                if (!event.wasClean && isMounted) {
-                    console.log("Attempting to reconnect in 3s...");
-                    setTimeout(() => {
-                        if (isMounted) connectWebSocket();
-                    }, 3000);
-                }
-            };
-
-            ws.onerror = (err) => {
-                console.error("Monitor Stream WS Error:", err);
-                ws.close();
-            };
+        ws.onopen = () => {
+            console.log("Connected to Monitor Stream");
         };
 
-        connectWebSocket();
+        ws.onmessage = (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                console.log("Monitor WS Received:", data);
+                if (data.type === "LOCATION_UPDATE") {
+                    setLocation({ lat: data.latitude, lng: data.longitude });
+                } else if (data.status) {
+                    handleStatusUpdate(data);
+                }
+            } catch (e) {
+                console.error("WS Parse Error", e);
+            }
+        };
+
+        ws.onclose = () => console.log("Monitor Stream Closed");
 
         // Keep polling as backup (every 5s instead of 2s)
-        const intervalId = setInterval(() => {
-            fetchStatus();
-            fetchMedLogs();
-        }, 5000);
+        const intervalId = setInterval(fetchStatus, 5000);
 
         return () => {
             isMounted = false;
             clearInterval(intervalId);
-            if (wsRef.current) {
-                wsRef.current.close();
-            }
+            if (wsRef.current) wsRef.current.close();
         };
     }, [patientId]);
 
@@ -149,11 +98,6 @@ const AssessmentMonitorPage = () => {
 
         if (data.current_location && !location) {
             setLocation(data.current_location);
-        }
-
-        // Update Patient Data
-        if (data.patient_data) {
-            setPatientData(data.patient_data);
         }
 
         if (data.status === 'COMPLETED' && data.result) {
@@ -190,48 +134,6 @@ const AssessmentMonitorPage = () => {
         } finally {
             setIsSubmitting(false);
         }
-    };
-
-    const renderMedicationAdherence = () => {
-        return (
-            <div className="glass-panel p-5 rounded-xl border-l-4 border-l-blue-500 mb-6">
-                <div className="flex items-center gap-3 mb-4">
-                    <Activity className="w-5 h-5 text-blue-500" />
-                    <h3 className="font-semibold text-slate-700">Medication Adherence (Today)</h3>
-                </div>
-                {medicationLogs.length === 0 ? (
-                    <p className="text-sm text-slate-500 italic">No medications tracked today.</p>
-                ) : (
-                    <div className="space-y-3">
-                        {medicationLogs.map((log) => (
-                            <div key={log.id} className="flex items-center justify-between p-3 bg-white rounded-lg border border-slate-100 shadow-sm">
-                                <div>
-                                    <p className="font-medium text-slate-800">{log.medicine_name}</p>
-                                    <p className="text-xs text-slate-500">
-                                        Scheduled: {new Date(log.scheduled_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                    </p>
-                                </div>
-                                <div>
-                                    {log.status === 'TAKEN' ? (
-                                        <span className="flex items-center gap-1 text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full">
-                                            <CheckCircle className="w-3 h-3" /> Taken
-                                        </span>
-                                    ) : log.status === 'MISSED' ? (
-                                        <span className="flex items-center gap-1 text-xs font-bold text-red-600 bg-red-50 px-2 py-1 rounded-full">
-                                            <ShieldAlert className="w-3 h-3" /> Missed
-                                        </span>
-                                    ) : (
-                                        <span className="flex items-center gap-1 text-xs font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded-full">
-                                            <Activity className="w-3 h-3 animate-pulse" /> Pending
-                                        </span>
-                                    )}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </div>
-        );
     };
 
     const renderMap = () => {
@@ -281,7 +183,6 @@ const AssessmentMonitorPage = () => {
             case 'RUNNING':
                 return (
                     <div className="flex flex-col items-center justify-center py-20">
-                        {renderMedicationAdherence()}
                         {renderMap()}
                         <div className="relative h-24 w-24">
                             <div className="absolute inset-0 animate-ping rounded-full bg-sky-400 opacity-20"></div>
@@ -303,7 +204,6 @@ const AssessmentMonitorPage = () => {
                         animate={{ opacity: 1, scale: 1 }}
                         className="rounded-2xl border border-sky-100 bg-sky-50/50 p-8 shadow-sm"
                     >
-                        {renderMedicationAdherence()}
                         {renderMap()}
                         <div className="flex items-start gap-4">
                             <div className="rounded-full bg-white p-3 shadow-sm text-sky-600">
@@ -355,7 +255,6 @@ const AssessmentMonitorPage = () => {
                         animate={{ opacity: 1, y: 0 }}
                         className="space-y-6"
                     >
-                        {renderMedicationAdherence()}
                         {renderMap()}
                         <div className={cn("glass-panel rounded-2xl border-2 p-8 text-center", riskBorder)}>
                             <div className={cn("mb-4 inline-flex items-center justify-center rounded-full p-4", riskColor)}>
@@ -431,15 +330,7 @@ const AssessmentMonitorPage = () => {
             <div className="mb-6 flex items-center justify-between">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-900">Assessment Monitor</h1>
-                    <div className="flex flex-col gap-1 mt-1">
-                        <p className="text-slate-500">Patient ID: <span className="font-mono text-xs bg-slate-100 px-1 py-0.5 rounded">{patientId}</span></p>
-                        {patientData && (
-                            <div className="text-sm text-slate-700 bg-white p-2 border border-slate-200 rounded-lg shadow-sm mt-2">
-                                <p><span className="font-semibold">Name:</span> {patientData.name} ({patientData.age}, {patientData.gender})</p>
-                                <p><span className="font-semibold">Conditions:</span> {typeof patientData.conditions === 'string' ? patientData.conditions : JSON.stringify(patientData.conditions)}</p>
-                            </div>
-                        )}
-                    </div>
+                    <p className="text-slate-500">Patient ID: <span className="font-mono text-xs bg-slate-100 px-1 py-0.5 rounded">{patientId}</span></p>
                 </div>
                 <div className={cn(
                     "px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider",

@@ -55,6 +55,7 @@ async def get_doctor_recommendations(db: Session = Depends(get_db)):
     # Join with Patient to get names if needed, but for now just return raw recs
     # Ideally should use a Pydantic response model
     return recs
+    return recs
 
 class MedicationReply(BaseModel):
     phone: str

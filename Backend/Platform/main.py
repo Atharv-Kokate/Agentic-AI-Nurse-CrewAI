@@ -1,7 +1,7 @@
 import json
 import logging
 from typing import Optional, Dict, Any, List
-from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks, WebSocket, WebSocketDisconnect, status
+from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
@@ -42,10 +42,9 @@ from routes.auth import router as auth_router
 from routes.patients import router as patients_router 
 from routes.dashboard import router as dashboard_router
 from routes.reminders import router as reminders_router
-
+from routes.reminders import router as reminders_router
 from routes.callbacks import router as callbacks_router
 from routes.caretaker import router as caretaker_router
-from routes.medication import router as medication_router
 import requests
 
 # Initialize DB tables
@@ -90,7 +89,6 @@ app.include_router(dashboard_router)
 app.include_router(reminders_router)
 app.include_router(callbacks_router)
 app.include_router(caretaker_router)
-app.include_router(medication_router)
 
 # Setup Logging
 logging.basicConfig(
@@ -705,28 +703,26 @@ async def websocket_endpoint(websocket: WebSocket, patient_id: str, db: Session 
         # Using run_in_executor or just assuming quick query.
         
         from database.models import User, CaretakerPatientLink
-        from database.session import SessionLocal # Import for thread safety
         
         # Helper to run sync query
         def check_permission():
-            with SessionLocal() as session:
-                user = session.query(User).filter(User.id == user_id).first()
-                if not user: return False
+            user = db.query(User).filter(User.id == user_id).first()
+            if not user: return False
+            
+            if user.role in [UserRole.ADMIN, UserRole.NURSE, UserRole.DOCTOR]:
+                return True
+            
+            if user.role == UserRole.PATIENT:
+                return str(user.patient_id) == str(patient_id)
+            
+            if user.role == UserRole.CARETAKER:
+                link = db.query(CaretakerPatientLink).filter(
+                    CaretakerPatientLink.caretaker_id == user.id,
+                    CaretakerPatientLink.patient_id == patient_id
+                ).first()
+                return link is not None
                 
-                if user.role in [UserRole.ADMIN, UserRole.NURSE, UserRole.DOCTOR]:
-                    return True
-                
-                if user.role == UserRole.PATIENT:
-                    return str(user.patient_id) == str(patient_id)
-                
-                if user.role == UserRole.CARETAKER:
-                    link = session.query(CaretakerPatientLink).filter(
-                        CaretakerPatientLink.caretaker_id == user.id,
-                        CaretakerPatientLink.patient_id == patient_id
-                    ).first()
-                    return link is not None
-                    
-                return False
+            return False
 
         has_access = await asyncio.to_thread(check_permission)
 
@@ -749,24 +745,18 @@ async def websocket_endpoint(websocket: WebSocket, patient_id: str, db: Session 
                     lng = data.get("longitude")
                     logger.info(f"Received LOCATION_UPDATE for {patient_id}: {lat}, {lng}")
                     
-                    if lat is not None and lng is not None:
-                        # 1. Update DB (Async/Background) - Wrap in try/except to prevent connection crash
-                        def update_location_safe():
-                            try:
-                                with SessionLocal() as session:
-                                    patient = session.query(Patient).filter(Patient.id == patient_id).first()
-                                    if patient:
-                                        patient.last_latitude = str(lat)
-                                        patient.last_longitude = str(lng)
-                                        session.commit()
-                            except Exception as db_err:
-                                logger.error(f"Failed to save location to DB: {db_err}")
-
-                        # Run DB update but don't await result if you want super-fast real-time? 
-                        # Better to await to ensure thread doesn't pile up, but catch errors.
-                        await asyncio.to_thread(update_location_safe)
+                    if lat and lng:
+                        # Update DB (Last Known Location)
+                        def update_location():
+                            patient = db.query(Patient).filter(Patient.id == patient_id).first()
+                            if patient:
+                                patient.last_latitude = str(lat)
+                                patient.last_longitude = str(lng)
+                                db.commit() # Important: Save changes!
                         
-                        # 2. Broadcast to all listeners (Caretakers) - ALWAYS run this
+                        await asyncio.to_thread(update_location)
+                        
+                        # Broadcast to all listeners (Caretakers)
                         await manager.broadcast({
                             "type": "LOCATION_UPDATE",
                             "latitude": lat,
