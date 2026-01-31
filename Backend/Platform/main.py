@@ -749,20 +749,24 @@ async def websocket_endpoint(websocket: WebSocket, patient_id: str, db: Session 
                     lng = data.get("longitude")
                     logger.info(f"Received LOCATION_UPDATE for {patient_id}: {lat}, {lng}")
                     
-                    if lat and lng:
-                        # Update DB (Last Known Location)
-                        # CRITICAL FIX: Use fresh session for thread safety
-                        def update_location():
-                            with SessionLocal() as session:
-                                patient = session.query(Patient).filter(Patient.id == patient_id).first()
-                                if patient:
-                                    patient.last_latitude = str(lat)
-                                    patient.last_longitude = str(lng)
-                                    session.commit()
+                    if lat is not None and lng is not None:
+                        # 1. Update DB (Async/Background) - Wrap in try/except to prevent connection crash
+                        def update_location_safe():
+                            try:
+                                with SessionLocal() as session:
+                                    patient = session.query(Patient).filter(Patient.id == patient_id).first()
+                                    if patient:
+                                        patient.last_latitude = str(lat)
+                                        patient.last_longitude = str(lng)
+                                        session.commit()
+                            except Exception as db_err:
+                                logger.error(f"Failed to save location to DB: {db_err}")
+
+                        # Run DB update but don't await result if you want super-fast real-time? 
+                        # Better to await to ensure thread doesn't pile up, but catch errors.
+                        await asyncio.to_thread(update_location_safe)
                         
-                        await asyncio.to_thread(update_location)
-                        
-                        # Broadcast to all listeners (Caretakers)
+                        # 2. Broadcast to all listeners (Caretakers) - ALWAYS run this
                         await manager.broadcast({
                             "type": "LOCATION_UPDATE",
                             "latitude": lat,
