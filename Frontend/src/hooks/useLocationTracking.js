@@ -98,8 +98,11 @@ const useLocationTracking = () => {
                 }
 
                 // Reconnect logic
-                // Only attempt reconnect if not a normal closure (1000) and still a PATIENT
-                if (role === 'PATIENT' && event.code !== 1000) {
+                // Only attempt reconnect if not a normal closure (1000) AND not a policy violation (1008)
+                // Also avoid reconnecting on specific app errors if we defined them (e.g., 4001, 4003)
+                const isRecoverable = event.code !== 1000 && event.code !== 1008 && event.code < 4000;
+
+                if (role === 'PATIENT' && isRecoverable) {
                     console.log("Location Tracking: Reconnecting in 5s...");
                     setTimeout(() => {
                         // Check if still mounted/logged in and role is still PATIENT
