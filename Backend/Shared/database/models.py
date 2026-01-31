@@ -136,3 +136,14 @@ class CaretakerPatientLink(Base):
 
     caretaker = sa_relationship("User", back_populates="linked_patients")
     patient = sa_relationship("Patient", back_populates="linked_caretakers")
+
+class MedicationLog(Base):
+    __tablename__ = "medication_logs"
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    patient_id = Column(UUID(as_uuid=True), ForeignKey("patients.id"), nullable=False)
+    medicine_name = Column(String, nullable=False)
+    scheduled_time = Column(DateTime, nullable=False) # The theoretical time
+    taken_at = Column(DateTime, nullable=True) # Actual time taken
+    status = Column(String, nullable=False) # TAKEN, MISSED, SKIPPED
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+

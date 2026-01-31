@@ -42,9 +42,10 @@ from routes.auth import router as auth_router
 from routes.patients import router as patients_router 
 from routes.dashboard import router as dashboard_router
 from routes.reminders import router as reminders_router
-from routes.reminders import router as reminders_router
+
 from routes.callbacks import router as callbacks_router
 from routes.caretaker import router as caretaker_router
+from routes.medication import router as medication_router
 import requests
 
 # Initialize DB tables
@@ -89,6 +90,7 @@ app.include_router(dashboard_router)
 app.include_router(reminders_router)
 app.include_router(callbacks_router)
 app.include_router(caretaker_router)
+app.include_router(medication_router)
 
 # Setup Logging
 logging.basicConfig(
