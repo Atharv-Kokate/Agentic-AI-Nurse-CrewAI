@@ -39,7 +39,7 @@ class PatientCreate(BaseModel):
                     "next_appointment_date": None,
                     "current_medications": {"medications": ["Metformin 500mg", "Lisinopril 10mg"]}
                 }
-                }
+
             ]
         }
     }
