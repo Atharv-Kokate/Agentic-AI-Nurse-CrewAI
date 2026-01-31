@@ -43,6 +43,8 @@ const useLocationTracking = () => {
 
             const token = localStorage.getItem('token');
             const wsUrl = `${protocol}//${host}/ws/${patientId}?token=${token}`;
+            console.log("DEBUG: WS URL:", wsUrl);
+            if (!apiUrl) console.warn("DEBUG: VITE_API_URL is missing! Fallback to window host.");
 
             console.log("Location Tracking: Connecting WS...");
             setStatus('connecting');
@@ -102,22 +104,39 @@ const useLocationTracking = () => {
                 // Also avoid reconnecting on specific app errors if we defined them (e.g., 4001, 4003)
                 const isRecoverable = event.code !== 1000 && event.code !== 1008 && event.code < 4000;
 
+                // Track retries to prevent infinite loops
+                const now = Date.now();
+                if (!window.wsReconnectAttempts) window.wsReconnectAttempts = 0;
+                if (!window.wsLastReconnectTime) window.wsLastReconnectTime = 0;
+
+                // Reset retries if last attempt was > 60s ago
+                if (now - window.wsLastReconnectTime > 60000) {
+                    window.wsReconnectAttempts = 0;
+                }
+
                 if (role === 'PATIENT' && isRecoverable) {
-                    console.log("Location Tracking: Reconnecting in 5s...");
-                    setTimeout(() => {
-                        // Check if still mounted/logged in and role is still PATIENT
-                        const tokenFromStorage = localStorage.getItem('token');
-                        if (tokenFromStorage) {
-                            try {
-                                const currentRole = JSON.parse(atob(tokenFromStorage.split('.')[1])).role?.toUpperCase();
-                                if (currentRole === 'PATIENT') {
-                                    connectWebSocket(patientId);
+                    if (window.wsReconnectAttempts < 5) {
+                        window.wsReconnectAttempts++;
+                        window.wsLastReconnectTime = now;
+                        console.log(`Location Tracking: Reconnecting in 5s... (Attempt ${window.wsReconnectAttempts}/5)`);
+                        setTimeout(() => {
+                            // Check if still mounted/logged in and role is still PATIENT
+                            const tokenFromStorage = localStorage.getItem('token');
+                            if (tokenFromStorage) {
+                                try {
+                                    const currentRole = JSON.parse(atob(tokenFromStorage.split('.')[1])).role?.toUpperCase();
+                                    if (currentRole === 'PATIENT') {
+                                        connectWebSocket(patientId);
+                                    }
+                                } catch (e) {
+                                    console.error("Failed to parse token for reconnect check", e);
                                 }
-                            } catch (e) {
-                                console.error("Failed to parse token for reconnect check", e);
                             }
-                        }
-                    }, 5000);
+                        }, 5000);
+                    } else {
+                        console.error("Location Tracking: Max reconnect attempts reached. Stopping.");
+                        setStatus('error');
+                    }
                 }
             };
 
