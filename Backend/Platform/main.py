@@ -36,6 +36,7 @@ from medical_agents.crew import MedicalCrew
 
 # Auth imports
 from auth.dependencies import get_current_active_user, require_roles
+from auth.security import decode_token
 
 # Route imports
 from routes.auth import router as auth_router
@@ -684,7 +685,6 @@ async def websocket_endpoint(websocket: WebSocket, patient_id: str, db: Session 
         return
 
     try:
-        from auth.security import decode_token
         payload = decode_token(token)
         if not payload:
              logger.warning(f"WS Token Invalid: {token[:10]}...")
