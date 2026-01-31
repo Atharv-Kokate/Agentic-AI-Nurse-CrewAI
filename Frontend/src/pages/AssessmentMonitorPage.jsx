@@ -15,6 +15,9 @@ const AssessmentMonitorPage = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [medicationLogs, setMedicationLogs] = useState([]);
 
+    // Add Patient Data State
+    const [patientData, setPatientData] = useState(null);
+
     const [location, setLocation] = useState(null);
     const wsRef = useRef(null);
 
@@ -67,33 +70,62 @@ const AssessmentMonitorPage = () => {
             }
         }
 
-        const token = localStorage.getItem('token');
-        const wsUrl = `${protocol}//${host}/ws/${patientId}?token=${token}`;
+        const connectWebSocket = () => {
+            const token = localStorage.getItem('token');
+            const wsUrl = `${protocol}//${host}/ws/${patientId}?token=${token}`;
 
-        const ws = new WebSocket(wsUrl);
-        wsRef.current = ws;
+            console.log("Connecting to Monitor Stream:", wsUrl);
+            const ws = new WebSocket(wsUrl);
+            wsRef.current = ws;
 
-        ws.onopen = () => {
-            console.log("Connected to Monitor Stream");
-        };
+            let pingInterval;
 
-        ws.onmessage = (event) => {
-            try {
-                const data = JSON.parse(event.data);
-                console.log("Monitor WS Received:", data);
-                if (data.type === "LOCATION_UPDATE") {
-                    setLocation({ lat: data.latitude, lng: data.longitude });
-                } else if (data.status) {
-                    handleStatusUpdate(data);
+            ws.onopen = () => {
+                console.log("Connected to Monitor Stream");
+                // Start Ping Loop to keep connection alive
+                pingInterval = setInterval(() => {
+                    if (ws.readyState === WebSocket.OPEN) {
+                        ws.send(JSON.stringify({ type: "PING" }));
+                    }
+                }, 25000); // 25s keep-alive
+            };
+
+            ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    // console.log("Monitor WS Received:", data);
+                    if (data.type === "LOCATION_UPDATE") {
+                        setLocation({ lat: data.latitude, lng: data.longitude });
+                    } else if (data.status) {
+                        handleStatusUpdate(data);
+                    } else if (data.type === "PONG") {
+                        // console.log("PONG received");
+                    }
+                } catch (e) {
+                    console.error("WS Parse Error", e);
                 }
-            } catch (e) {
-                console.error("WS Parse Error", e);
-            }
+            };
+
+            ws.onclose = (event) => {
+                console.log(`Monitor Stream Closed: Code=${event.code}, Reason=${event.reason}, WasClean=${event.wasClean}`);
+                clearInterval(pingInterval);
+
+                // Attempt Reconnect if not clean close
+                if (!event.wasClean && isMounted) {
+                    console.log("Attempting to reconnect in 3s...");
+                    setTimeout(() => {
+                        if (isMounted) connectWebSocket();
+                    }, 3000);
+                }
+            };
+
+            ws.onerror = (err) => {
+                console.error("Monitor Stream WS Error:", err);
+                ws.close();
+            };
         };
 
-        ws.onclose = (event) => {
-            console.log(`Monitor Stream Closed: Code=${event.code}, Reason=${event.reason}, WasClean=${event.wasClean}`);
-        };
+        connectWebSocket();
 
         // Keep polling as backup (every 5s instead of 2s)
         const intervalId = setInterval(() => {
@@ -104,7 +136,9 @@ const AssessmentMonitorPage = () => {
         return () => {
             isMounted = false;
             clearInterval(intervalId);
-            if (wsRef.current) wsRef.current.close();
+            if (wsRef.current) {
+                wsRef.current.close();
+            }
         };
     }, [patientId]);
 
@@ -115,6 +149,11 @@ const AssessmentMonitorPage = () => {
 
         if (data.current_location && !location) {
             setLocation(data.current_location);
+        }
+
+        // Update Patient Data
+        if (data.patient_data) {
+            setPatientData(data.patient_data);
         }
 
         if (data.status === 'COMPLETED' && data.result) {
@@ -392,7 +431,15 @@ const AssessmentMonitorPage = () => {
             <div className="mb-6 flex items-center justify-between">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-900">Assessment Monitor</h1>
-                    <p className="text-slate-500">Patient ID: <span className="font-mono text-xs bg-slate-100 px-1 py-0.5 rounded">{patientId}</span></p>
+                    <div className="flex flex-col gap-1 mt-1">
+                        <p className="text-slate-500">Patient ID: <span className="font-mono text-xs bg-slate-100 px-1 py-0.5 rounded">{patientId}</span></p>
+                        {patientData && (
+                            <div className="text-sm text-slate-700 bg-white p-2 border border-slate-200 rounded-lg shadow-sm mt-2">
+                                <p><span className="font-semibold">Name:</span> {patientData.name} ({patientData.age}, {patientData.gender})</p>
+                                <p><span className="font-semibold">Conditions:</span> {typeof patientData.conditions === 'string' ? patientData.conditions : JSON.stringify(patientData.conditions)}</p>
+                            </div>
+                        )}
+                    </div>
                 </div>
                 <div className={cn(
                     "px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider",

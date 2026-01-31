@@ -16,35 +16,19 @@ const useLocationTracking = () => {
         }
 
         let watchId = null;
+        let pingInterval = null;
 
-        const startTracking = async () => {
-            setStatus('connecting');
-
-            // 1. Get Patient ID
-            let patientId = user.patient_id;
-            if (!patientId) {
-                try {
-                    const meRes = await client.get('/patients/me');
-                    patientId = meRes.data.id;
-                } catch (err) {
-                    console.error("Tracking: Failed to fetch patient ID", err);
-                    setStatus('error');
-                    return;
-                }
+        const sendLocation = (coords) => {
+            if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+                wsRef.current.send(JSON.stringify({
+                    type: "LOCATION_UPDATE",
+                    latitude: coords.latitude,
+                    longitude: coords.longitude
+                }));
             }
+        };
 
-            if (!patientId) {
-                setStatus('error');
-                return;
-            }
-
-            if (!navigator.geolocation) {
-                console.warn("Geolocation not supported");
-                setStatus('error');
-                return;
-            }
-
-            // Connect WS
+        const connectWebSocket = (patientId) => {
             const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
             let host = window.location.host;
             const apiUrl = import.meta.env.VITE_API_URL;
@@ -60,13 +44,23 @@ const useLocationTracking = () => {
             const token = localStorage.getItem('token');
             const wsUrl = `${protocol}//${host}/ws/${patientId}?token=${token}`;
 
+            console.log("Location Tracking: Connecting WS...");
+            setStatus('connecting');
+
+            // Close existing connection if any
             if (wsRef.current) {
                 wsRef.current.close();
+                wsRef.current = null;
+            }
+            if (pingInterval) {
+                clearInterval(pingInterval);
+                pingInterval = null;
             }
 
-            wsRef.current = new WebSocket(wsUrl);
+            const ws = new WebSocket(wsUrl);
+            wsRef.current = ws;
 
-            wsRef.current.onopen = () => {
+            ws.onopen = () => {
                 console.log("Location WS Connected");
                 setStatus('connected');
 
@@ -75,19 +69,89 @@ const useLocationTracking = () => {
                     pos => sendLocation(pos.coords),
                     err => console.error(err)
                 );
+
+                // Start Ping Loop
+                pingInterval = setInterval(() => {
+                    if (ws.readyState === WebSocket.OPEN) {
+                        ws.send(JSON.stringify({ type: "PING" }));
+                    }
+                }, 25000);
             };
 
-            wsRef.current.onclose = (event) => {
-                console.log(`Location WS Disconnected: Code=${event.code}, Reason=${event.reason}, WasClean=${event.wasClean}`);
+            ws.onmessage = (event) => {
+                // Handle PONG or other messages if needed
+                try {
+                    const data = JSON.parse(event.data);
+                    if (data.type === 'PONG') {
+                        // alive
+                    }
+                } catch (e) { }
+            };
+
+            ws.onclose = (event) => {
+                console.log(`Location WS Disconnected: Code=${event.code}, Reason=${event.reason}`);
                 if (status !== 'idle') setStatus('disconnected');
+
+                if (pingInterval) {
+                    clearInterval(pingInterval);
+                    pingInterval = null;
+                }
+
+                // Reconnect logic
+                // Only attempt reconnect if not a normal closure (1000) and still a PATIENT
+                if (role === 'PATIENT' && event.code !== 1000) {
+                    console.log("Location Tracking: Reconnecting in 5s...");
+                    setTimeout(() => {
+                        // Check if still mounted/logged in and role is still PATIENT
+                        const tokenFromStorage = localStorage.getItem('token');
+                        if (tokenFromStorage) {
+                            try {
+                                const currentRole = JSON.parse(atob(tokenFromStorage.split('.')[1])).role?.toUpperCase();
+                                if (currentRole === 'PATIENT') {
+                                    connectWebSocket(patientId);
+                                }
+                            } catch (e) {
+                                console.error("Failed to parse token for reconnect check", e);
+                            }
+                        }
+                    }, 5000);
+                }
             };
 
-            wsRef.current.onerror = (err) => {
+            ws.onerror = (err) => {
                 console.error("Location WS Error", err);
                 setStatus('error');
             };
+        };
 
-            // Start Watching
+        const startTracking = async () => {
+            // 1. Get Patient ID
+            let currentPatientId = user?.patient_id;
+            if (!currentPatientId) {
+                try {
+                    const meRes = await client.get('/patients/me');
+                    currentPatientId = meRes.data.id;
+                } catch (err) {
+                    console.error("Tracking: Failed to fetch patient ID", err);
+                    setStatus('error');
+                    return;
+                }
+            }
+
+            if (!currentPatientId) {
+                setStatus('error');
+                return;
+            }
+
+            if (!navigator.geolocation) {
+                console.warn("Geolocation not supported");
+                setStatus('error');
+                return;
+            }
+
+            connectWebSocket(currentPatientId);
+
+            // Start Watch Position
             watchId = navigator.geolocation.watchPosition(
                 (position) => sendLocation(position.coords),
                 (err) => console.error("Geo Error", err),
@@ -95,26 +159,17 @@ const useLocationTracking = () => {
             );
         };
 
-        const sendLocation = (coords) => {
-            if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-                wsRef.current.send(JSON.stringify({
-                    type: "LOCATION_UPDATE",
-                    latitude: coords.latitude,
-                    longitude: coords.longitude
-                }));
-            }
-        };
-
         startTracking();
 
         return () => {
             if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+            if (pingInterval) clearInterval(pingInterval);
             if (wsRef.current) {
                 wsRef.current.close();
                 wsRef.current = null;
             }
         };
-    }, [user]);
+    }, [user, status]); // Added status to dependency array to ensure reconnect logic can read latest status
 
     return { status };
 };
