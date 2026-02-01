@@ -11,6 +11,10 @@ function CaretakerDashboardPage() {
     const [linkForm, setLinkForm] = useState({ patient_id: '', relationship: '' });
     const [linkError, setLinkError] = useState('');
 
+    const [medicationHistory, setMedicationHistory] = useState([]);
+    const [showMedicationModal, setShowMedicationModal] = useState(false);
+    const [loadingHistory, setLoadingHistory] = useState(false);
+
     useEffect(() => {
         fetchPatients();
     }, []);
@@ -23,6 +27,20 @@ function CaretakerDashboardPage() {
             console.error("Failed to fetch patients", error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const fetchMedicationHistory = async (patientId) => {
+        setLoadingHistory(true);
+        setMedicationHistory([]);
+        setShowMedicationModal(true);
+        try {
+            const response = await client.get(`/medication/history/${patientId}`);
+            setMedicationHistory(response.data);
+        } catch (error) {
+            console.error("Failed to fetch medication history", error);
+        } finally {
+            setLoadingHistory(false);
         }
     };
 
@@ -69,23 +87,37 @@ function CaretakerDashboardPage() {
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {patients.map((patient) => (
-                        <Link
-                            key={patient.patient_id}
-                            to={`/assessments/monitor/${patient.patient_id}`}
-                            className="block bg-white rounded-xl shadow-sm hover:shadow-md transition p-6 border border-slate-100"
-                        >
-                            <div className="flex justify-between items-start mb-4">
-                                <div className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-semibold">
-                                    {patient.relationship}
+                        <div key={patient.patient_id} className="bg-white rounded-xl shadow-sm hover:shadow-md transition p-6 border border-slate-100 flex flex-col">
+                            <Link
+                                to={`/assessments/monitor/${patient.patient_id}`}
+                                className="block flex-1"
+                            >
+                                <div className="flex justify-between items-start mb-4">
+                                    <div className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-semibold">
+                                        {patient.relationship}
+                                    </div>
                                 </div>
-                            </div>
-                            <h3 className="text-xl font-bold text-slate-900 mb-1">{patient.name}</h3>
-                            <p className="text-slate-500 text-sm mb-4">Phone: {patient.contact_number}</p>
+                                <h3 className="text-xl font-bold text-slate-900 mb-1">{patient.name}</h3>
+                                <p className="text-slate-500 text-sm mb-4">Phone: {patient.contact_number}</p>
 
-                            <div className="flex items-center text-blue-600 text-sm font-medium">
-                                Monitor Vitals →
+                                <div className="mb-4">
+                                    <span className="text-blue-600 text-sm font-medium">Monitor Vitals →</span>
+                                </div>
+                            </Link>
+
+                            {/* Actions Footer */}
+                            <div className="border-t pt-4 mt-auto">
+                                <button
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        fetchMedicationHistory(patient.patient_id);
+                                    }}
+                                    className="w-full py-2 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-lg text-sm font-medium transition-colors border border-slate-200"
+                                >
+                                    💊 View Pill History
+                                </button>
                             </div>
-                        </Link>
+                        </div>
                     ))}
                 </div>
             )}
@@ -146,6 +178,58 @@ function CaretakerDashboardPage() {
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Medication History Modal */}
+            {showMedicationModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+                    <div className="bg-white rounded-xl p-6 w-full max-w-lg max-h-[80vh] flex flex-col">
+                        <div className="flex justify-between items-center mb-6">
+                            <h2 className="text-xl font-bold">Medication History</h2>
+                            <button onClick={() => setShowMedicationModal(false)} className="text-slate-400 hover:text-slate-600">
+                                ✕
+                            </button>
+                        </div>
+
+                        <div className="overflow-y-auto flex-1 pr-2">
+                            {loadingHistory ? (
+                                <div className="text-center py-8">Loading...</div>
+                            ) : medicationHistory.length === 0 ? (
+                                <div className="text-center py-8 text-slate-500 bg-slate-50 rounded-lg">
+                                    No records found.
+                                </div>
+                            ) : (
+                                <div className="space-y-3">
+                                    {medicationHistory.map((log) => (
+                                        <div key={log.id} className="flex items-center justify-between p-3 border border-slate-100 rounded-lg hover:bg-slate-50">
+                                            <div>
+                                                <p className="font-semibold text-slate-900">{log.medicine_name}</p>
+                                                <p className="text-xs text-slate-500">
+                                                    Scheduled: {new Date(log.scheduled_time).toLocaleString()}
+                                                </p>
+                                            </div>
+                                            <div className={`px-3 py-1 rounded-full text-xs font-bold ${log.status === 'TAKEN'
+                                                    ? 'bg-green-100 text-green-700'
+                                                    : 'bg-red-100 text-red-700'
+                                                }`}>
+                                                {log.status}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="mt-6 pt-4 border-t flex justify-end">
+                            <button
+                                onClick={() => setShowMedicationModal(false)}
+                                className="text-slate-600 hover:bg-slate-100 px-4 py-2 rounded-lg"
+                            >
+                                Close
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
