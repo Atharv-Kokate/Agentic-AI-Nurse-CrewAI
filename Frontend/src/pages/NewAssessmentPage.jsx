@@ -60,20 +60,36 @@ const NewAssessmentPage = () => {
 
     useEffect(() => {
         const loadPatientData = async () => {
-            if (user?.role === 'PATIENT') {
+            // Case-insensitive role check
+            if (user?.role?.toUpperCase() === 'PATIENT') {
                 try {
                     // Try to fetch from API first (if online)
                     if (isOnline) {
+                        console.log("Fetching patient data...");
                         const response = await client.get('/patients/me');
                         const patient = response.data;
+                        console.log("Patient data received:", patient);
+
+                        // Helper to safely extract list from potentially nested objects
+                        const extractList = (obj, keys) => {
+                            if (!obj) return '';
+                            if (Array.isArray(obj)) return obj.join(', ');
+                            if (typeof obj === 'string') return obj;
+                            for (const key of keys) {
+                                if (obj[key] && Array.isArray(obj[key])) return obj[key].join(', ');
+                                if (obj[key] && typeof obj[key] === 'string') return obj[key];
+                            }
+                            return '';
+                        };
+
                         reset({
-                            name: patient.name,
-                            age: patient.age,
-                            gender: patient.gender,
-                            contact_number: patient.contact_number,
-                            known_conditions: patient.known_conditions?.known_conditions || patient.known_conditions?.conditions?.join(', ') || '',
-                            current_medications: patient.current_medications?.medications?.join(', ') || patient.current_medications || '',
-                            initial_symptoms: '',
+                            name: patient.name || '',
+                            age: patient.age || '',
+                            gender: patient.gender || 'Male',
+                            contact_number: patient.contact_number || '',
+                            known_conditions: extractList(patient.known_conditions, ['known_conditions', 'conditions']),
+                            current_medications: extractList(patient.current_medications, ['medications', 'current_medications']),
+                            initial_symptoms: '', // Always start blank?
                             meds_taken: false,
                             blood_pressure: '',
                             heart_rate: '',
@@ -89,6 +105,12 @@ const NewAssessmentPage = () => {
                     }
                 } catch (error) {
                     console.error("Failed to load patient data", error);
+                    // Optional: Notify user if data loading fails but they are online
+                    if (isOnline) {
+                        // We don't want to alert blocking if it's just a minor fetch issue, 
+                        // but for debugging this uses console. 
+                        // Check if it was 404 (Patient not found) or 403 (Unauthorized)
+                    }
                 }
             }
         };
