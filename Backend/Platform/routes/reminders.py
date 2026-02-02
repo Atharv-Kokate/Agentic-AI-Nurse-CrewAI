@@ -83,7 +83,27 @@ async def create_reminder(
     db.commit()
     db.refresh(new_reminder)
 
-    # 2. Trigger n8n Webhook
+    # 2. Save PENDING Log and Trigger n8n Webhook
+    # Create a PENDING log entry so we can track the reply
+    from database.models import MedicationLog
+    from datetime import datetime
+    
+    current_dt = datetime.utcnow()
+    try:
+        hour, minute = map(int, reminder.schedule_time.split(':'))
+        scheduled_dt = current_dt.replace(hour=hour, minute=minute, second=0, microsecond=0)
+    except:
+        scheduled_dt = current_dt # Fallback
+
+    pending_log = MedicationLog(
+        patient_id=current_user.patient_id,
+        medicine_name=reminder.medicine_name,
+        scheduled_time=scheduled_dt,
+        status="PENDING"
+    )
+    db.add(pending_log)
+    db.commit()
+    
     # Configurable via env, default to modijiop test url
     webhook_url = os.getenv("N8N_REMINDER_WEBHOOK", "https://modijiop.app.n8n.cloud/webhook-test/nurse-reminder")
     if webhook_url:
@@ -97,6 +117,7 @@ async def create_reminder(
             payload = {
                 "action": "create",
                 "reminder_id": str(new_reminder.id),
+                "log_id": str(pending_log.id), # Pass this just in case we update n8n later to use it
                 "patient_name": patient.name,
                 "phone_number": patient.contact_number,
                 "medicine_name": new_reminder.medicine_name,
