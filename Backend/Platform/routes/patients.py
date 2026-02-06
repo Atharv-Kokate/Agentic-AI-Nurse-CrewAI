@@ -268,7 +268,7 @@ def delete_patient(
     
     return None
 
-from database.models import ai_assesments
+from database.models import ai_assesments, monitoring_logs
 
 @router.get("/{patient_id}/history")
 def get_patient_history(
@@ -305,3 +305,40 @@ def get_patient_history(
     ).order_by(ai_assesments.created_at.desc()).all()
     
     return history
+
+@router.get("/{patient_id}/vitals")
+def get_patient_vitals(
+    patient_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Get vitals monitoring history for a patient.
+    """
+    # Authorization check
+    if current_user.role == UserRole.PATIENT:
+        if current_user.patient_id != patient_id:
+             raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You can only view your own vitals"
+            )
+            
+    if current_user.role == UserRole.CARETAKER:
+        from database.models import CaretakerPatientLink
+        link = db.query(CaretakerPatientLink).filter(
+            CaretakerPatientLink.caretaker_id == current_user.id,
+            CaretakerPatientLink.patient_id == patient_id
+        ).first()
+        
+        if not link:
+             raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You are not linked to this patient"
+            )
+            
+    # Fetch logs
+    logs = db.query(monitoring_logs).filter(
+        monitoring_logs.patient_id == patient_id
+    ).order_by(monitoring_logs.created_at.desc()).limit(50).all()
+    
+    return logs

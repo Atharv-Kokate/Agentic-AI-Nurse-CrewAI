@@ -11,9 +11,16 @@ function CaretakerDashboardPage() {
     const [linkForm, setLinkForm] = useState({ patient_id: '', relationship: '' });
     const [linkError, setLinkError] = useState('');
 
+    // Medication State
     const [medicationHistory, setMedicationHistory] = useState([]);
     const [showMedicationModal, setShowMedicationModal] = useState(false);
     const [loadingHistory, setLoadingHistory] = useState(false);
+    const [selectedPatientId, setSelectedPatientId] = useState(null);
+
+    // Vitals State
+    const [vitalsHistory, setVitalsHistory] = useState([]);
+    const [showVitalsModal, setShowVitalsModal] = useState(false);
+    const [loadingVitals, setLoadingVitals] = useState(false);
 
     useEffect(() => {
         fetchPatients();
@@ -31,6 +38,7 @@ function CaretakerDashboardPage() {
     };
 
     const fetchMedicationHistory = async (patientId) => {
+        setSelectedPatientId(patientId);
         setLoadingHistory(true);
         setMedicationHistory([]);
         setShowMedicationModal(true);
@@ -41,6 +49,33 @@ function CaretakerDashboardPage() {
             console.error("Failed to fetch medication history", error);
         } finally {
             setLoadingHistory(false);
+        }
+    };
+
+    const updateMedicationStatus = async (logId, newStatus) => {
+        try {
+            await client.put(`/medication/log/${logId}`, { status: newStatus });
+            // Optimistic update
+            setMedicationHistory(prev => prev.map(log =>
+                log.id === logId ? { ...log, status: newStatus } : log
+            ));
+        } catch (error) {
+            console.error("Failed to update status", error);
+            alert("Failed to update status");
+        }
+    };
+
+    const fetchVitalsHistory = async (patientId) => {
+        setLoadingVitals(true);
+        setVitalsHistory([]);
+        setShowVitalsModal(true);
+        try {
+            const response = await client.get(`/patients/${patientId}/vitals`);
+            setVitalsHistory(response.data);
+        } catch (error) {
+            console.error("Failed to fetch vitals", error);
+        } finally {
+            setLoadingVitals(false);
         }
     };
 
@@ -101,20 +136,29 @@ function CaretakerDashboardPage() {
                                 <p className="text-slate-500 text-sm mb-4">Phone: {patient.contact_number}</p>
 
                                 <div className="mb-4">
-                                    <span className="text-blue-600 text-sm font-medium">Monitor Vitals →</span>
+                                    <span className="text-blue-600 text-sm font-medium">Monitor Live Vitals →</span>
                                 </div>
                             </Link>
 
                             {/* Actions Footer */}
-                            <div className="border-t pt-4 mt-auto">
+                            <div className="border-t pt-4 mt-auto flex gap-2">
                                 <button
                                     onClick={(e) => {
                                         e.preventDefault();
                                         fetchMedicationHistory(patient.patient_id);
                                     }}
-                                    className="w-full py-2 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-lg text-sm font-medium transition-colors border border-slate-200"
+                                    className="flex-1 py-2 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-lg text-sm font-medium transition-colors border border-slate-200"
                                 >
-                                    💊 View Pill History
+                                    💊 Pills
+                                </button>
+                                <button
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        fetchVitalsHistory(patient.patient_id);
+                                    }}
+                                    className="flex-1 py-2 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-lg text-sm font-medium transition-colors border border-slate-200"
+                                >
+                                    ❤️ Vitals
                                 </button>
                             </div>
                         </div>
@@ -185,9 +229,9 @@ function CaretakerDashboardPage() {
             {/* Medication History Modal */}
             {showMedicationModal && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-                    <div className="bg-white rounded-xl p-6 w-full max-w-lg max-h-[80vh] flex flex-col">
+                    <div className="bg-white rounded-xl p-6 w-full max-w-2xl max-h-[80vh] flex flex-col">
                         <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-xl font-bold">Medication History</h2>
+                            <h2 className="text-xl font-bold">Medication Tracker</h2>
                             <button onClick={() => setShowMedicationModal(false)} className="text-slate-400 hover:text-slate-600">
                                 ✕
                             </button>
@@ -198,23 +242,54 @@ function CaretakerDashboardPage() {
                                 <div className="text-center py-8">Loading...</div>
                             ) : medicationHistory.length === 0 ? (
                                 <div className="text-center py-8 text-slate-500 bg-slate-50 rounded-lg">
-                                    No records found.
+                                    No records found. Reminders generated daily.
                                 </div>
                             ) : (
                                 <div className="space-y-3">
                                     {medicationHistory.map((log) => (
-                                        <div key={log.id} className="flex items-center justify-between p-3 border border-slate-100 rounded-lg hover:bg-slate-50">
-                                            <div>
-                                                <p className="font-semibold text-slate-900">{log.medicine_name}</p>
-                                                <p className="text-xs text-slate-500">
-                                                    Scheduled: {new Date(log.scheduled_time).toLocaleString()}
+                                        <div key={log.id} className="flex items-center justify-between p-4 border border-slate-100 rounded-lg hover:bg-slate-50 shadow-sm">
+                                            <div className="flex-1">
+                                                <p className="font-semibold text-slate-900 text-lg">{log.medicine_name}</p>
+                                                <p className="text-sm text-slate-500">
+                                                    Scheduled: {new Date(log.scheduled_time).toLocaleDateString()} at {new Date(log.scheduled_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                 </p>
                                             </div>
-                                            <div className={`px-3 py-1 rounded-full text-xs font-bold ${log.status === 'TAKEN'
-                                                    ? 'bg-green-100 text-green-700'
-                                                    : 'bg-red-100 text-red-700'
-                                                }`}>
-                                                {log.status}
+
+                                            {/* Action Buttons */}
+                                            <div className="flex items-center gap-2">
+                                                {log.status === 'TAKEN' ? (
+                                                    <span className="flex items-center gap-1 text-green-600 font-bold bg-green-50 px-3 py-1 rounded-full border border-green-100">
+                                                        ✅ Taken
+                                                    </span>
+                                                ) : log.status === 'MISSED' ? (
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-red-600 font-medium bg-red-50 px-3 py-1 rounded-full border border-red-100">
+                                                            ❌ Missed
+                                                        </span>
+                                                        {/* Allow changing back if mistake? */}
+                                                        <button
+                                                            onClick={() => updateMedicationStatus(log.id, 'TAKEN')}
+                                                            className="text-xs text-blue-600 underline"
+                                                        >
+                                                            Undo
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex items-center gap-2">
+                                                        <button
+                                                            onClick={() => updateMedicationStatus(log.id, 'TAKEN')}
+                                                            className="bg-green-600 text-white px-4 py-1.5 rounded-lg text-sm font-medium hover:bg-green-700 transition"
+                                                        >
+                                                            Mark Taken
+                                                        </button>
+                                                        <button
+                                                            onClick={() => updateMedicationStatus(log.id, 'MISSED')}
+                                                            className="bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-slate-300 transition"
+                                                        >
+                                                            Missed
+                                                        </button>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                     ))}
@@ -225,6 +300,55 @@ function CaretakerDashboardPage() {
                         <div className="mt-6 pt-4 border-t flex justify-end">
                             <button
                                 onClick={() => setShowMedicationModal(false)}
+                                className="text-slate-600 hover:bg-slate-100 px-4 py-2 rounded-lg"
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Vitals History Modal */}
+            {showVitalsModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+                    <div className="bg-white rounded-xl p-6 w-full max-w-2xl max-h-[80vh] flex flex-col">
+                        <div className="flex justify-between items-center mb-6">
+                            <h2 className="text-xl font-bold">Vitals History</h2>
+                            <button onClick={() => setShowVitalsModal(false)} className="text-slate-400 hover:text-slate-600">
+                                ✕
+                            </button>
+                        </div>
+
+                        <div className="overflow-y-auto flex-1 pr-2">
+                            {loadingVitals ? (
+                                <div className="text-center py-8">Loading...</div>
+                            ) : vitalsHistory.length === 0 ? (
+                                <div className="text-center py-8 text-slate-500 bg-slate-50 rounded-lg">
+                                    No vitals recorded yet.
+                                </div>
+                            ) : (
+                                <div className="space-y-0 divide-y divide-slate-100 border border-slate-100 rounded-lg overflow-hidden">
+                                    <div className="bg-slate-50 p-3 grid grid-cols-4 font-semibold text-slate-700 text-sm">
+                                        <div>Date</div>
+                                        <div>BP</div>
+                                        <div>HR</div>
+                                        <div>Sugar</div>
+                                    </div>
+                                    {vitalsHistory.map((log) => (
+                                        <div key={log.id} className="p-3 grid grid-cols-4 text-sm hover:bg-slate-50">
+                                            <div className="text-slate-900">{new Date(log.created_at).toLocaleDateString()}</div>
+                                            <div className="text-slate-600">{log.blood_pressure}</div>
+                                            <div className="text-slate-600">{log.heart_rate} bpm</div>
+                                            <div className="text-slate-600">{log.blood_sugar} mg/dL</div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                        <div className="mt-6 pt-4 border-t flex justify-end">
+                            <button
+                                onClick={() => setShowVitalsModal(false)}
                                 className="text-slate-600 hover:bg-slate-100 px-4 py-2 rounded-lg"
                             >
                                 Close

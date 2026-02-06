@@ -229,6 +229,28 @@ async def run_crew_background(crew_input: dict, patient_id_str: str):
         # Instantiate Crew with patient_id for Tool usage
         medical_crew = MedicalCrew(patient_id=patient_id_str)
         
+        # --- NEW: Fetch Medication History (Last 3 days) ---
+        from database.models import MedicationLog
+        from datetime import timedelta
+        
+        since = datetime.utcnow() - timedelta(days=3)
+        med_logs = db.query(MedicationLog).filter(
+            MedicationLog.patient_id == patient_id_str,
+            MedicationLog.created_at >= since
+        ).order_by(MedicationLog.created_at.desc()).all()
+        
+        med_history_str = "No recent medication logs."
+        if med_logs:
+            lines = []
+            for log in med_logs:
+                # Format: "2024-01-01 08:00: Metformin (500mg) - TAKEN"
+                scheduled = log.scheduled_time.strftime("%Y-%m-%d %H:%M")
+                lines.append(f"- {scheduled}: {log.medicine_name} - {log.status}")
+            med_history_str = "\n".join(lines)
+            
+        logger.info(f"Fetched Med History for AI: {med_history_str[:100]}...")
+        # ----------------------------------------------------
+
         # Format input for LLM clarity to avoid hallucinations/history confusion
         history_str = json.dumps(crew_input.get('recent_vitals_history', []), indent=2)
         formatted_input = (
@@ -245,7 +267,9 @@ async def run_crew_background(crew_input: dict, patient_id_str: str):
             f"Current Medications: {crew_input.get('current_medications')}\n"
             f"Reported Symptoms: {crew_input.get('reported_symptoms')}\n\n"
             f"[RECENT VITALS HISTORY]\n"
-            f"{history_str}"
+            f"{history_str}\n\n"
+            f"[RECENT MEDICATION ADHERENCE (Last 3 Days)]\n"
+            f"{med_history_str}"
         )
         
         logger.info(f"--- CREW INPUT START ---\n{formatted_input}\n--- CREW INPUT END ---")
