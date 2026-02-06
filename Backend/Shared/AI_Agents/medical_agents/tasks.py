@@ -147,5 +147,28 @@ class MedicalTasks:
             ),
             agent=agent,
             context=context,
+            context=context,
             # output_pydantic=ActionDecisionOutput # DISABLED: Processed by robust clean_json_string in main.py
+        )
+
+    def create_daily_plan_task(self, agent, patient_data):
+        return Task(
+            description=(
+                f"Create a daily health plan for the following patient: {patient_data}. "
+                "1. SEARCH the Task Knowledge Base for protocols relevant to the patient's known conditions (e.g., 'Hypertension', 'Diabetes'). "
+                "2. Generate 3-5 specific, actionable tasks for TODAY. "
+                "3. Tasks must span categories: Diet, Exercise, Lifestyle, Medication (if applicable). "
+                "4. OUTPUT FORMAT RULE: Return ONLY a JSON list of objects. "
+                "Example: [{\"category\": \"Diet\", \"task_description\": \"Eat a low-sodium lunch...\"}, ...]"
+            ),
+            expected_output=(
+                "A JSON array containing:\n"
+                "[\n"
+                "  {\n"
+                "    \"category\": \"Diet | Exercise | Lifestyle | Medication\",\n"
+                "    \"task_description\": \"Specific action item\"\n"
+                "  }\n"
+                "]"
+            ),
+            agent=agent
         )

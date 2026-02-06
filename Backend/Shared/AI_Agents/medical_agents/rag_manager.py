@@ -70,7 +70,7 @@ class RAGManager:
 
     def initialize(self):
         """
-        Initialize ChromaDB client and collection.
+        Initialize ChromaDB client and collections.
         Uses Google Gemini API for embeddings (Free, Fast, Reliable).
         """
         try:
@@ -94,29 +94,42 @@ class RAGManager:
                 api_key=google_api_key
             )
             
+            # --- Collection 1: Clinical Knowledge ---
             self.collection_name = "medical_knowledge"
             self.collection = self.client.get_or_create_collection(
                 name=self.collection_name,
                 embedding_function=self.embedding_fn
             )
+            
+            # --- Collection 2: Task Planning Knowledge ---
+            self.task_collection_name = "task_knowledge"
+            self.task_collection = self.client.get_or_create_collection(
+                name=self.task_collection_name,
+                embedding_function=self.embedding_fn
+            )
+
             logger.info(f"RAGManager initialized. DB Path: {self.persist_directory}")
             
             # Auto-ingest if empty
             if self.collection.count() == 0:
-                logger.info("Collection empty. Auto-ingesting knowledge base...")
-                self.ingest_knowledge_base()
+                logger.info("Clinical Collection empty. Auto-ingesting knowledge base...")
+                self.ingest_knowledge_base('knowledge_base.md', self.collection)
+
+            if self.task_collection.count() == 0:
+                logger.info("Task Collection empty. Auto-ingesting task knowledge base...")
+                self.ingest_knowledge_base('task_planning_kb.md', self.task_collection)
                 
         except Exception as e:
             logger.error(f"Failed to initialize RAGManager: {e}")
             raise e
 
-    def ingest_knowledge_base(self):
+    def ingest_knowledge_base(self, filename: str, collection):
         """
-        Reads knowledge_base.md, splits by headers, and ingests into ChromaDB.
+        Reads a markdown file, splits by headers, and ingests into the specified collection.
         """
         try:
             current_dir = os.path.dirname(os.path.abspath(__file__))
-            kb_path = os.path.join(current_dir, 'knowledge_base.md')
+            kb_path = os.path.join(current_dir, filename)
             
             if not os.path.exists(kb_path):
                 logger.error(f"Knowledge base file not found at {kb_path}")
@@ -143,44 +156,39 @@ class RAGManager:
                 title = sec.split('\n')[0].strip()
                 
                 documents.append(full_text)
-                ids.append(f"doc_{i}")
-                metadatas.append({"title": title, "source": "knowledge_base.md"})
+                ids.append(f"{filename}_doc_{i}")
+                metadatas.append({"title": title, "source": filename})
             
             if documents:
-                self.collection.upsert(
+                collection.upsert(
                     documents=documents,
                     ids=ids,
                     metadatas=metadatas
                 )
-                logger.info(f"Successfully ingested {len(documents)} snippets into ChromaDB.")
+                logger.info(f"Successfully ingested {len(documents)} snippets from {filename} into ChromaDB.")
             
         except Exception as e:
-            logger.error(f"Error ingesting knowledge base: {e}")
+            logger.error(f"Error ingesting {filename}: {e}")
 
-    def search(self, query: str, k: int = 1) -> str:
+    def search(self, query: str, k: int = 1, collection_type: str = "clinical") -> str:
         """
         Semantic search for relevant protocols.
-        Returns a formatted string of the top-k results.
+        collection_type: 'clinical' or 'task'
         """
         try:
-            # Note: For search queries, we should ideally use task_type="RETRIEVAL_QUERY"
-            # but Chroma's function wrapper handles what it can. 
-            # If strictly needed, we can re-instantiate embedding function with RETRIEVAL_QUERY for the query call.
-            # For simplicity, we use the default or document one as the difference is often minor for this scale.
-            
-            results = self.collection.query(
+            # Select collection based on type
+            target_collection = self.task_collection if collection_type == "task" else self.collection
+
+            results = target_collection.query(
                 query_texts=[query],
                 n_results=k
             )
-            
-            # results is a dict with lists of lists (batch support)
-            # We only have one query, so access results['documents'][0]
             
             docs = results.get('documents', [[]])[0]
             metadatas = results.get('metadatas', [[]])[0]
             
             if not docs:
-                return "No specific protocols found in the knowledge base."
+                return f"No specific info found in {collection_type} knowledge base."
             
             formatted_results = []
             for doc, meta in zip(docs, metadatas):

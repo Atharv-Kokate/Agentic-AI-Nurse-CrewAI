@@ -1,8 +1,13 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Loader2, AlertTriangle, MessageSquare, CheckCircle, Activity, ShieldAlert, Send } from 'lucide-react';
+import {
+    Activity, Heart, Thermometer, ShieldAlert, CheckCircle, Loader2,
+    Video, Mic, MicOff, Send, Phone, Clock, FileText, User, Sparkles, Utensils, ShieldCheck, Trash2
+} from 'lucide-react';
 import client from '../api/client';
+import { useAuth } from '../contexts/AuthContext';
 import { cn } from '../utils/cn';
 
 const AssessmentMonitorPage = () => {
@@ -34,7 +39,7 @@ const AssessmentMonitorPage = () => {
         // 1. Initial REST Fetch (for immediate state)
         const fetchStatus = async () => {
             try {
-                const response = await client.get(`/status/${patientId}`);
+                const response = await client.get(`/ status / ${patientId} `);
                 const data = response.data;
                 if (isMounted) handleStatusUpdate(data);
             } catch (error) {
@@ -373,6 +378,39 @@ const AssessmentMonitorPage = () => {
         }
     };
 
+
+    // --- Task Planning Logic ---
+    const [showTaskModal, setShowTaskModal] = useState(false);
+    const [tasks, setTasks] = useState([]);
+    const [loadingTasks, setLoadingTasks] = useState(false);
+    const [generatingPlan, setGeneratingPlan] = useState(false);
+
+    const fetchDailyTasks = async () => {
+        setLoadingTasks(true);
+        setShowTaskModal(true); // Open modal immediately
+        try {
+            const response = await client.get(`/tasks/${patientId}`);
+            setTasks(response.data);
+        } catch (error) {
+            console.error("Failed to fetch daily tasks", error);
+        } finally {
+            setLoadingTasks(false);
+        }
+    };
+
+    const generateAiPlan = async () => {
+        setGeneratingPlan(true);
+        try {
+            const response = await client.post(`/tasks/generate/${patientId}`);
+            setTasks(response.data); // Update with new tasks
+        } catch (error) {
+            console.error("Failed to generate plan", error);
+            alert("Failed to generate plan. Please try again.");
+        } finally {
+            setGeneratingPlan(false);
+        }
+    };
+
     return (
         <div className="mx-auto max-w-3xl pb-12">
             <div className="mb-6 flex items-center justify-between">
@@ -387,7 +425,13 @@ const AssessmentMonitorPage = () => {
                     <p className="text-slate-500 text-sm">Patient ID: <span className="font-mono bg-slate-100 px-1 py-0.5 rounded text-xs select-all">{patientId}</span></p>
                 </div>
                 <div className="flex items-center gap-3">
-                    {/* History Action Buttons */}
+                    {/* Action Buttons */}
+                    <button
+                        onClick={fetchDailyTasks}
+                        className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-700 font-medium hover:bg-slate-50 hover:shadow-sm"
+                    >
+                        📋 Tasks
+                    </button>
                     <button
                         onClick={fetchMedicationHistory}
                         className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-700 font-medium hover:bg-slate-50 hover:shadow-sm"
@@ -508,6 +552,111 @@ const AssessmentMonitorPage = () => {
                     </div>
                 </div>
             )}
+
+            {/* Daily Tasks Modal */}
+            {showTaskModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+                    <div className="bg-white rounded-xl p-6 w-full max-w-2xl max-h-[85vh] flex flex-col">
+                        <div className="flex justify-between items-center mb-6">
+                            <div>
+                                <h2 className="text-xl font-bold">Daily Health Plan</h2>
+                                <p className="text-sm text-slate-500">Manage patient's daily routine</p>
+                            </div>
+                            <button onClick={() => setShowTaskModal(false)} className="text-slate-400 hover:text-slate-600">
+                                ✕
+                            </button>
+                        </div>
+
+                        {/* Toolbar */}
+                        <div className="flex justify-between items-center mb-4 bg-slate-50 p-3 rounded-lg">
+                            <div className="text-sm font-medium text-slate-700">
+                                Today's Tasks
+                            </div>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={generateAiPlan}
+                                    disabled={generatingPlan}
+                                    className="flex items-center gap-2 bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-sm font-bold hover:bg-indigo-700 transition disabled:opacity-50"
+                                >
+                                    {generatingPlan ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                                    Generate AI Plan
+                                </button>
+                                <button
+                                    onClick={() => alert("Manual add feature coming soon!")}
+                                    className="bg-white border border-slate-300 text-slate-700 px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-slate-50"
+                                >
+                                    + Add Manual
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="overflow-y-auto flex-1 pr-2">
+                            {loadingTasks ? (
+                                <div className="text-center py-8">Loading tasks...</div>
+                            ) : tasks.length === 0 ? (
+                                <div className="text-center py-12 text-slate-500 bg-slate-50 rounded-lg border-2 border-dashed border-slate-200">
+                                    <Sparkles className="h-8 w-8 text-slate-300 mx-auto mb-2" />
+                                    <p>No tasks scheduled for today.</p>
+                                    <button onClick={generateAiPlan} className="text-indigo-600 font-medium hover:underline mt-1">
+                                        Generate a plan using AI
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="space-y-3">
+                                    {tasks.map((task) => (
+                                        <div key={task.id} className="flex items-start justify-between p-4 border border-slate-100 rounded-lg hover:bg-slate-50 group">
+                                            <div className="flex items-start gap-3">
+                                                <div className={cn("mt-1 p-2 rounded-lg",
+                                                    task.category === 'Diet' ? 'bg-green-100 text-green-700' :
+                                                        task.category === 'Exercise' ? 'bg-orange-100 text-orange-700' :
+                                                            'bg-blue-100 text-blue-700'
+                                                )}>
+                                                    {task.category === 'Diet' ? <Utensils className="h-4 w-4" /> :
+                                                        task.category === 'Exercise' ? <Activity className="h-4 w-4" /> :
+                                                            <Clock className="h-4 w-4" />}
+                                                </div>
+                                                <div>
+                                                    <p className="font-semibold text-slate-900">{task.task_description}</p>
+                                                    <div className="flex items-center gap-3 mt-1">
+                                                        <span className="text-xs text-slate-500 uppercase tracking-wide font-medium">{task.category}</span>
+
+                                                        {/* Status Badges */}
+                                                        {task.status_patient === 'COMPLETED' ? (
+                                                            <span className="text-xs flex items-center gap-1 text-emerald-600 font-bold">
+                                                                <CheckCircle className="h-3 w-3" /> Patient Done
+                                                            </span>
+                                                        ) : (
+                                                            <span className="text-xs text-slate-400">Patient: Pending</span>
+                                                        )}
+
+                                                        {task.status_caretaker === 'VALIDATED' ? (
+                                                            <span className="text-xs flex items-center gap-1 text-indigo-600 font-bold border-l pl-2 border-slate-200">
+                                                                <ShieldCheck className="h-3 w-3" /> Verified
+                                                            </span>
+                                                        ) : task.status_caretaker === 'REFUSED' ? (
+                                                            <span className="text-xs text-red-500 font-bold border-l pl-2 border-slate-200">
+                                                                Rejected
+                                                            </span>
+                                                        ) : (
+                                                            <span className="text-xs text-slate-400 border-l pl-2 border-slate-200">
+                                                                Unverified
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <button className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition">
+                                                <Trash2 className="h-4 w-4" />
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
 
             {/* Vitals History Modal */}
             {showVitalsModal && (

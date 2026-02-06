@@ -147,3 +147,15 @@ class MedicationLog(Base):
     status = Column(String, nullable=False) # TAKEN, MISSED, SKIPPED
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
 
+
+class DailyTask(Base):
+    __tablename__ = "daily_tasks"
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    patient_id = Column(UUID(as_uuid=True), ForeignKey("patients.id"), nullable=False)
+    task_description = Column(String, nullable=False)
+    category = Column(String, nullable=False) # Diet, Exercise, Lifestyle, Medication
+    scheduled_date = Column(DateTime, nullable=False) # The date this task is for
+    status_patient = Column(String, default="PENDING") # PENDING, COMPLETED, SKIPPED
+    status_caretaker = Column(String, default="PENDING") # PENDING, VALIDATED, REFUSED
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)

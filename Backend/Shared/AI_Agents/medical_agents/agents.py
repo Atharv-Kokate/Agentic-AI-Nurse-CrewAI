@@ -132,3 +132,19 @@ class MedicalAgents:
             max_rpm=10,
             llm=groq_llama70 # Key 1
         )
+
+    def task_planner_agent(self):
+        # Tools import
+        from medical_agents.tools import SearchTaskKnowledgeBaseTool
+        
+        return Agent(
+            role='Daily Health Task Planner',
+            goal='Generate a structured daily plan (Diet, Exercise, Lifestyle) for a patient based on their specific medical conditions.',
+            backstory="""You are an expert Lifestyle Medicine specialist. You create personalized, practical daily routines for patients. 
+            You ALWAYS check the trusted knowledge base for condition-specific protocols (e.g., Diabetes Diet, Hypertension Exercise) before assigning tasks.
+            Your plans are simple, actionable, and strictly based on medical guidelines.""",
+            verbose=True,
+            tools=[SearchTaskKnowledgeBaseTool()],
+            llm=groq_llama70,
+            max_iter=3
+        )

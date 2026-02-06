@@ -1,13 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Activity, Calendar, Clock, AlertTriangle, CheckCircle, Plus, Copy } from 'lucide-react';
+import { Activity, Calendar, Clock, AlertTriangle, CheckCircle, Plus, Copy, Sparkles, Utensils } from 'lucide-react';
 import { format } from 'date-fns';
 import client from '../api/client';
+import { cn } from '../utils/cn';
 
 const PatientDashboardPage = () => {
     const navigate = useNavigate();
     const [patient, setPatient] = useState(null);
     const [history, setHistory] = useState([]);
+    const [tasks, setTasks] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -22,9 +24,9 @@ const PatientDashboardPage = () => {
                     const historyRes = await client.get(`/patients/${meRes.data.id}/history`);
                     setHistory(historyRes.data);
 
-                    // 3. Start Location Tracking (Patient Only)
-                    // REMOVED: Now handled globally in Layout.jsx via useLocationTracking hook
-                    // startLocationTracking(meRes.data.id);
+                    // 3. Get Today's Tasks
+                    const tasksRes = await client.get(`/tasks/${meRes.data.id}`);
+                    setTasks(tasksRes.data);
                 }
             } catch (error) {
                 console.error("Failed to fetch dashboard data", error);
@@ -38,6 +40,21 @@ const PatientDashboardPage = () => {
             if (wsRef.current) wsRef.current.close();
         };
     }, []);
+
+    const toggleTaskStatus = async (taskId, currentStatus) => {
+        const newStatus = currentStatus === 'COMPLETED' ? 'PENDING' : 'COMPLETED';
+
+        // Optimistic Update
+        setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status_patient: newStatus } : t));
+
+        try {
+            await client.put(`/tasks/${taskId}/status`, { status_patient: newStatus });
+        } catch (error) {
+            console.error("Failed to update task", error);
+            // Revert on failure
+            setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status_patient: currentStatus } : t));
+        }
+    };
 
     const wsRef = React.useRef(null);
 
@@ -165,6 +182,69 @@ const PatientDashboardPage = () => {
                     </div>
                     <p className="text-2xl font-bold text-slate-900">{history.length}</p>
                 </div>
+            </div>
+
+            {/* Daily Tasks Section */}
+            <div className="glass-panel p-6 rounded-xl">
+                <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-bold text-slate-900">Today's Health Tasks</h2>
+                    <span className="text-sm text-slate-500 font-medium">
+                        {format(new Date(), 'EEEE, MMMM d')}
+                    </span>
+                </div>
+
+                {tasks.length === 0 ? (
+                    <div className="text-center py-8 text-slate-500 bg-slate-50 rounded-lg">
+                        <Sparkles className="h-6 w-6 mx-auto mb-2 text-slate-400" />
+                        <p>No tasks assigned for today.</p>
+                    </div>
+                ) : (
+                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                        {tasks.map((task) => (
+                            <div
+                                key={task.id}
+                                className={cn(
+                                    "p-4 rounded-xl border transition-all",
+                                    task.status_patient === 'COMPLETED'
+                                        ? "bg-emerald-50 border-emerald-100 opacity-75"
+                                        : "bg-white border-slate-100 hover:shadow-md"
+                                )}
+                            >
+                                <div className="flex items-start justify-between">
+                                    <div className="flex items-start gap-3">
+                                        <div className={cn("p-2 rounded-lg mt-0.5",
+                                            task.category === 'Diet' ? 'bg-green-100 text-green-600' :
+                                                task.category === 'Exercise' ? 'bg-orange-100 text-orange-600' :
+                                                    'bg-blue-100 text-blue-600'
+                                        )}>
+                                            {task.category === 'Diet' ? <Utensils className="h-4 w-4" /> :
+                                                task.category === 'Exercise' ? <Activity className="h-4 w-4" /> :
+                                                    <Clock className="h-4 w-4" />}
+                                        </div>
+                                        <div>
+                                            <p className={cn("font-medium text-slate-900", task.status_patient === 'COMPLETED' && "line-through text-slate-500")}>
+                                                {task.task_description}
+                                            </p>
+                                            <span className="text-xs text-slate-400 font-medium uppercase tracking-wider">{task.category}</span>
+                                        </div>
+                                    </div>
+
+                                    <button
+                                        onClick={() => toggleTaskStatus(task.id, task.status_patient)}
+                                        className={cn(
+                                            "flex items-center justify-center w-6 h-6 rounded-full border transition-all",
+                                            task.status_patient === 'COMPLETED'
+                                                ? "bg-emerald-500 border-emerald-500 text-white"
+                                                : "bg-transparent border-slate-300 text-transparent hover:border-emerald-500"
+                                        )}
+                                    >
+                                        <CheckCircle className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
             </div>
 
             {/* History Table */}

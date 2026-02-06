@@ -110,6 +110,24 @@ class KnowledgeBaseSearchTool(BaseTool):
     def _run(self, query: str) -> str:
         try:
             rag = RAGManager()
-            return rag.search(query)
+            return rag.search(query, collection_type="clinical")
         except Exception as e:
             return f"Error searching knowledge base: {str(e)}"
+
+class SearchTaskKnowledgeBaseInput(BaseModel):
+    query: str = Field(..., description="The condition or topic to find daily routines for (e.g., 'Diabetes Diet', 'Post-Surgery Exercises').")
+
+class SearchTaskKnowledgeBaseTool(BaseTool):
+    name: str = "search_task_knowledge_base"
+    description: str = (
+        "Useful for finding specific daily routine protocols (Diet, Exercise, Sleep, Lifestyle) "
+        "based on medical conditions."
+    )
+    args_schema: type[BaseModel] = SearchTaskKnowledgeBaseInput
+    
+    def _run(self, query: str) -> str:
+        try:
+            rag = RAGManager()
+            return rag.search(query, collection_type="task")
+        except Exception as e:
+            return f"Error searching task knowledge base: {str(e)}"

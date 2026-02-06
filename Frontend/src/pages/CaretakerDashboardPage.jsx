@@ -79,6 +79,39 @@ function CaretakerDashboardPage() {
         }
     };
 
+
+    // Tasks State
+    const [tasks, setTasks] = useState([]);
+    const [showTaskModal, setShowTaskModal] = useState(false);
+    const [loadingTasks, setLoadingTasks] = useState(false);
+
+    const fetchTasks = async (patientId) => {
+        setLoadingTasks(true);
+        setTasks([]);
+        setShowTaskModal(true);
+        try {
+            const response = await client.get(`/tasks/${patientId}`);
+            setTasks(response.data);
+        } catch (error) {
+            console.error("Failed to fetch tasks", error);
+        } finally {
+            setLoadingTasks(false);
+        }
+    };
+
+    const validateTask = async (taskId, validationStatus) => {
+        try {
+            await client.put(`/tasks/${taskId}/status`, { status_caretaker: validationStatus });
+            // Optimistic update
+            setTasks(prev => prev.map(t =>
+                t.id === taskId ? { ...t, status_caretaker: validationStatus } : t
+            ));
+        } catch (error) {
+            console.error("Failed to validate task", error);
+            alert("Failed to update status");
+        }
+    };
+
     const handleLinkPatient = async (e) => {
         e.preventDefault();
         setLinkError('');
@@ -159,6 +192,15 @@ function CaretakerDashboardPage() {
                                     className="flex-1 py-2 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-lg text-sm font-medium transition-colors border border-slate-200"
                                 >
                                     ❤️ Vitals
+                                </button>
+                                <button
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        fetchTasks(patient.patient_id);
+                                    }}
+                                    className="flex-1 py-2 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-lg text-sm font-medium transition-colors border border-slate-200"
+                                >
+                                    📋 Tasks
                                 </button>
                             </div>
                         </div>

@@ -110,3 +110,19 @@ class MedicalCrew:
             "risk_assessment": risk_result,
             "decision_action": decision_result
         }
+
+    def run_planning_crew(self, patient_data):
+        print(f"DEBUG: MedicalCrew.run_planning_crew called with: {patient_data}")
+        
+        planner_agent = self.agents.task_planner_agent()
+        planning_task = self.tasks.create_daily_plan_task(planner_agent, patient_data)
+        
+        crew = Crew(
+            agents=[planner_agent],
+            tasks=[planning_task],
+            verbose=True
+        )
+        
+        result = self.kickoff_with_retry(crew, "Daily Task Planning")
+        print(f"DEBUG: Planning Result: {result}")
+        return result
