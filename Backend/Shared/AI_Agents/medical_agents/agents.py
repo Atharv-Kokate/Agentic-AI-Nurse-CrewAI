@@ -19,19 +19,19 @@ ollama_phi = LLM(
 # 3. Groq (Llama 3.1 8B Instant) - Cloud
 # Ensure GROQ_API_KEY is in .env
 groq_llama70 = LLM(
-    model="groq/llama-3.1-8b-instant",
+    model="groq/llama-3.3-70b-versatile",
     api_key=os.getenv("GROQ_API_KEY")
 )
 
 # 4. Groq (Secondary Key to double rate limits)
 groq_llama70_2 = LLM(
-    model="groq/llama-3.1-8b-instant",
+    model="groq/llama-3.3-70b-versatile",
     api_key=os.getenv("GROQ_API_KEY_2")
 )
 
-# 4. Groq (Llama 3.3 70B Versatile) - Cloud
+# 4. Groq (Backup / Alternative)
 groq_gemma = LLM(
-    model="groq/llama-3.3-70b-versatile",
+    model="groq/llama-3.1-8b-instant",
     api_key=os.getenv("GROQ_API_KEY")
 )
 
