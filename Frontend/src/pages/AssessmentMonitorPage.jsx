@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
+    Activity, Heart, Thermometer, ShieldAlert, CheckCircle, Loader2,
     Video, Mic, MicOff, Send, Phone, Clock, FileText, User, Sparkles, Utensils, ShieldCheck, Trash2, MessageSquare
 } from 'lucide-react';
 import client from '../api/client';
