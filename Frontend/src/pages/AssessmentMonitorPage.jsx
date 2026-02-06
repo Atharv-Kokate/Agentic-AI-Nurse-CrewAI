@@ -405,7 +405,8 @@ const AssessmentMonitorPage = () => {
             setTasks(response.data); // Update with new tasks
         } catch (error) {
             console.error("Failed to generate plan", error);
-            alert("Failed to generate plan. Please try again.");
+            const msg = error.response?.data?.detail || "Failed to generate plan. Please try again.";
+            alert(msg);
         } finally {
             setGeneratingPlan(false);
         }

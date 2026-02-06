@@ -163,8 +163,8 @@ def generate_daily_tasks(
                  json_content = json.loads(output_str)
         except Exception as e:
             print(f"JSON Parse Error: {e} - Content: {output_str}")
-            # Fallback for debugging
-            raise HTTPException(status_code=500, detail="AI Agent failed to generate valid JSON task list.")
+            # Return the raw content in the error for debugging
+            raise HTTPException(status_code=500, detail=f"AI Output Parse Error: {str(e)}. Raw Output: {output_str[:200]}...")
 
         generated_tasks = []
         today = date.today()
