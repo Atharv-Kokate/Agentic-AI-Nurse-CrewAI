@@ -39,7 +39,7 @@ const AssessmentMonitorPage = () => {
         // 1. Initial REST Fetch (for immediate state)
         const fetchStatus = async () => {
             try {
-                const response = await client.get(`/ status / ${patientId} `);
+                const response = await client.get(`/status/${patientId}`);
                 const data = response.data;
                 if (isMounted) handleStatusUpdate(data);
             } catch (error) {
