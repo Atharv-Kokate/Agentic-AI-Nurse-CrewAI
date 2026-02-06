@@ -147,7 +147,6 @@ class MedicalTasks:
             ),
             agent=agent,
             context=context,
-            context=context,
             # output_pydantic=ActionDecisionOutput # DISABLED: Processed by robust clean_json_string in main.py
         )
 
