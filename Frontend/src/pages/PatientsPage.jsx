@@ -74,7 +74,7 @@ const PatientsPage = () => {
                             animate={{ opacity: 1, y: 0 }}
                             whileHover={{ y: -2 }}
                             className="glass-panel rounded-xl p-5 cursor-pointer transition-shadow hover:shadow-md"
-                            onClick={() => navigate(`/assessments/new`)} // Ideally go to details page
+                            onClick={() => navigate(`/assessments/monitor/${patient.id}`)} // Go to Monitor/Detail page
                         >
                             <div className="flex items-start justify-between">
                                 <div className="flex items-center gap-3">
