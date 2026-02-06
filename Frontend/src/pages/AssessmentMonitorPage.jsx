@@ -411,6 +411,26 @@ const AssessmentMonitorPage = () => {
         }
     };
 
+    // Manual Task State
+    const [isAddingManual, setIsAddingManual] = useState(false);
+    const [manualTask, setManualTask] = useState({ description: '', category: 'General' });
+
+    const handleAddManualTask = async () => {
+        if (!manualTask.description.trim()) return;
+        try {
+            const response = await client.post(`/tasks/${patientId}/manual`, {
+                task_description: manualTask.description,
+                category: manualTask.category
+            });
+            setTasks([...tasks, response.data]);
+            setManualTask({ description: '', category: 'General' });
+            setIsAddingManual(false);
+        } catch (error) {
+            console.error("Failed to add task manually", error);
+            alert("Failed to add task.");
+        }
+    };
+
     return (
         <div className="mx-auto max-w-3xl pb-12">
             <div className="mb-6 flex items-center justify-between">
@@ -567,6 +587,8 @@ const AssessmentMonitorPage = () => {
                             </button>
                         </div>
 
+
+
                         {/* Toolbar */}
                         <div className="flex justify-between items-center mb-4 bg-slate-50 p-3 rounded-lg">
                             <div className="text-sm font-medium text-slate-700">
@@ -582,13 +604,53 @@ const AssessmentMonitorPage = () => {
                                     Generate AI Plan
                                 </button>
                                 <button
-                                    onClick={() => alert("Manual add feature coming soon!")}
-                                    className="bg-white border border-slate-300 text-slate-700 px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-slate-50"
+                                    onClick={() => setIsAddingManual(!isAddingManual)}
+                                    className={cn(
+                                        "px-3 py-1.5 rounded-lg text-sm font-medium transition border",
+                                        isAddingManual
+                                            ? "bg-slate-200 text-slate-700 border-slate-300"
+                                            : "bg-white border-slate-300 text-slate-700 hover:bg-slate-50"
+                                    )}
                                 >
-                                    + Add Manual
+                                    {isAddingManual ? "Cancel" : "+ Add Manual"}
                                 </button>
                             </div>
                         </div>
+
+                        {/* Manual Entry Form */}
+                        {isAddingManual && (
+                            <div className="mb-4 bg-slate-50 p-4 rounded-lg border border-slate-200 animate-in fade-in slide-in-from-top-2">
+                                <h3 className="text-sm font-bold text-slate-700 mb-2">New Manual Task</h3>
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        placeholder="e.g. Drink 2L of water..."
+                                        className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                                        value={manualTask.description}
+                                        onChange={(e) => setManualTask({ ...manualTask, description: e.target.value })}
+                                        autoFocus
+                                    />
+                                    <select
+                                        className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none bg-white"
+                                        value={manualTask.category}
+                                        onChange={(e) => setManualTask({ ...manualTask, category: e.target.value })}
+                                    >
+                                        <option value="General">General</option>
+                                        <option value="Diet">Diet</option>
+                                        <option value="Exercise">Exercise</option>
+                                        <option value="Lifestyle">Lifestyle</option>
+                                        <option value="Medication">Medication</option>
+                                    </select>
+                                    <button
+                                        onClick={handleAddManualTask}
+                                        disabled={!manualTask.description.trim()}
+                                        className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-indigo-700 disabled:opacity-50"
+                                    >
+                                        Add
+                                    </button>
+                                </div>
+                            </div>
+                        )}
 
                         <div className="overflow-y-auto flex-1 pr-2">
                             {loadingTasks ? (

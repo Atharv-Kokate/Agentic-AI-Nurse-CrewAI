@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Activity, Calendar, Clock, AlertTriangle, CheckCircle, Plus, Copy, Sparkles, Utensils } from 'lucide-react';
+import { Activity, Calendar, Clock, AlertTriangle, CheckCircle, Plus, Copy, Sparkles, Utensils, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import client from '../api/client';
 import { cn } from '../utils/cn';
@@ -40,6 +40,21 @@ const PatientDashboardPage = () => {
             if (wsRef.current) wsRef.current.close();
         };
     }, []);
+
+    const [generatingPlan, setGeneratingPlan] = useState(false);
+
+    const generateAiPlan = async () => {
+        setGeneratingPlan(true);
+        try {
+            const response = await client.post(`/tasks/generate/${patient.id}`);
+            setTasks(response.data); // Update with new tasks
+        } catch (error) {
+            console.error("Failed to generate plan", error);
+            alert("Failed to generate plan. Please try again.");
+        } finally {
+            setGeneratingPlan(false);
+        }
+    };
 
     const toggleTaskStatus = async (taskId, currentStatus) => {
         const newStatus = currentStatus === 'COMPLETED' ? 'PENDING' : 'COMPLETED';
@@ -196,7 +211,15 @@ const PatientDashboardPage = () => {
                 {tasks.length === 0 ? (
                     <div className="text-center py-8 text-slate-500 bg-slate-50 rounded-lg">
                         <Sparkles className="h-6 w-6 mx-auto mb-2 text-slate-400" />
-                        <p>No tasks assigned for today.</p>
+                        <p className="mb-3">No tasks assigned for today.</p>
+                        <button
+                            onClick={generateAiPlan}
+                            disabled={generatingPlan}
+                            className="inline-flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 transition disabled:opacity-50"
+                        >
+                            {generatingPlan ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                            Generate My Plan
+                        </button>
                     </div>
                 ) : (
                     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
