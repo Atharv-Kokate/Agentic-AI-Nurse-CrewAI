@@ -13,7 +13,7 @@ from medical_agents.crew import MedicalCrew
 import json
 
 router = APIRouter(
-    prefix="/tasks",
+    prefix="/api/v1/tasks",
     tags=["tasks"]
 )
 
