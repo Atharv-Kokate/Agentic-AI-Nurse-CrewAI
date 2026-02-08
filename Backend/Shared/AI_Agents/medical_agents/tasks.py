@@ -40,6 +40,8 @@ class MedicalTasks:
             ),
             agent=agent
         )
+##"6. EVEN IF VITALS ARE CRITICAL: You may ask up to 2 high-priority questions to confirm the severity or nature of the symptoms. Do not incorrectly assume you have 'enough info' just because vitals are high."
+
 
     def symptom_inquiry_task(self, agent, context):
         return Task(
@@ -54,6 +56,7 @@ class MedicalTasks:
                 "   - If the patient's 'reported_symptoms' already covers the question (e.g., they said 'chest pain', don't ask 'do you have chest pain'), DO NOT ASK IT AGAIN.\n"
                 "5. ASK ONLY NEW QUESTIONS: Formulate your questions based ONLY on missing information from the protocol.\n"
                 "6. Stop immediately if you identify a medical emergency or have enough info."
+                
             ),
             expected_output=(
                 "A JSON object containing:\n"

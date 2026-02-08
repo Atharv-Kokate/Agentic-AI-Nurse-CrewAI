@@ -12,7 +12,7 @@ class GoogleGeminiEmbeddingFunction(embedding_functions.EmbeddingFunction):
     Custom embedding function using Google Gemini API (REST).
     Avoids dependency hell with langchain/google-genai libraries.
     """
-    def __init__(self, api_key: str, model_name: str = "models/text-embedding-004"):
+    def __init__(self, api_key: str, model_name: str = "models/gemini-embedding-001"):
         self.api_key = api_key
         self.model_name = model_name
         self.api_url = f"https://generativelanguage.googleapis.com/v1beta/{model_name}:batchEmbedContents?key={api_key}"

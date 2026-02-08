@@ -399,6 +399,100 @@ function CaretakerDashboardPage() {
                     </div>
                 </div>
             )}
+            {/* Task Verification Modal */}
+            {showTaskModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+                    <div className="bg-white rounded-xl p-6 w-full max-w-2xl max-h-[80vh] flex flex-col">
+                        <div className="flex justify-between items-center mb-6">
+                            <h2 className="text-xl font-bold">Daily Tasks Verification</h2>
+                            <button onClick={() => setShowTaskModal(false)} className="text-slate-400 hover:text-slate-600">
+                                ✕
+                            </button>
+                        </div>
+
+                        <div className="overflow-y-auto flex-1 pr-2">
+                            {loadingTasks ? (
+                                <div className="text-center py-8">Loading tasks...</div>
+                            ) : tasks.length === 0 ? (
+                                <div className="text-center py-8 text-slate-500 bg-slate-50 rounded-lg">
+                                    No tasks assigned for today.
+                                </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    {tasks.map((task) => (
+                                        <div key={task.id} className="p-4 border border-slate-100 rounded-lg hover:bg-slate-50 shadow-sm">
+                                            <div className="flex justify-between items-start mb-3">
+                                                <div>
+                                                    <span className="inline-block px-2 py-0.5 rounded text-xs font-semibold bg-blue-50 text-blue-600 mb-1">
+                                                        {task.category}
+                                                    </span>
+                                                    <p className="font-semibold text-slate-900">{task.task_description}</p>
+                                                </div>
+                                                <div className="text-right">
+                                                    <div className="text-xs text-slate-500 mb-1">Patient Status</div>
+                                                    {task.status_patient === 'COMPLETED' ? (
+                                                        <span className="text-green-600 font-medium text-sm flex items-center gap-1 justify-end">
+                                                            ✓ Done
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-amber-600 font-medium text-sm flex items-center gap-1 justify-end">
+                                                            ○ Pending
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            <div className="border-t pt-3 flex items-center justify-between">
+                                                <div className="text-sm">
+                                                    <span className="text-slate-500 mr-2">Verification:</span>
+                                                    {task.status_caretaker === 'VALIDATED' ? (
+                                                        <span className="text-green-700 font-semibold">Verified ✅</span>
+                                                    ) : (
+                                                        <span className="text-slate-400 italic">Unverified</span>
+                                                    )}
+                                                </div>
+
+                                                <div className="flex gap-2">
+                                                    {task.status_caretaker !== 'VALIDATED' && (
+                                                        <button
+                                                            onClick={() => validateTask(task.id, 'VALIDATED')}
+                                                            disabled={task.status_patient !== 'COMPLETED'}
+                                                            className={`px-4 py-1.5 rounded-lg text-sm font-medium transition ${task.status_patient === 'COMPLETED'
+                                                                    ? 'bg-green-600 text-white hover:bg-green-700'
+                                                                    : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                                                                }`}
+                                                            title={task.status_patient !== 'COMPLETED' ? "Patient must complete task first" : "Verify this task"}
+                                                        >
+                                                            Verify
+                                                        </button>
+                                                    )}
+
+                                                    {task.status_caretaker === 'VALIDATED' && (
+                                                        <button
+                                                            onClick={() => validateTask(task.id, 'PENDING')}
+                                                            className="text-xs text-red-500 hover:text-red-700 underline"
+                                                        >
+                                                            Revoke
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                        <div className="mt-6 pt-4 border-t flex justify-end">
+                            <button
+                                onClick={() => setShowTaskModal(false)}
+                                className="text-slate-600 hover:bg-slate-100 px-4 py-2 rounded-lg"
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
