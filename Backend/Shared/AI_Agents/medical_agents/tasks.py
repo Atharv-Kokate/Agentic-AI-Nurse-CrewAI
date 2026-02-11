@@ -55,7 +55,8 @@ class MedicalTasks:
                 "   - If the patient has already provided the answer (e.g., 'known_conditions' answers 'history'), DO NOT ASK IT AGAIN.\n"
                 "   - If the patient's 'reported_symptoms' already covers the question (e.g., they said 'chest pain', don't ask 'do you have chest pain'), DO NOT ASK IT AGAIN.\n"
                 "5. ASK ONLY NEW QUESTIONS: Formulate your questions based ONLY on missing information from the protocol.\n"
-                "6. Stop immediately if you identify a medical emergency or have enough info."
+                "6. You should ask atleast 2 relevant questions from the KNOWLEDGE BASE which you feel should be must asked to the patient which doctor would have must asked to patient"
+                "7. Stop if you identify a medical emergency or have enough info but if you feel more context needs to be added the definitely use the KNOWLEDGE BASE for asking questions according to protocols and symptoms."
                 
             ),
             expected_output=(
