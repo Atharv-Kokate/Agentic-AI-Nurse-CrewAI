@@ -236,7 +236,8 @@ async def run_crew_background(crew_input: dict, patient_id_str: str):
         from datetime import timedelta
         
         # 1. Medication History
-        since = datetime.utcnow() - timedelta(days=3)
+        current_time = datetime.utcnow()
+        since = current_time - timedelta(days=3)
         med_logs = db.query(MedicationLog).filter(
             MedicationLog.patient_id == patient_id_str,
             MedicationLog.created_at >= since
@@ -248,12 +249,17 @@ async def run_crew_background(crew_input: dict, patient_id_str: str):
             for log in med_logs:
                 # Format: "2024-01-01 08:00: Metformin (500mg) - TAKEN"
                 scheduled = log.scheduled_time.strftime("%Y-%m-%d %H:%M")
-                status_upper = log.status.upper()
-                lines.append(f"- [{scheduled}] {log.medicine_name} - Status: {status_upper}")
+                status = log.status.upper()
+                
+                # Intelligent Overdue Check
+                if status == "PENDING" and log.scheduled_time < current_time:
+                    status = "MISSED (Overdue)"
+                
+                lines.append(f"- [{scheduled}] {log.medicine_name} - Status: {status}")
             med_history_str = "\n".join(lines)
 
         # 2. Daily Task Adherence (Today)
-        today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+        today_start = current_time.replace(hour=0, minute=0, second=0, microsecond=0)
         daily_tasks = db.query(DailyTask).filter(
             DailyTask.patient_id == patient_id_str,
             DailyTask.scheduled_date >= today_start
@@ -263,10 +269,17 @@ async def run_crew_background(crew_input: dict, patient_id_str: str):
         if daily_tasks:
             lines = []
             for task in daily_tasks:
-                # Focus on non-completed tasks or specifically failed ones
                 status = task.status_patient.upper()
+                
+                # Check Caretaker Status First
                 if task.status_caretaker == "REFUSED":
                     status = "REFUSED BY CARETAKER"
+                elif status == "PENDING":
+                     # If end of day is approaching (e.g. it's 8PM) and still pending? 
+                     # Or just list as pending. Let's mark as INCOMPLETE if it's PENDING
+                     # Actually, for tasks, PENDING is fine, but let's be explicit
+                     status = "PENDING (Not Completed)"
+                
                 lines.append(f"- {task.category}: {task.task_description} (Status: {status})")
             task_history_str = "\n".join(lines)
             
