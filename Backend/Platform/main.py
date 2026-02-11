@@ -232,9 +232,10 @@ async def run_crew_background(crew_input: dict, patient_id_str: str):
         medical_crew = MedicalCrew(patient_id=patient_id_str)
         
         # --- NEW: Fetch Medication History (Last 3 days) ---
-        from database.models import MedicationLog
+        from database.models import MedicationLog, DailyTask
         from datetime import timedelta
         
+        # 1. Medication History
         since = datetime.utcnow() - timedelta(days=3)
         med_logs = db.query(MedicationLog).filter(
             MedicationLog.patient_id == patient_id_str,
@@ -247,31 +248,62 @@ async def run_crew_background(crew_input: dict, patient_id_str: str):
             for log in med_logs:
                 # Format: "2024-01-01 08:00: Metformin (500mg) - TAKEN"
                 scheduled = log.scheduled_time.strftime("%Y-%m-%d %H:%M")
-                lines.append(f"- {scheduled}: {log.medicine_name} - {log.status}")
+                status_upper = log.status.upper()
+                lines.append(f"- [{scheduled}] {log.medicine_name} - Status: {status_upper}")
             med_history_str = "\n".join(lines)
+
+        # 2. Daily Task Adherence (Today)
+        today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+        daily_tasks = db.query(DailyTask).filter(
+            DailyTask.patient_id == patient_id_str,
+            DailyTask.scheduled_date >= today_start
+        ).all()
+
+        task_history_str = "No tasks assigned for today."
+        if daily_tasks:
+            lines = []
+            for task in daily_tasks:
+                # Focus on non-completed tasks or specifically failed ones
+                status = task.status_patient.upper()
+                if task.status_caretaker == "REFUSED":
+                    status = "REFUSED BY CARETAKER"
+                lines.append(f"- {task.category}: {task.task_description} (Status: {status})")
+            task_history_str = "\n".join(lines)
             
-        logger.info(f"Fetched Med History for AI: {med_history_str[:100]}...")
+        logger.info(f"Fetched Context: Meds={len(med_logs)}, Tasks={len(daily_tasks)}")
         # ----------------------------------------------------
 
         # Format input for LLM clarity to avoid hallucinations/history confusion
-        history_str = json.dumps(crew_input.get('recent_vitals_history', []), indent=2)
+        # RE-ENABLE HISTORY: Format as TEXT logs, not JSON
+        vitals_history_str = "No recent vitals history."
+        if crew_input.get('recent_vitals_history'):
+            lines = []
+            for item in crew_input.get('recent_vitals_history'):
+                lines.append(f"- [{item['date']}] BP: {item['bp']} | HR: {item['hr']} | Sugar: {item['sugar']}")
+            vitals_history_str = "\n".join(lines)
+
         formatted_input = (
             f"Analyze this PATIENT DATA:\n\n"
-            f"[CURRENT VITALS]\n"
+            f"[CURRENT VITALS & CLINICAL STATUS]\n"
             f"Name: {crew_input.get('name')}\n"
             f"Age: {crew_input.get('age')}\n"
             f"Gender: {crew_input.get('gender')}\n"
             f"Blood Pressure: {crew_input.get('blood_pressure')}\n"
             f"Heart Rate: {crew_input.get('heart_rate')}\n"
             f"Blood Sugar: {crew_input.get('blood_sugar')}\n"
-            f"Meds Taken: {crew_input.get('meds_taken')}\n"
+            f"Meds Taken (Self-Reported): {crew_input.get('meds_taken')}\n"
             f"Known Conditions: {crew_input.get('known_conditions')}\n"
-            f"Current Medications: {crew_input.get('current_medications')}\n"
+            f"Current Medications List: {crew_input.get('current_medications')}\n"
             f"Reported Symptoms: {crew_input.get('reported_symptoms')}\n\n"
-            f"[RECENT VITALS HISTORY]\n"
-            f"{history_str}\n\n"
-            f"[RECENT MEDICATION ADHERENCE (Last 3 Days)]\n"
-            f"{med_history_str}"
+            f"========================================\n"
+            f"[HISTORICAL VITALS LOG (Last 5 checks)]\n"
+            f"(Use for trend analysis only. DO NOT confuse with current status)\n"
+            f"{vitals_history_str}\n\n"
+            f"[MEDICATION ADHERENCE LOG (Last 3 Days)]\n"
+            f"{med_history_str}\n\n"
+            f"[DAILY LIFESTYLE TASKS (Today)]\n"
+            f"{task_history_str}\n"
+            f"========================================"
         )
         
         logger.info(f"--- CREW INPUT START ---\n{formatted_input}\n--- CREW INPUT END ---")

@@ -66,8 +66,8 @@ class MedicalCrew:
         
         print("\n[2/5] Running Symptom Inquiry Agent...")
         # Manually inject context since separate Crews might break Task.context sharing
-        # CRITICAL FIX: Inject ORIGINAL PATIENT DATA so this agent doesn't rely solely on the previous agent's summary
-        symptom_inquiry.description += f"\n\n[ORIGINAL PATIENT DATA]:\n{patient_data}\n\n[CONTEXT - VITAL ANALYSIS]:\n{out1}"
+        # CRITICAL FIX: Inject ORIGINAL PATIENT DATA (which now includes history/meds) so this agent doesn't rely solely on the previous agent's summary
+        symptom_inquiry.description += f"\n\n[ORIGINAL PATIENT DATA & HISTORY]:\n{patient_data}\n\n[CONTEXT - VITAL ANALYSIS]:\n{out1}"
         
         c2 = Crew(agents=[interviewer_agent], tasks=[symptom_inquiry], verbose=True)
         res2 = self.kickoff_with_retry(c2, "Symptom Inquiry")
@@ -78,7 +78,7 @@ class MedicalCrew:
 
         print("\n[3/5] Running Context Aggregation Agent...")
         # Inject previous contexts AND original data
-        aggregation.description += f"\n\n[ORIGINAL PATIENT DATA]:\n{patient_data}\n\n[CONTEXT - VITAL ANALYSIS]:\n{out1}\n\n[CONTEXT - SYMPTOM INQUIRY]:\n{out2}"
+        aggregation.description += f"\n\n[ORIGINAL PATIENT DATA & HISTORY]:\n{patient_data}\n\n[CONTEXT - VITAL ANALYSIS]:\n{out1}\n\n[CONTEXT - SYMPTOM INQUIRY]:\n{out2}"
         
         c3 = Crew(agents=[aggregator_agent], tasks=[aggregation], verbose=True)
         res3 = self.kickoff_with_retry(c3, "Context Aggregation")
@@ -89,7 +89,7 @@ class MedicalCrew:
 
         print("\n[4/5] Running Risk Assessment Agent...")
         # Inject Ground Truth again
-        risk_assessment.description += f"\n\n[ORIGINAL PATIENT DATA]:\n{patient_data}\n\n[CONTEXT - CLINICAL AGGREGATION]:\n{out3}"
+        risk_assessment.description += f"\n\n[ORIGINAL PATIENT DATA & HISTORY]:\n{patient_data}\n\n[CONTEXT - CLINICAL AGGREGATION]:\n{out3}"
         
         c4 = Crew(agents=[risk_agent], tasks=[risk_assessment], verbose=True)
         risk_result = self.kickoff_with_retry(c4, "Risk Assessment")
@@ -99,7 +99,7 @@ class MedicalCrew:
         out4 = get_output_str(risk_result)
 
         print("\n[5/5] Running Decision & Action Agent...")
-        decision_making.description += f"\n\n[CONTEXT - RISK ASSESSMENT]:\n{out4}"
+        decision_making.description += f"\n\n[ORIGINAL PATIENT DATA & HISTORY]:\n{patient_data}\n\n[CONTEXT - RISK ASSESSMENT]:\n{out4}"
         
         c5 = Crew(agents=[decision_agent], tasks=[decision_making], verbose=True)
         decision_result = self.kickoff_with_retry(c5, "Decision Action")
