@@ -300,20 +300,29 @@ function CaretakerDashboardPage() {
                                             {/* Action Buttons */}
                                             <div className="flex items-center gap-2">
                                                 {log.status === 'TAKEN' ? (
-                                                    <span className="flex items-center gap-1 text-green-600 font-bold bg-green-50 px-3 py-1 rounded-full border border-green-100">
-                                                        ✅ Taken
-                                                    </span>
-                                                ) : log.status === 'MISSED' ? (
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="flex items-center gap-1 text-green-600 font-bold bg-green-50 px-3 py-1 rounded-full border border-green-100">
+                                                            ✅ Taken
+                                                        </span>
+                                                        <button
+                                                            onClick={() => updateMedicationStatus(log.id, 'MISSED')}
+                                                            className="text-xs text-red-500 hover:text-red-700 underline"
+                                                            title="Correct to Missed"
+                                                        >
+                                                            Mark Missed
+                                                        </button>
+                                                    </div>
+                                                ) : log.status === 'MISSED' || log.status === 'SKIPPED' ? (
                                                     <div className="flex items-center gap-2">
                                                         <span className="text-red-600 font-medium bg-red-50 px-3 py-1 rounded-full border border-red-100">
-                                                            ❌ Missed
+                                                            ❌ {log.status === 'SKIPPED' ? 'Skipped' : 'Missed'}
                                                         </span>
-                                                        {/* Allow changing back if mistake? */}
                                                         <button
                                                             onClick={() => updateMedicationStatus(log.id, 'TAKEN')}
                                                             className="text-xs text-blue-600 underline"
+                                                            title="Correct to Taken"
                                                         >
-                                                            Undo
+                                                            Mark Taken
                                                         </button>
                                                     </div>
                                                 ) : (
@@ -447,32 +456,39 @@ function CaretakerDashboardPage() {
                                                     <span className="text-slate-500 mr-2">Verification:</span>
                                                     {task.status_caretaker === 'VALIDATED' ? (
                                                         <span className="text-green-700 font-semibold">Verified ✅</span>
+                                                    ) : task.status_caretaker === 'REFUSED' ? (
+                                                        <span className="text-red-600 font-semibold">Refused ❌</span>
                                                     ) : (
                                                         <span className="text-slate-400 italic">Unverified</span>
                                                     )}
                                                 </div>
 
                                                 <div className="flex gap-2">
-                                                    {task.status_caretaker !== 'VALIDATED' && (
-                                                        <button
-                                                            onClick={() => validateTask(task.id, 'VALIDATED')}
-                                                            disabled={task.status_patient !== 'COMPLETED'}
-                                                            className={`px-4 py-1.5 rounded-lg text-sm font-medium transition ${task.status_patient === 'COMPLETED'
-                                                                    ? 'bg-green-600 text-white hover:bg-green-700'
-                                                                    : 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                                                                }`}
-                                                            title={task.status_patient !== 'COMPLETED' ? "Patient must complete task first" : "Verify this task"}
-                                                        >
-                                                            Verify
-                                                        </button>
+                                                    {task.status_caretaker === 'PENDING' && (
+                                                        <>
+                                                            <button
+                                                                onClick={() => validateTask(task.id, 'VALIDATED')}
+                                                                className="px-3 py-1.5 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition"
+                                                                title="Verify this task"
+                                                            >
+                                                                Verify
+                                                            </button>
+                                                            <button
+                                                                onClick={() => validateTask(task.id, 'REFUSED')}
+                                                                className="px-3 py-1.5 bg-red-100 text-red-700 rounded-lg text-sm font-medium hover:bg-red-200 transition"
+                                                                title="Refuse/Reject this task"
+                                                            >
+                                                                Refuse
+                                                            </button>
+                                                        </>
                                                     )}
 
-                                                    {task.status_caretaker === 'VALIDATED' && (
+                                                    {(task.status_caretaker === 'VALIDATED' || task.status_caretaker === 'REFUSED') && (
                                                         <button
                                                             onClick={() => validateTask(task.id, 'PENDING')}
-                                                            className="text-xs text-red-500 hover:text-red-700 underline"
+                                                            className="text-xs text-slate-500 hover:text-slate-700 underline"
                                                         >
-                                                            Revoke
+                                                            Revoke ({task.status_caretaker})
                                                         </button>
                                                     )}
                                                 </div>
