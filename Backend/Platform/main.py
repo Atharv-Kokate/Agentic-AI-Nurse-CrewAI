@@ -460,6 +460,47 @@ def escalate_to_doctor(
                 "meds_taken": latest_log.meds_taken
             }
 
+        # --- HARD FETCH: Missed Meds & Failed Tasks (Context Guarantee) ---
+        from database.models import MedicationLog, DailyTask
+        from datetime import timedelta
+        
+        # 1. Missed Meds (Last 48 hours)
+        since_48h = datetime.utcnow() - timedelta(hours=48)
+        missed_logs = db.query(MedicationLog).filter(
+            MedicationLog.patient_id == request.patient_id,
+            MedicationLog.created_at >= since_48h,
+            MedicationLog.status.in_(["MISSED", "SKIPPED"])
+        ).all()
+        
+        missed_meds_list = []
+        for log in missed_logs:
+            missed_meds_list.append({
+                "medicine": log.medicine_name,
+                "scheduled": log.scheduled_time.strftime("%Y-%m-%d %H:%M"),
+                "status": log.status
+            })
+
+        # 2. Failed/Pending Tasks (Today)
+        today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+        failed_tasks = db.query(DailyTask).filter(
+            DailyTask.patient_id == request.patient_id,
+            DailyTask.scheduled_date >= today_start,
+            DailyTask.status_patient != "COMPLETED" 
+        ).all()
+
+        failed_tasks_list = []
+        for task in failed_tasks:
+             status = task.status_patient
+             if task.status_caretaker == "REFUSED":
+                 status = "REFUSED_BY_CARETAKER"
+             
+             failed_tasks_list.append({
+                 "task": task.task_description,
+                 "category": task.category,
+                 "status": status
+             })
+        # ------------------------------------------------------------------
+
         payload = {
             "patient_id": str(patient.id),
             "patient_name": patient.name,
@@ -470,7 +511,9 @@ def escalate_to_doctor(
             "summary": summary_text, 
             "doctor_name": "Dr kokate",
             "callback_url": f"{os.getenv('API_BASE_URL', 'https://agentic-nurse.onrender.com')}/api/v1/callbacks/doctor-advice",
-            "vitals": vitals_data 
+            "vitals": vitals_data,
+            "missed_medications": missed_meds_list,
+            "incomplete_tasks": failed_tasks_list
         }
         
         logger.info(f"Triggering N8N Escalation (Manual): {N8N_WEBHOOK}")
