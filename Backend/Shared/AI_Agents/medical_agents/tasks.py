@@ -158,7 +158,7 @@ class MedicalTasks:
             description=(
                 f"Create a daily health plan for the following patient: {patient_data}. "
                 "1. SEARCH the Task Knowledge Base for protocols relevant to the patient's known conditions (e.g., 'Hypertension', 'Diabetes'). "
-                "2. Generate 3-5 specific, actionable tasks for TODAY. "
+                "2. Generate 10 to 12 specific, actionable tasks for TODAY. "
                 "3. Tasks must span categories: Diet, Exercise, Lifestyle, Medication (if applicable). "
                 "4. OUTPUT FORMAT RULE: Return ONLY a JSON list of objects. "
                 "Example: [{\"category\": \"Diet\", \"task_description\": \"Eat a low-sodium lunch...\"}, ...]"

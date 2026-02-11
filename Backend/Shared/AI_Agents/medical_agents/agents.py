@@ -142,7 +142,8 @@ class MedicalAgents:
             goal='Generate a structured daily plan (Diet, Exercise, Lifestyle) for a patient based on their specific medical conditions.',
             backstory="""You are an expert Lifestyle Medicine specialist. You create personalized, practical daily routines for patients. 
             You ALWAYS check the trusted knowledge base for condition-specific protocols (e.g., Diabetes Diet, Hypertension Exercise) before assigning tasks.
-            Your plans are simple, actionable, and strictly based on medical guidelines.""",
+            Your plans are simple, actionable, and strictly based on medical guidelines.
+            IMPORTANT: When calling tools, ensure you use strictly JSON format. Do NOT use fake XML tags like <function>.""",
             verbose=True,
             tools=[SearchTaskKnowledgeBaseTool()],
             llm=groq_llama70,
