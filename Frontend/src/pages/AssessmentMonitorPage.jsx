@@ -9,6 +9,7 @@ import {
 import client from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
 import { cn } from '../utils/cn';
+import VideoCallModal from '../components/VideoCallModal';
 
 const AssessmentMonitorPage = () => {
     const { patientId } = useParams();
@@ -32,6 +33,12 @@ const AssessmentMonitorPage = () => {
 
     // Ref to track last seen interaction ID to avoid reprocessing same q
     const lastInteractionIdRef = useRef(null);
+
+    // WebRTC State
+    const [isVideoCallOpen, setIsVideoCallOpen] = useState(false);
+    const [incomingSignal, setIncomingSignal] = useState(null);
+    const [isInitiator, setIsInitiator] = useState(false);
+
 
     useEffect(() => {
         let isMounted = true;
@@ -85,6 +92,12 @@ const AssessmentMonitorPage = () => {
                     setLocation({ lat: data.latitude, lng: data.longitude });
                 } else if (data.status) {
                     handleStatusUpdate(data);
+                } else if (data.type === 'WEBRTC_SIGNAL') {
+                    if (data.payload) {
+                        setIncomingSignal(data.payload);
+                        setIsInitiator(false);
+                        setIsVideoCallOpen(true);
+                    }
                 }
             } catch (e) {
                 console.error("WS Parse Error", e);
@@ -126,6 +139,20 @@ const AssessmentMonitorPage = () => {
             // setPollingData(null); 
             // Actually, don't clear logic to prevent flashing if we just get a "RUNNING" ping
         }
+    };
+
+    const handleWebRTCSignal = (signal) => {
+        if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+            wsRef.current.send(JSON.stringify({
+                type: 'WEBRTC_SIGNAL',
+                payload: signal
+            }));
+        }
+    };
+
+    const startVideoCall = () => {
+        setIsInitiator(true);
+        setIsVideoCallOpen(true);
     };
 
     const fetchMedicationHistory = async () => {
@@ -465,6 +492,13 @@ const AssessmentMonitorPage = () => {
                     >
                         ❤️ Vitals
                     </button>
+                    <button
+                        onClick={startVideoCall}
+                        className="flex items-center gap-2 px-3 py-1.5 bg-indigo-600 text-white border border-indigo-600 rounded-lg text-sm font-medium hover:bg-indigo-700 shadow-sm transition-all"
+                    >
+                        <Video className="h-4 w-4" />
+                        Video Call
+                    </button>
 
                     <div className={cn(
                         "ml-2 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider",
@@ -488,6 +522,15 @@ const AssessmentMonitorPage = () => {
                     {renderContent()}
                 </motion.div>
             </AnimatePresence>
+
+            <VideoCallModal
+                isOpen={isVideoCallOpen}
+                onClose={() => setIsVideoCallOpen(false)}
+                onSignal={handleWebRTCSignal}
+                incomingSignal={incomingSignal}
+                isInitiator={isInitiator}
+            />
+
 
             {/* Medication History Modal */}
             {showMedicationModal && (

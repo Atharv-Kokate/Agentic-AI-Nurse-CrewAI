@@ -883,6 +883,14 @@ async def websocket_endpoint(websocket: WebSocket, patient_id: str, db: Session 
                         
                 elif data.get("type") == "PING":
                     await websocket.send_json({"type": "PONG"})
+
+                elif data.get("type") == "WEBRTC_SIGNAL":
+                    # Relay the signal to other peers in the room (patient_id)
+                    # We assume 1-on-1 or small group, so broadcast to all others is fine.
+                    # The payload should contain: { type: "WEBRTC_SIGNAL", payload: { ... }, target: ... }
+                    # Ideally we just relay the whole data object.
+                    logger.info(f"Relaying WEBRTC_SIGNAL for {patient_id}")
+                    await manager.broadcast(data, patient_id, exclude=websocket)
                     
         except WebSocketDisconnect:
             manager.disconnect(websocket, patient_id)

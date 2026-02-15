@@ -25,10 +25,12 @@ class ConnectionManager:
                 del self.active_connections[patient_id]
         logger.info(f"WebSocket disconnected for patient {patient_id}")
 
-    async def broadcast(self, message: Dict, patient_id: str):
+    async def broadcast(self, message: Dict, patient_id: str, exclude: WebSocket = None):
         if patient_id in self.active_connections:
             dead_connections = []
             for connection in self.active_connections[patient_id]:
+                if exclude and connection == exclude:
+                    continue
                 try:
                     await connection.send_json(message)
                 except Exception as e:
