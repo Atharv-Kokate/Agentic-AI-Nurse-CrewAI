@@ -4,11 +4,15 @@ import { Phone, PhoneOff, Mic, MicOff, Video, VideoOff, Maximize2, Minimize2 } f
 import webrtcService from '../services/webrtc';
 
 const VideoCallModal = ({ isOpen, onClose, onSignal, incomingSignal, isInitiator }) => {
-    const [callState, setCallState] = useState('IDLE'); // IDLE, CALLING, INCOMING, CONNECTED, ENDED
+    const [callState, setCallState] = useState('IDLE'); // IDLE, CALLING, INCOMING, ANSWERING, CONNECTED, ENDED
     const [isMuted, setIsMuted] = useState(false);
     const [isVideoOff, setIsVideoOff] = useState(false);
     const localVideoRef = useRef(null);
     const remoteVideoRef = useRef(null);
+
+    // WebRTC Buffering
+    const [offerSignal, setOfferSignal] = useState(null);
+    const candidateQueue = useRef([]);
 
     // Initialize based on props
     useEffect(() => {
@@ -16,7 +20,9 @@ const VideoCallModal = ({ isOpen, onClose, onSignal, incomingSignal, isInitiator
             if (isInitiator) {
                 startCall();
             } else if (incomingSignal) {
-                setCallState('INCOMING');
+                // If we open receiving a call, initiate incoming state
+                // But let the main signal handler effect process the signal
+                // setCallState('INCOMING'); 
             }
         } else {
             endCall(false); // Clean up if closed externally
@@ -25,15 +31,32 @@ const VideoCallModal = ({ isOpen, onClose, onSignal, incomingSignal, isInitiator
 
     // Handle incoming signals from parent
     useEffect(() => {
-        if (incomingSignal && isOpen) {
-            if (callState === 'IDLE' && incomingSignal.type === 'offer') {
+        if (!incomingSignal || !isOpen) return;
+
+        console.log("Processing Incoming Signal:", incomingSignal.type);
+
+        if (incomingSignal.type === 'offer') {
+            setOfferSignal(incomingSignal);
+            // Only set INCOMING if we are IDLE (not already answering or connected)
+            if (callState === 'IDLE') {
                 setCallState('INCOMING');
+            }
+        }
+        else if (incomingSignal.type === 'candidate') {
+            // Buffer candidates if we haven't established connection yet
+            if (callState === 'INCOMING' || callState === 'ANSWERING' || callState === 'IDLE') {
+                console.log("Buffering Candidate");
+                candidateQueue.current.push(incomingSignal);
             } else {
-                // Forward other signals (answer, candidate) directly to service
+                // Directly handle if connected (or calling and receiving remote candidates)
                 webrtcService.handleSignal(incomingSignal);
             }
         }
-    }, [incomingSignal]);
+        else if (incomingSignal.type === 'answer') {
+            // If we are the caller, we receive an answer
+            webrtcService.handleSignal(incomingSignal);
+        }
+    }, [incomingSignal, isOpen, callState]);
 
     const startCall = async () => {
         setCallState('CALLING');
@@ -69,7 +92,7 @@ const VideoCallModal = ({ isOpen, onClose, onSignal, incomingSignal, isInitiator
     };
 
     const answerCall = async () => {
-        setCallState('CONNECTED'); // Optimistic
+        setCallState('ANSWERING'); // Show loading/connecting state
         try {
             const stream = await webrtcService.startLocalStream();
             if (localVideoRef.current) localVideoRef.current.srcObject = stream;
@@ -88,10 +111,23 @@ const VideoCallModal = ({ isOpen, onClose, onSignal, incomingSignal, isInitiator
                 }
             };
 
-            // Process the pending offer
-            if (incomingSignal) {
-                await webrtcService.handleSignal(incomingSignal);
+            // 1. Process the original Offer first
+            if (offerSignal) {
+                console.log("Handling Buffered Offer");
+                await webrtcService.handleSignal(offerSignal);
+            } else {
+                console.warn("No offer signal found when answering!");
             }
+
+            // 2. Process Buffered Candidates
+            while (candidateQueue.current.length > 0) {
+                const candidate = candidateQueue.current.shift();
+                console.log("Handling Buffered Candidate");
+                await webrtcService.handleSignal(candidate);
+            }
+
+            setCallState('CONNECTED');
+
         } catch (error) {
             console.error("Failed to answer call:", error);
             endCall();
