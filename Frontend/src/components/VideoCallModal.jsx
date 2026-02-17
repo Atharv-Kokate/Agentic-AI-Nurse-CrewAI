@@ -102,7 +102,12 @@ const VideoCallModal = ({ isOpen, onClose, onSignal, incomingSignal, isInitiator
             };
 
             webrtcService.onRemoteStream = (stream) => {
-                if (remoteVideoRef.current) remoteVideoRef.current.srcObject = stream;
+                console.log("Remote stream received in answerCall");
+                if (remoteVideoRef.current) {
+                    remoteVideoRef.current.srcObject = stream;
+                    remoteVideoRef.current.play().catch(e => console.error("Remote play error", e));
+                }
+                setCallState('CONNECTED'); // Only switch to connected when we have video
             };
 
             webrtcService.onConnectionStateChange = (state) => {
@@ -126,7 +131,7 @@ const VideoCallModal = ({ isOpen, onClose, onSignal, incomingSignal, isInitiator
                 await webrtcService.handleSignal(candidate);
             }
 
-            setCallState('CONNECTED');
+            // setCallState('CONNECTED'); // Removed: Moved to onRemoteStream
 
         } catch (error) {
             console.error("Failed to answer call:", error);

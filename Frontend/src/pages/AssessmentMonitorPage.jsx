@@ -36,7 +36,8 @@ const AssessmentMonitorPage = () => {
 
     // WebRTC State
     const [isVideoCallOpen, setIsVideoCallOpen] = useState(false);
-    const [incomingSignal, setIncomingSignal] = useState(null);
+    // const [incomingSignal, setIncomingSignal] = useState(null); // Replaced by queue
+    const [signalQueue, setSignalQueue] = useState([]);
     const [isInitiator, setIsInitiator] = useState(false);
 
 
@@ -94,7 +95,9 @@ const AssessmentMonitorPage = () => {
                     handleStatusUpdate(data);
                 } else if (data.type === 'WEBRTC_SIGNAL') {
                     if (data.payload) {
-                        setIncomingSignal(data.payload);
+                        // Append to queue
+                        setSignalQueue(prev => [...prev, data.payload]);
+                        // setIncomingSignal(data.payload);
                         setIsInitiator(false);
                         setIsVideoCallOpen(true);
                     }
@@ -527,7 +530,7 @@ const AssessmentMonitorPage = () => {
                 isOpen={isVideoCallOpen}
                 onClose={() => setIsVideoCallOpen(false)}
                 onSignal={handleWebRTCSignal}
-                incomingSignal={incomingSignal}
+                signalQueue={signalQueue}
                 isInitiator={isInitiator}
             />
 
