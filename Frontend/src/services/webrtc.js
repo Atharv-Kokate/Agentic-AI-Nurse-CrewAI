@@ -49,9 +49,12 @@ class WebRTCService {
         // Handle remote tracks
         this.peerConnection.ontrack = (event) => {
             console.log("Remote track received:", event.streams[0]);
-            event.streams[0].getTracks().forEach(track => {
-                this.remoteStream.addTrack(track);
-            });
+
+            if (event.streams && event.streams[0]) {
+                this.remoteStream = event.streams[0];
+            } else {
+                this.remoteStream.addTrack(event.track);
+            }
             this.onRemoteStream && this.onRemoteStream(this.remoteStream);
         };
 
@@ -69,9 +72,8 @@ class WebRTCService {
     }
 
     async handleSignal(data) {
-        if (!this.peerConnection) this.createPeerConnection();
-
         if (data.type === 'offer') {
+            if (!this.peerConnection) this.createPeerConnection();
             this.isSettingRemoteDescription = true;
             try {
                 await this.peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
@@ -85,6 +87,7 @@ class WebRTCService {
                 this.isSettingRemoteDescription = false;
             }
         } else if (data.type === 'answer') {
+            if (!this.peerConnection) this.createPeerConnection();
             this.isSettingRemoteDescription = true;
             try {
                 await this.peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
@@ -97,7 +100,7 @@ class WebRTCService {
         } else if (data.type === 'candidate') {
             if (data.candidate) {
                 // Check if we are ready to add candidate
-                if (this.peerConnection.remoteDescription && this.peerConnection.remoteDescription.type) {
+                if (this.peerConnection && this.peerConnection.remoteDescription && this.peerConnection.remoteDescription.type) {
                     try {
                         await this.peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
                     } catch (e) {
