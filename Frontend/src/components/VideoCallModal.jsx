@@ -114,6 +114,10 @@ const VideoCallModal = ({ isOpen, onClose, onSignal, incomingSignal, signalQueue
             const stream = await webrtcService.startLocalStream();
             if (localVideoRef.current) localVideoRef.current.srcObject = stream;
 
+            // Allow time for state update
+            await new Promise(r => setTimeout(r, 100));
+
+
             webrtcService.onSignal = (signal) => {
                 onSignal(signal);
             };
@@ -152,6 +156,9 @@ const VideoCallModal = ({ isOpen, onClose, onSignal, incomingSignal, signalQueue
 
         } catch (error) {
             console.error("Failed to answer call:", error);
+            if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+                alert("Camera/Microphone permission denied. Please allow access in your browser settings to answer the call.");
+            }
             endCall();
         }
     };
