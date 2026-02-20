@@ -41,31 +41,32 @@ const VideoCallModal = ({ isOpen, onClose, onSignal, incomingSignal, signalQueue
 
         console.log(`Processing ${newSignals.length} new signals from queue`);
 
-        newSignals.forEach(signal => {
-            console.log("Processing Signal:", signal.type);
+        // Use a for...of loop to allow await-ing async operations
+        const processSignals = async () => {
+            for (const signal of newSignals) {
+                console.log("Processing Signal:", signal.type);
 
-            if (signal.type === 'offer') {
-                setOfferSignal(signal);
-                if (callState === 'IDLE') {
-                    setCallState('INCOMING');
+                if (signal.type === 'offer') {
+                    setOfferSignal(signal);
+                    if (callState === 'IDLE') {
+                        setCallState('INCOMING');
+                    }
+                }
+
+                // Pass ALL signals to service - it handles buffering internally
+                if (isInitiator || callState === 'CONNECTED' || callState === 'ANSWERING') {
+                    await webrtcService.handleSignal(signal);
+                }
+
+                // For INCOMING state (receiver), handle candidates if needed
+                // Note: webrtcService buffers candidates if remoteDescription isn't set
+                if (!isInitiator && signal.type === 'candidate') {
+                    await webrtcService.handleSignal(signal);
                 }
             }
+        };
 
-            // Pass ALL signals to service - it now handles buffering internally
-            // This includes candidates that arrive early
-            if (isInitiator || callState === 'CONNECTED' || callState === 'ANSWERING') {
-                webrtcService.handleSignal(signal);
-            }
-            // For INCOMING state (receiver), we wait until they answer to process 'offer'
-            // BUT candidates might need to be buffered by service even before answer?
-            // Actually, we process Offer only when Answer is clicked. 
-            // Candidates arriving before that should be buffered by service if we pass them?
-            // No, if we haven't called handleSignal(offer), remoteDescription isn't set.
-            // So service will buffer candidates.
-            if (!isInitiator && signal.type === 'candidate') {
-                webrtcService.handleSignal(signal);
-            }
-        });
+        processSignals();
 
         // Update tracking ref
         lastProcessedIndex.current = signalQueue.length - 1;
