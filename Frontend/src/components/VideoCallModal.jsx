@@ -13,7 +13,6 @@ const VideoCallModal = ({ isOpen, onClose, onSignal, incomingSignal, signalQueue
     // WebRTC Buffering
     // WebRTC Buffering
     const [offerSignal, setOfferSignal] = useState(null);
-    const candidateQueue = useRef([]);
     const lastProcessedIndex = useRef(-1); // Track processed signals from queue
 
     // Initialize based on props
@@ -51,15 +50,19 @@ const VideoCallModal = ({ isOpen, onClose, onSignal, incomingSignal, signalQueue
                     setCallState('INCOMING');
                 }
             }
-            else if (signal.type === 'candidate') {
-                if (callState === 'INCOMING' || callState === 'ANSWERING' || callState === 'IDLE') {
-                    console.log("Buffering Candidate");
-                    candidateQueue.current.push(signal);
-                } else {
-                    webrtcService.handleSignal(signal);
-                }
+
+            // Pass ALL signals to service - it now handles buffering internally
+            // This includes candidates that arrive early
+            if (isInitiator || callState === 'CONNECTED' || callState === 'ANSWERING') {
+                webrtcService.handleSignal(signal);
             }
-            else if (signal.type === 'answer') {
+            // For INCOMING state (receiver), we wait until they answer to process 'offer'
+            // BUT candidates might need to be buffered by service even before answer?
+            // Actually, we process Offer only when Answer is clicked. 
+            // Candidates arriving before that should be buffered by service if we pass them?
+            // No, if we haven't called handleSignal(offer), remoteDescription isn't set.
+            // So service will buffer candidates.
+            if (!isInitiator && signal.type === 'candidate') {
                 webrtcService.handleSignal(signal);
             }
         });
@@ -145,12 +148,8 @@ const VideoCallModal = ({ isOpen, onClose, onSignal, incomingSignal, signalQueue
                 console.warn("No offer signal found when answering!");
             }
 
-            // 2. Process Buffered Candidates
-            while (candidateQueue.current.length > 0) {
-                const candidate = candidateQueue.current.shift();
-                console.log("Handling Buffered Candidate");
-                await webrtcService.handleSignal(candidate);
-            }
+            // Note: Candidates were already passed to service and buffered there.
+            // Service will auto-process them once offer is set.
 
             // setCallState('CONNECTED'); // Removed: Moved to onRemoteStream
 

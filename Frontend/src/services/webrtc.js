@@ -13,6 +13,8 @@ class WebRTCService {
                 { urls: 'stun:stun1.l.google.com:19302' }
             ]
         };
+        this.candidateBuffer = [];
+        this.isSettingRemoteDescription = false;
     }
 
     async startLocalStream() {
@@ -70,15 +72,54 @@ class WebRTCService {
         if (!this.peerConnection) this.createPeerConnection();
 
         if (data.type === 'offer') {
-            await this.peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
-            const answer = await this.peerConnection.createAnswer();
-            await this.peerConnection.setLocalDescription(answer);
-            this.onSignal && this.onSignal({ type: 'answer', answer: answer });
+            this.isSettingRemoteDescription = true;
+            try {
+                await this.peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
+                const answer = await this.peerConnection.createAnswer();
+                await this.peerConnection.setLocalDescription(answer);
+                this.onSignal && this.onSignal({ type: 'answer', answer: answer });
+
+                // Process buffered candidates
+                this.processCandidateBuffer();
+            } finally {
+                this.isSettingRemoteDescription = false;
+            }
         } else if (data.type === 'answer') {
-            await this.peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
+            this.isSettingRemoteDescription = true;
+            try {
+                await this.peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
+
+                // Process buffered candidates
+                this.processCandidateBuffer();
+            } finally {
+                this.isSettingRemoteDescription = false;
+            }
         } else if (data.type === 'candidate') {
             if (data.candidate) {
-                await this.peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+                // Check if we are ready to add candidate
+                if (this.peerConnection.remoteDescription && this.peerConnection.remoteDescription.type) {
+                    try {
+                        await this.peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+                    } catch (e) {
+                        console.error("Error adding candidate:", e);
+                    }
+                } else {
+                    // Buffer it
+                    console.log("Buffering candidate (no remote description)");
+                    this.candidateBuffer.push(data.candidate);
+                }
+            }
+        }
+    }
+
+    async processCandidateBuffer() {
+        console.log(`Processing ${this.candidateBuffer.length} buffered candidates`);
+        while (this.candidateBuffer.length > 0) {
+            const candidate = this.candidateBuffer.shift();
+            try {
+                await this.peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+            } catch (e) {
+                console.error("Error adding buffered candidate:", e);
             }
         }
     }
@@ -95,6 +136,8 @@ class WebRTCService {
         // Don't clear remote stream object itself, but maybe remove tracks?
         // New instance is better. 
         this.remoteStream = new MediaStream();
+        this.candidateBuffer = [];
+        this.isSettingRemoteDescription = false;
     }
 }
 
