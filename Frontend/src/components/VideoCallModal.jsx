@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Phone, PhoneOff, Mic, MicOff, Video, VideoOff, Maximize2, Minimize2 } from 'lucide-react';
 import webrtcService from '../services/webrtc';
 
-const VideoCallModal = ({ isOpen, onClose, onSignal, incomingSignal, isInitiator }) => {
+const VideoCallModal = ({ isOpen, onClose, onSignal, incomingSignal, signalQueue = [], isInitiator }) => {
     const [callState, setCallState] = useState('IDLE'); // IDLE, CALLING, INCOMING, ANSWERING, CONNECTED, ENDED
     const [isMuted, setIsMuted] = useState(false);
     const [isVideoOff, setIsVideoOff] = useState(false);
@@ -11,8 +11,10 @@ const VideoCallModal = ({ isOpen, onClose, onSignal, incomingSignal, isInitiator
     const remoteVideoRef = useRef(null);
 
     // WebRTC Buffering
+    // WebRTC Buffering
     const [offerSignal, setOfferSignal] = useState(null);
     const candidateQueue = useRef([]);
+    const lastProcessedIndex = useRef(-1); // Track processed signals from queue
 
     // Initialize based on props
     useEffect(() => {
@@ -29,34 +31,49 @@ const VideoCallModal = ({ isOpen, onClose, onSignal, incomingSignal, isInitiator
         }
     }, [isOpen, isInitiator]);
 
-    // Handle incoming signals from parent
+    // Handle incoming signals from parent (QUEUE BASED)
+    useEffect(() => {
+        if (!isOpen || signalQueue.length === 0) return;
+
+        // Only process new signals we haven't seen yet
+        const newSignals = signalQueue.slice(lastProcessedIndex.current + 1);
+
+        if (newSignals.length === 0) return;
+
+        console.log(`Processing ${newSignals.length} new signals from queue`);
+
+        newSignals.forEach(signal => {
+            console.log("Processing Signal:", signal.type);
+
+            if (signal.type === 'offer') {
+                setOfferSignal(signal);
+                if (callState === 'IDLE') {
+                    setCallState('INCOMING');
+                }
+            }
+            else if (signal.type === 'candidate') {
+                if (callState === 'INCOMING' || callState === 'ANSWERING' || callState === 'IDLE') {
+                    console.log("Buffering Candidate");
+                    candidateQueue.current.push(signal);
+                } else {
+                    webrtcService.handleSignal(signal);
+                }
+            }
+            else if (signal.type === 'answer') {
+                webrtcService.handleSignal(signal);
+            }
+        });
+
+        // Update tracking ref
+        lastProcessedIndex.current = signalQueue.length - 1;
+
+    }, [signalQueue, isOpen, callState]);
+
+    // Handle legacy incoming signals (single) - Keep for backward compat if needed
     useEffect(() => {
         if (!incomingSignal || !isOpen) return;
-
-        console.log("Processing Incoming Signal:", incomingSignal.type);
-
-        if (incomingSignal.type === 'offer') {
-            setOfferSignal(incomingSignal);
-            // Only set INCOMING if we are IDLE (not already answering or connected)
-            if (callState === 'IDLE') {
-                setCallState('INCOMING');
-            }
-        }
-        else if (incomingSignal.type === 'candidate') {
-            // Buffer candidates if we haven't established connection yet
-            if (callState === 'INCOMING' || callState === 'ANSWERING' || callState === 'IDLE') {
-                console.log("Buffering Candidate");
-                candidateQueue.current.push(incomingSignal);
-            } else {
-                // Directly handle if connected (or calling and receiving remote candidates)
-                webrtcService.handleSignal(incomingSignal);
-            }
-        }
-        else if (incomingSignal.type === 'answer') {
-            // If we are the caller, we receive an answer
-            webrtcService.handleSignal(incomingSignal);
-        }
-    }, [incomingSignal, isOpen, callState]);
+        // ... (Legacy logic kept but likely unused if queue is used)
+    }, [incomingSignal, isOpen]);
 
     const startCall = async () => {
         setCallState('CALLING');
