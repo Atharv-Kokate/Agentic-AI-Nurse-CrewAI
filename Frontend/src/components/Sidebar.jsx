@@ -49,11 +49,15 @@ const Sidebar = ({ isOpen, onClose }) => {
             `}>
                 <div className="flex h-16 items-center justify-between px-6 border-b border-slate-100">
                     <div className="flex items-center gap-2">
-                        <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-sky-500 to-teal-400 flex items-center justify-center text-white font-bold shadow-sm">
-                            AI
+                        <div className="flex items-center justify-center">
+                            <img
+                                src="/pwa-192x192.png"
+                                alt="Logo"
+                                className="h-8 w-8 rounded-lg object-cover shadow-sm"
+                            />
                         </div>
                         <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-sky-600 to-teal-500">
-                            NurseAgent
+                            अविरल
                         </span>
                     </div>
                     {/* Close Button (Mobile Only) */}
