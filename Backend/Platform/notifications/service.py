@@ -78,7 +78,7 @@ class NotificationService:
 
         try:
             if FIREBASE_INITIALIZED:
-                response = messaging.send_multicast(message)
+                response = messaging.send_each_for_multicast(message)
                 status = "SENT" if response.success_count > 0 else "FAILED_FCM_ERROR"
             else:
                 print(f"[MOCK PUSH] To: {fcm_tokens} | {title} - {body} | Data: {data}")
