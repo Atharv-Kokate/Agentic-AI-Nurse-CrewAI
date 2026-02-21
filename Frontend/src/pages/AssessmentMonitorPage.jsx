@@ -4,7 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Activity, Heart, Thermometer, ShieldAlert, CheckCircle, Loader2,
-    Video, Mic, MicOff, Send, Phone, Clock, FileText, User, Sparkles, Utensils, ShieldCheck, Trash2, MessageSquare
+    Video, Mic, MicOff, Send, Phone, Clock, FileText, User, Sparkles, Utensils, ShieldCheck, Trash2, MessageSquare, PhoneCall, AlertTriangle
 } from 'lucide-react';
 import client from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
@@ -40,6 +40,10 @@ const AssessmentMonitorPage = () => {
     // const [incomingSignal, setIncomingSignal] = useState(null); // Replaced by queue
     const [signalQueue, setSignalQueue] = useState([]);
     const [isInitiator, setIsInitiator] = useState(false);
+
+    // Emergency Call State
+    const [showSOSModal, setShowSOSModal] = useState(false);
+    const emergencyNumber = import.meta.env.VITE_EMERGENCY_NUMBER || '+91108';
 
 
     useEffect(() => {
@@ -798,6 +802,49 @@ const AssessmentMonitorPage = () => {
                                 className="text-slate-600 hover:bg-slate-100 px-4 py-2 rounded-lg"
                             >
                                 Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {/* Contextual SOS Button */}
+            <button
+                onClick={() => setShowSOSModal(true)}
+                className="fixed bottom-6 right-6 md:bottom-8 md:right-8 bg-red-600 hover:bg-red-700 text-white p-4 rounded-full shadow-2xl flex items-center justify-center transition-all hover:scale-110 active:scale-95 z-40 group"
+                aria-label="Emergency Call"
+            >
+                <PhoneCall className="h-6 w-6 sm:h-8 sm:w-8 animate-pulse" />
+                <span className="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-xs transition-all duration-300 ease-in-out font-bold text-sm ml-0 group-hover:ml-3">
+                    Call Ambulance
+                </span>
+            </button>
+
+            {/* SOS Confirmation Modal */}
+            {showSOSModal && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+                    <div className="bg-white rounded-2xl p-6 w-full max-w-sm text-center shadow-xl animate-in zoom-in-95">
+                        <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-4">
+                            <AlertTriangle className="h-8 w-8 text-red-600" />
+                        </div>
+                        <h2 className="text-2xl font-bold text-slate-900 mb-2">Emergency Call</h2>
+                        <p className="text-slate-500 text-sm mb-6">
+                            Are you sure you want to dial emergency services ({emergencyNumber})?
+                        </p>
+
+                        <div className="flex flex-col gap-3">
+                            <a
+                                href={`tel:${emergencyNumber}`}
+                                onClick={() => setShowSOSModal(false)}
+                                className="w-full flex items-center justify-center gap-2 bg-red-600 text-white font-bold py-3 px-4 rounded-xl hover:bg-red-700 active:bg-red-800 transition-colors shadow-lg shadow-red-600/20"
+                            >
+                                <PhoneCall className="h-5 w-5" />
+                                Yes, Call Now
+                            </a>
+                            <button
+                                onClick={() => setShowSOSModal(false)}
+                                className="w-full font-semibold text-slate-600 py-3 px-4 rounded-xl hover:bg-slate-100 transition-colors"
+                            >
+                                Cancel
                             </button>
                         </div>
                     </div>
