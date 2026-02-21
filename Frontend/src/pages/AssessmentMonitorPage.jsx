@@ -10,6 +10,7 @@ import client from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
 import { cn } from '../utils/cn';
 import VideoCallModal from '../components/VideoCallModal';
+import { getWsUrl } from '../utils/websocket';
 
 const AssessmentMonitorPage = () => {
     const { patientId } = useParams();
@@ -58,25 +59,7 @@ const AssessmentMonitorPage = () => {
         fetchStatus();
 
         // 2. WebSocket Connection
-        // Determine WS Protocol
-        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-
-        // Determine WS Host
-        let host = window.location.host; // Default to current host (for same-domain deployment)
-
-        // If VITE_API_URL is set (e.g. separate backend), extract host from it
-        const apiUrl = import.meta.env.VITE_API_URL;
-        if (apiUrl) {
-            try {
-                const url = new URL(apiUrl);
-                host = url.host;
-            } catch (e) {
-                console.warn("Invalid VITE_API_URL, falling back to window.location.host");
-            }
-        }
-
-        const token = localStorage.getItem('token');
-        const wsUrl = `${protocol}//${host}/ws/${patientId}?token=${token}`;
+        const wsUrl = getWsUrl(patientId);
 
         const ws = new WebSocket(wsUrl);
         wsRef.current = ws;

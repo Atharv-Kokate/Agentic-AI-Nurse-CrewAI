@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import client from '../api/client';
+import { getWsUrl } from '../utils/websocket';
 
 const useLocationTracking = () => {
     const { user } = useAuth();
@@ -29,22 +30,8 @@ const useLocationTracking = () => {
         };
 
         const connectWebSocket = (patientId) => {
-            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-            let host = window.location.host;
-            const apiUrl = import.meta.env.VITE_API_URL;
-            if (apiUrl) {
-                try {
-                    const url = new URL(apiUrl);
-                    host = url.host;
-                } catch (e) {
-                    console.warn("Invalid VITE_API_URL");
-                }
-            }
-
-            const token = localStorage.getItem('token');
-            const wsUrl = `${protocol}//${host}/ws/${patientId}?token=${token}`;
+            const wsUrl = getWsUrl(patientId);
             console.log("DEBUG: WS URL:", wsUrl);
-            if (!apiUrl) console.warn("DEBUG: VITE_API_URL is missing! Fallback to window host.");
 
             console.log("Location Tracking: Connecting WS...");
             setStatus('connecting');
