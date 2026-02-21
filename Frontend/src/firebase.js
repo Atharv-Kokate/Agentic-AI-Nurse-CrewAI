@@ -4,12 +4,12 @@ import { getMessaging, getToken, onMessage } from "firebase/messaging";
 
 // You will provide these credentials later
 const firebaseConfig = {
-  apiKey: "AIzaSyCsEEKPMsVJwvzzurMtLJDZ8gYHhDvag1M",
-  authDomain: "aviral---notification.firebaseapp.com",
-  projectId: "aviral---notification",
-  storageBucket: "aviral---notification.firebasestorage.app",
-  messagingSenderId: "213714315994",
-  appId: "1:213714315994:web:a822db280f4f89e25093e3"
+    apiKey: "AIzaSyCsEEKPMsVJwvzzurMtLJDZ8gYHhDvag1M",
+    authDomain: "aviral---notification.firebaseapp.com",
+    projectId: "aviral---notification",
+    storageBucket: "aviral---notification.firebasestorage.app",
+    messagingSenderId: "213714315994",
+    appId: "1:213714315994:web:a822db280f4f89e25093e3"
 };
 
 // Initialize Firebase
@@ -20,12 +20,20 @@ export const messaging = getMessaging(app);
 
 export const requestForToken = async () => {
     try {
-        const currentToken = await getToken(messaging, { vapidKey: 'BOqy6tuOEJkcVgznUig2jTOBhKUS7tI_Bev6oV5BFRSlD6I9iSUMrSm9GwJ200sWDXvuFnPNb4l_zL9WVCg7yiA' });
-        if (currentToken) {
-            console.log('FCM Token:', currentToken);
-            return currentToken;
+        console.log('Requesting notification permission...');
+        const permission = await Notification.requestPermission();
+        if (permission === 'granted') {
+            console.log('Notification permission granted.');
+            const currentToken = await getToken(messaging, { vapidKey: 'BOqy6tuOEJkcVgznUig2jTOBhKUS7tI_Bev6oV5BFRSlD6I9iSUMrSm9GwJ200sWDXvuFnPNb4l_zL9WVCg7yiA' });
+            if (currentToken) {
+                console.log('FCM Token:', currentToken);
+                return currentToken;
+            } else {
+                console.log('No registration token available. Request permission to generate one.');
+                return null;
+            }
         } else {
-            console.log('No registration token available. Request permission to generate one.');
+            console.log('Unable to get permission to notify.');
             return null;
         }
     } catch (err) {
