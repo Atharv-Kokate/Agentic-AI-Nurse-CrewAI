@@ -10,8 +10,8 @@ const NotificationSetup = () => {
     const [isRegistered, setIsRegistered] = useState(false);
 
     useEffect(() => {
-        // Only show prompt if permission is 'default' (not yet asked)
-        if ('Notification' in window && Notification.permission === 'default') {
+        // Only show prompt if permission is 'default' (not yet asked) AND user is logged in
+        if ('Notification' in window && Notification.permission === 'default' && user) {
             setShowPrompt(true);
         } else if ('Notification' in window && Notification.permission === 'granted') {
             // If already granted, try to register quietly in background
@@ -22,6 +22,11 @@ const NotificationSetup = () => {
     }, [user, token, isRegistered]);
 
     const handleEnableNotifications = async () => {
+        if (!user) {
+            alert("Please log in first to enable notifications!");
+            setShowPrompt(false);
+            return;
+        }
         try {
             const fcmToken = await requestForToken();
             if (fcmToken) {
