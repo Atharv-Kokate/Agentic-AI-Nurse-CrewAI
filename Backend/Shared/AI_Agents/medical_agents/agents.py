@@ -16,24 +16,23 @@ ollama_phi = LLM(
 
 # 3. Groq (Llama 3.1 8B Instant) - Cloud
 # Ensure GROQ_API_KEY is in .env
+# 3. Groq (Llama 3.1 8B Instant) - Cloud
+# Ensure GROQ_API_KEY is in .env
 groq_llama70 = LLM(
     model="groq/llama-3.3-70b-versatile",
-    api_key=os.getenv("GROQ_API_KEY"),
-    temperature=0.0
+    api_key=os.getenv("GROQ_API_KEY")
 )
 
 # 4. Groq (Secondary Key to double rate limits)
 groq_llama70_2 = LLM(
     model="groq/llama-3.3-70b-versatile",
-    api_key=os.getenv("GROQ_API_KEY_2"),
-    temperature=0.0
+    api_key=os.getenv("GROQ_API_KEY_2")
 )
 
-# 5. Groq Fast (Llama 3.1 8B Instant) - Fast & Cheap for Summaries
-groq_fast = LLM(
+# 4. Groq (Backup / Alternative)
+groq_gemma = LLM(
     model="groq/llama-3.1-8b-instant",
-    api_key=os.getenv("GROQ_API_KEY"),
-    temperature=0.0
+    api_key=os.getenv("GROQ_API_KEY")
 )
 
 class MedicalAgents:
@@ -53,8 +52,7 @@ class MedicalAgents:
             verbose=True,
             allow_delegation=False,
             max_rpm=10,
-            max_iter=3,
-            llm=groq_fast # Simple thresholds check, use fast 8B model
+            llm=groq_llama70 # Key 1
         )
 
     def symptom_inquiry_agent(self):
@@ -84,7 +82,6 @@ class MedicalAgents:
             verbose=True,
             allow_delegation=False,
             max_rpm=10,
-            max_iter=3, # Prevent infinite thinking loops which cause 10k token payload blowups
             tools=tools_list,
             llm=groq_llama70_2 # Key 2 (Heavy Tool Usage)
         )
@@ -102,8 +99,7 @@ class MedicalAgents:
             verbose=True,
             allow_delegation=False,
             max_rpm=10,
-            max_iter=3,
-            llm=groq_fast # Simple contextual summary, use fast 8B model
+            llm=groq_llama70 # Key 1
         )
 
     def risk_assessment_agent(self):
@@ -118,8 +114,7 @@ class MedicalAgents:
             verbose=True,
             allow_delegation=False,
             max_rpm=10,
-            max_iter=3,
-            llm=groq_llama70_2 # Key 2 (Needs complex reasoning)
+            llm=groq_llama70_2 # Key 2
         )
 
     def decision_action_agent(self):
@@ -135,8 +130,7 @@ class MedicalAgents:
             verbose=True,
             allow_delegation=False,
             max_rpm=10,
-            max_iter=3,
-            llm=groq_fast # Key 1
+            llm=groq_llama70 # Key 1
         )
 
     def task_planner_agent(self):
