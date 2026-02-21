@@ -13,11 +13,13 @@ import PatientDashboardPage from './pages/PatientDashboardPage';
 import MedicineRemindersPage from './pages/MedicineRemindersPage';
 import DoctorAdvicePage from './pages/DoctorAdvicePage';
 import CaretakerDashboardPage from './pages/CaretakerDashboardPage';
+import NotificationSetup from './components/NotificationSetup';
 import { useAuth } from './contexts/AuthContext';
 
 function App() {
     return (
         <div className="min-h-screen bg-slate-50 text-slate-900 font-sans">
+            <NotificationSetup />
             <Routes>
                 <Route path="/login" element={<LoginPage />} />
 

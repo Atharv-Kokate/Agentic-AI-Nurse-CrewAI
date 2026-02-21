@@ -159,3 +159,26 @@ class DailyTask(Base):
     status_caretaker = Column(String, default="PENDING") # PENDING, VALIDATED, REFUSED
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
     updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+class DeviceToken(Base):
+    __tablename__ = "device_tokens"
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
+    fcm_token = Column(String, nullable=False, unique=True)
+    platform = Column(String, nullable=True) # web, android, ios
+    last_active = Column(DateTime, nullable=False, default=datetime.utcnow)
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    
+    user = sa_relationship("User")
+
+class NotificationLog(Base):
+    __tablename__ = "notification_logs"
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
+    event_type = Column(String, nullable=False) # e.g. HEALTH_CHECKUP_COMPLETED, EMERGENCY_CRITICAL
+    payload = Column(JSONB, nullable=True)
+    delivery_status = Column(String, default="PENDING") # PENDING, SENT, FAILED
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    
+    user = sa_relationship("User")
+

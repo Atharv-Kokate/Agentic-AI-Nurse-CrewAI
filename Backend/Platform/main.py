@@ -47,6 +47,7 @@ from routes.callbacks import router as callbacks_router
 from routes.caretaker import router as caretaker_router
 from routes.medications import router as medications_router
 from routes.tasks import router as tasks_router
+from notifications.router import router as notifications_router
 import requests
 
 # Initialize DB tables
@@ -93,6 +94,7 @@ app.include_router(callbacks_router)
 app.include_router(caretaker_router)
 app.include_router(medications_router)
 app.include_router(tasks_router)
+app.include_router(notifications_router)
 
 # Setup Logging
 logging.basicConfig(
@@ -232,7 +234,8 @@ async def run_crew_background(crew_input: dict, patient_id_str: str):
         medical_crew = MedicalCrew(patient_id=patient_id_str)
         
         # --- NEW: Fetch Medication History (Last 3 days) ---
-        from database.models import MedicationLog, DailyTask
+        from database.models import MedicationLog, DailyTask, CaretakerPatientLink
+        from notifications.service import NotificationService
         from datetime import timedelta
         
         # 1. Medication History
@@ -383,6 +386,18 @@ async def run_crew_background(crew_input: dict, patient_id_str: str):
                 call_received=False 
             )
             db.add(new_alert)
+
+            # Send Notification to Caretakers
+            caretakers = db.query(CaretakerPatientLink).filter(CaretakerPatientLink.patient_id == patient_id_str).all()
+            for ct in caretakers:
+                NotificationService.send_push_notification(
+                    db=db,
+                    user_id=ct.caretaker_id,
+                    title="EMERGENCY ALERT: Critical Risk Detected",
+                    body=f"Patient risk level is {risk_level}. Action: {action}",
+                    event_type="EMERGENCY_CRITICAL",
+                    data={"click_action": f"/dashboard/patient/{patient_id_str}"}
+                )
         
         db.commit()
         logger.info(f"Background analysis complete for {patient_id_str}")
@@ -627,6 +642,22 @@ def analyze_patient(
         )
         db.add(monitor_log)
         db.commit()
+
+        # --- Trigger Checkup Completed Notification to Caretakers ---
+        from database.models import CaretakerPatientLink
+        from notifications.service import NotificationService
+        
+        caretakers = db.query(CaretakerPatientLink).filter(CaretakerPatientLink.patient_id == patient.id).all()
+        for ct in caretakers:
+            NotificationService.send_push_notification(
+                db=db,
+                user_id=ct.caretaker_id,
+                title="Health Checkup Completed",
+                body=f"{patient.name} has submitted their vitals for analysis.",
+                event_type="HEALTH_CHECKUP_COMPLETED",
+                data={"click_action": f"/dashboard/patient/{patient.id}"}
+            )
+        # ------------------------------------------------------------
 
         # 3. Prepare Data for Crew
         # Fetch last 5 logs for trend analysis
