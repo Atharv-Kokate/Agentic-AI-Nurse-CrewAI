@@ -21,3 +21,5 @@ yarn-error.log
 
 # Groq
 .groq   
+
+firebase-credentials.json

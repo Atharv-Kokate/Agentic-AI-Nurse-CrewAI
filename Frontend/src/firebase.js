@@ -4,12 +4,12 @@ import { getMessaging, getToken, onMessage } from "firebase/messaging";
 
 // You will provide these credentials later
 const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT_ID.appspot.com",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyCsEEKPMsVJwvzzurMtLJDZ8gYHhDvag1M",
+  authDomain: "aviral---notification.firebaseapp.com",
+  projectId: "aviral---notification",
+  storageBucket: "aviral---notification.firebasestorage.app",
+  messagingSenderId: "213714315994",
+  appId: "1:213714315994:web:a822db280f4f89e25093e3"
 };
 
 // Initialize Firebase
@@ -20,7 +20,7 @@ export const messaging = getMessaging(app);
 
 export const requestForToken = async () => {
     try {
-        const currentToken = await getToken(messaging, { vapidKey: 'YOUR_VAPID_KEY' });
+        const currentToken = await getToken(messaging, { vapidKey: 'BOqy6tuOEJkcVgznUig2jTOBhKUS7tI_Bev6oV5BFRSlD6I9iSUMrSm9GwJ200sWDXvuFnPNb4l_zL9WVCg7yiA' });
         if (currentToken) {
             console.log('FCM Token:', currentToken);
             return currentToken;

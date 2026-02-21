@@ -4,12 +4,12 @@ importScripts('https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging-comp
 
 // You will provide these credentials later
 const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT_ID.appspot.com",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyCsEEKPMsVJwvzzurMtLJDZ8gYHhDvag1M",
+  authDomain: "aviral---notification.firebaseapp.com",
+  projectId: "aviral---notification",
+  storageBucket: "aviral---notification.firebasestorage.app",
+  messagingSenderId: "213714315994",
+  appId: "1:213714315994:web:a822db280f4f89e25093e3"
 };
 
 firebase.initializeApp(firebaseConfig);
