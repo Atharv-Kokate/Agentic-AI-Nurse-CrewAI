@@ -43,7 +43,7 @@ const AssessmentMonitorPage = () => {
 
     // Emergency Call State
     const [showSOSModal, setShowSOSModal] = useState(false);
-    const emergencyNumber = import.meta.env.VITE_EMERGENCY_NUMBER || '+91108';
+    const emergencyNumber = import.meta.env.VITE_EMERGENCY_NUMBER || '+919767060415';
 
 
     useEffect(() => {
