@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { requestForToken, onMessageListener } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
-import axios from 'axios';
+import client from '../api/client';
 import { Bell, X } from 'lucide-react';
 
 const NotificationSetup = () => {
@@ -25,18 +25,11 @@ const NotificationSetup = () => {
         try {
             const fcmToken = await requestForToken();
             if (fcmToken) {
-                const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
-                await axios.post(
-                    `${API_BASE_URL}/notifications/register-token`,
-                    {
-                        user_id: user.id,
-                        fcm_token: fcmToken,
-                        platform: 'web'
-                    },
-                    {
-                        headers: { Authorization: `Bearer ${token}` }
-                    }
-                );
+                await client.post('/notifications/register-token', {
+                    user_id: user.id,
+                    fcm_token: fcmToken,
+                    platform: 'web'
+                });
                 console.log("FCM Token registered with backend successfully");
                 setIsRegistered(true);
                 setShowPrompt(false);

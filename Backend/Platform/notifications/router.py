@@ -7,7 +7,7 @@ import uuid
 from database.session import get_db
 from notifications.service import NotificationService
 
-router = APIRouter(prefix="/notifications", tags=["Notifications"])
+router = APIRouter(prefix="/api/v1/notifications", tags=["Notifications"])
 
 class RegisterTokenRequest(BaseModel):
     user_id: str
