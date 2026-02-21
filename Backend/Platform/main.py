@@ -387,15 +387,27 @@ async def run_crew_background(crew_input: dict, patient_id_str: str):
             )
             db.add(new_alert)
 
-            # Send Notification to Caretakers
+            # Send EMERGENCY Notification to Caretakers
             caretakers = db.query(CaretakerPatientLink).filter(CaretakerPatientLink.patient_id == patient_id_str).all()
             for ct in caretakers:
                 NotificationService.send_push_notification(
                     db=db,
                     user_id=ct.caretaker_id,
-                    title="EMERGENCY ALERT: Critical Risk Detected",
+                    title="🚨 EMERGENCY ALERT: Critical Risk Detected",
                     body=f"Patient risk level is {risk_level}. Action: {action}",
                     event_type="EMERGENCY_CRITICAL",
+                    data={"click_action": f"/dashboard/patient/{patient_id_str}"}
+                )
+        else:
+            # Send Normal Completion Notification to Caretakers
+            caretakers = db.query(CaretakerPatientLink).filter(CaretakerPatientLink.patient_id == patient_id_str).all()
+            for ct in caretakers:
+                NotificationService.send_push_notification(
+                    db=db,
+                    user_id=ct.caretaker_id,
+                    title="✅ Checkup Analysis Complete",
+                    body=f"Patient is {risk_level}. Action: {action}",
+                    event_type="HEALTH_CHECKUP_COMPLETED",
                     data={"click_action": f"/dashboard/patient/{patient_id_str}"}
                 )
         
