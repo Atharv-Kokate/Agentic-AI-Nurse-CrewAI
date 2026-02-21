@@ -6,6 +6,7 @@ import client from '../api/client';
 import { cn } from '../utils/cn';
 import { useAuth } from '../contexts/AuthContext';
 import { getWsUrl } from '../utils/websocket';
+import VideoCallModal from '../components/VideoCallModal';
 
 const PatientDashboardPage = () => {
     const navigate = useNavigate();
@@ -39,10 +40,6 @@ const PatientDashboardPage = () => {
         };
 
         fetchData();
-
-        return () => {
-            if (wsRef.current) wsRef.current.close();
-        };
     }, []);
 
     const [generatingPlan, setGeneratingPlan] = useState(false);
@@ -76,48 +73,75 @@ const PatientDashboardPage = () => {
         }
     };
 
-    const wsRef = React.useRef(null);
+    // WebRTC State for Patient
+    const [isVideoCallOpen, setIsVideoCallOpen] = useState(false);
+    const [signalQueue, setSignalQueue] = useState([]);
+    const [isInitiator, setIsInitiator] = useState(false);
 
-    const startLocationTracking = (patientId) => {
-        if (!navigator.geolocation) return;
+    useEffect(() => {
+        if (!user || !user.patient_id) return;
 
-        // Connect WS
-        // 2. WebSocket Connection
         const wsUrl = getWsUrl(user.patient_id);
-        wsRef.current = new WebSocket(wsUrl);
+        const ws = new WebSocket(wsUrl);
+        wsRef.current = ws;
 
-        wsRef.current.onopen = () => {
-            console.log("Connected to Location Stream");
-            // Send initial location
-            paramsNavigator(wsRef.current);
+        ws.onopen = () => {
+            console.log("Connected to Stream (Location & WebRTC)");
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(pos => {
+                    if (ws.readyState === WebSocket.OPEN) {
+                        ws.send(JSON.stringify({
+                            type: "LOCATION_UPDATE",
+                            latitude: pos.coords.latitude,
+                            longitude: pos.coords.longitude
+                        }));
+                    }
+                });
+
+                // Watch Position
+                navigator.geolocation.watchPosition(
+                    (position) => {
+                        if (ws.readyState === WebSocket.OPEN) {
+                            ws.send(JSON.stringify({
+                                type: "LOCATION_UPDATE",
+                                latitude: position.coords.latitude,
+                                longitude: position.coords.longitude
+                            }));
+                        }
+                    },
+                    (err) => console.error("Geo Error", err),
+                    { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+                );
+            }
         };
 
-        // Watch Position
-        navigator.geolocation.watchPosition(
-            (position) => {
-                if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-                    wsRef.current.send(JSON.stringify({
-                        type: "LOCATION_UPDATE",
-                        latitude: position.coords.latitude,
-                        longitude: position.coords.longitude
-                    }));
+        ws.onmessage = (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                if (data.type === 'WEBRTC_SIGNAL' && data.payload) {
+                    setSignalQueue(prev => [...prev, data.payload]);
+                    setIsInitiator(false);
+                    setIsVideoCallOpen(true);
                 }
-            },
-            (err) => console.error("Geo Error", err),
-            { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
-        );
-    };
-
-    const paramsNavigator = (ws) => {
-        navigator.geolocation.getCurrentPosition(pos => {
-            if (ws.readyState === WebSocket.OPEN) {
-                ws.send(JSON.stringify({
-                    type: "LOCATION_UPDATE",
-                    latitude: pos.coords.latitude,
-                    longitude: pos.coords.longitude
-                }));
+            } catch (e) {
+                console.error("WS Parse Error", e);
             }
-        });
+        };
+
+        return () => {
+            if (ws.readyState === WebSocket.OPEN) {
+                ws.close();
+            }
+        };
+    }, [user]);
+
+    const handleWebRTCSignal = (signal) => {
+        if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+            wsRef.current.send(JSON.stringify({
+                type: 'WEBRTC_SIGNAL',
+                payload: signal
+            }));
+        }
     };
 
     if (loading) return <div className="p-10 text-center">Loading dashboard...</div>;
@@ -313,6 +337,14 @@ const PatientDashboardPage = () => {
                     </table>
                 </div>
             </div>
+
+            <VideoCallModal
+                isOpen={isVideoCallOpen}
+                onClose={() => setIsVideoCallOpen(false)}
+                onSignal={handleWebRTCSignal}
+                signalQueue={signalQueue}
+                isInitiator={isInitiator}
+            />
         </div>
     );
 };
