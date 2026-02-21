@@ -59,8 +59,21 @@ class WebRTCService {
         };
 
         this.peerConnection.onconnectionstatechange = () => {
-            console.log("Connection State:", this.peerConnection.connectionState);
+            console.log("Connection State Changed:", this.peerConnection.connectionState);
             this.onConnectionStateChange && this.onConnectionStateChange(this.peerConnection.connectionState);
+
+            // Sometimes ontrack fires but the stream fails to visually attach until connected
+            if (this.peerConnection.connectionState === 'connected') {
+                this.onRemoteStream && this.onRemoteStream(this.remoteStream);
+            }
+        };
+
+        this.peerConnection.oniceconnectionstatechange = () => {
+            console.log("ICE Connection State:", this.peerConnection.iceConnectionState);
+        };
+
+        this.peerConnection.onicegatheringstatechange = () => {
+            console.log("ICE Gathering State:", this.peerConnection.iceGatheringState);
         };
     }
 

@@ -100,7 +100,9 @@ const VideoCallModal = ({ isOpen, onClose, onSignal, incomingSignal, signalQueue
             };
 
             webrtcService.onConnectionStateChange = (state) => {
-                if (state === 'disconnected' || state === 'failed') {
+                if (state === 'connected') {
+                    setCallState('CONNECTED');
+                } else if (state === 'disconnected' || state === 'failed') {
                     endCall();
                 }
             };
@@ -136,7 +138,9 @@ const VideoCallModal = ({ isOpen, onClose, onSignal, incomingSignal, signalQueue
             };
 
             webrtcService.onConnectionStateChange = (state) => {
-                if (state === 'disconnected' || state === 'failed') {
+                if (state === 'connected') {
+                    setCallState('CONNECTED');
+                } else if (state === 'disconnected' || state === 'failed') {
                     endCall();
                 }
             };
