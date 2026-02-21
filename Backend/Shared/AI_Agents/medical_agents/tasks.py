@@ -57,10 +57,7 @@ class MedicalTasks:
                 "5. ASK ONLY NEW QUESTIONS: Formulate your questions based ONLY on missing information from the protocol.\n"
                 "6. You MUST ask at least 1-2 clarifying questions using the 'ask_patient' tool if there is ANY ambiguity or risk. Do not assume you know enough.\n"
                 "7. MANDATORY TOOL USAGE: If the patient has ANY reported symptoms or ABNORMAL vitals, you MUST use the 'ask_patient' tool to verify the severity. Do NOT just summarize. Ask a question.\n"
-                "8. ONLY stop asking questions if:\n"
-                "   a) The patient is completely healthy (Normal Vitals + No Symptoms).\n"
-                "   b) You have already asked 3 questions and have a clear picture.\n"
-                "   c) It is a clear medical emergency requiring immediate escalation (skip to risk assessment).\n"
+                "8. Even if you know the medical diagnosis or you have enough context about the patient to do analysis still you must ask atleast 3 relevant question to user for gathering more context regarding the known medical condition from the knowledge base"
                 "9. DO NOT return the final JSON until you have either asked the necessary questions or confirmed the patient is healthy."
                 
             ),

@@ -137,12 +137,27 @@ function CaretakerDashboardPage() {
                     <h1 className="text-3xl font-bold text-slate-900">Caretaker Dashboard</h1>
                     <p className="text-slate-600">Monitor your family members and patients</p>
                 </div>
-                <button
-                    onClick={() => setShowLinkModal(true)}
-                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
-                >
-                    + Link New Patient
-                </button>
+                <div className="flex gap-4">
+                    <button
+                        onClick={async () => {
+                            try {
+                                const res = await client.get('/caretaker/test-push');
+                                alert(res.data.message + "\nYour ID: " + res.data.caretaker_id);
+                            } catch (err) {
+                                alert(err.response?.data?.detail || "Failed to trigger test push");
+                            }
+                        }}
+                        className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition flex items-center gap-2"
+                    >
+                        Test Push Notification
+                    </button>
+                    <button
+                        onClick={() => setShowLinkModal(true)}
+                        className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+                    >
+                        + Link New Patient
+                    </button>
+                </div>
             </div>
 
             {loading ? (

@@ -69,3 +69,25 @@ def link_patient(
     db.add(new_link)
     db.commit()
     return {"message": "Linked successfully"}
+
+@router.get("/test-push")
+def test_caretaker_push(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles([UserRole.CARETAKER]))
+):
+    """Temporary endpoint to allow Caretakers to test Push Notifications to themselves."""
+    from notifications.service import NotificationService
+    
+    success, msg = NotificationService.send_push_notification(
+        db=db,
+        user_id=current_user.id,
+        title="Render Test Alert",
+        body="If you see this, Firebase and Render are working perfectly!",
+        event_type="TEST_EVENT",
+        data={"click_action": "/dashboard"}
+    )
+    
+    if success:
+        return {"status": "success", "message": msg, "caretaker_id": str(current_user.id)}
+    else:
+        raise HTTPException(status_code=400, detail=f"Push failed: {msg}. Caretaker ID: {str(current_user.id)}")
