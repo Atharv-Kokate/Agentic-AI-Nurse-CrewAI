@@ -31,11 +31,15 @@ const NotificationSetup = () => {
                     platform: 'web'
                 });
                 console.log("FCM Token registered with backend successfully");
+                alert("Notifications Enabled Successfully!");
                 setIsRegistered(true);
                 setShowPrompt(false);
+            } else {
+                alert("Failed to get FCM token. Please check your browser notification settings or Firebase setup.");
             }
         } catch (error) {
             console.error("Failed to register FCM token with backend", error);
+            alert("Error registering token: " + (error.message || "Unknown error"));
         }
     };
 

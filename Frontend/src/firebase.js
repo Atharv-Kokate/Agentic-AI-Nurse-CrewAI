@@ -24,20 +24,29 @@ export const requestForToken = async () => {
         const permission = await Notification.requestPermission();
         if (permission === 'granted') {
             console.log('Notification permission granted.');
-            const currentToken = await getToken(messaging, { vapidKey: 'BOqy6tuOEJkcVgznUig2jTOBhKUS7tI_Bev6oV5BFRSlD6I9iSUMrSm9GwJ200sWDXvuFnPNb4l_zL9WVCg7yiA' });
-            if (currentToken) {
-                console.log('FCM Token:', currentToken);
-                return currentToken;
-            } else {
-                console.log('No registration token available. Request permission to generate one.');
+            try {
+                const currentToken = await getToken(messaging, { vapidKey: 'BOqy6tuOEJkcVgznUig2jTOBhKUS7tI_Bev6oV5BFRSlD6I9iSUMrSm9GwJ200sWDXvuFnPNb4l_zL9WVCg7yiA' });
+                if (currentToken) {
+                    console.log('FCM Token:', currentToken);
+                    return currentToken;
+                } else {
+                    console.log('No registration token available. Request permission to generate one.');
+                    alert("Firebase error: No registration token available. Check vapidKey.");
+                    return null;
+                }
+            } catch (tokenErr) {
+                console.error("FCM getToken Error:", tokenErr);
+                alert("FCM getToken Error: " + tokenErr.message);
                 return null;
             }
         } else {
             console.log('Unable to get permission to notify.');
+            alert("Permission denied by browser. Check site settings.");
             return null;
         }
     } catch (err) {
         console.log('An error occurred while retrieving token. ', err);
+        alert('An error occurred while retrieving token: ' + err.message);
         return null;
     }
 };
