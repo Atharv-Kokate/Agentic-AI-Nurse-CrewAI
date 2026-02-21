@@ -240,11 +240,11 @@ async def run_crew_background(crew_input: dict, patient_id_str: str):
         
         # 1. Medication History
         current_time = datetime.utcnow()
-        since = current_time - timedelta(days=3)
+        since = current_time - timedelta(days=2) # Reduced to 2 days to save tokens
         med_logs = db.query(MedicationLog).filter(
             MedicationLog.patient_id == patient_id_str,
             MedicationLog.created_at >= since
-        ).order_by(MedicationLog.created_at.desc()).all()
+        ).order_by(MedicationLog.created_at.desc()).limit(10).all()
         
         med_history_str = "No recent medication logs."
         if med_logs:
@@ -270,7 +270,7 @@ async def run_crew_background(crew_input: dict, patient_id_str: str):
 
         task_history_str = "No tasks assigned for today."
         if daily_tasks:
-            lines = []
+            unique_tasks = {}
             for task in daily_tasks:
                 status = task.status_patient.upper()
                 
@@ -278,13 +278,10 @@ async def run_crew_background(crew_input: dict, patient_id_str: str):
                 if task.status_caretaker == "REFUSED":
                     status = "REFUSED BY CARETAKER"
                 elif status == "PENDING":
-                     # If end of day is approaching (e.g. it's 8PM) and still pending? 
-                     # Or just list as pending. Let's mark as INCOMPLETE if it's PENDING
-                     # Actually, for tasks, PENDING is fine, but let's be explicit
                      status = "PENDING (Not Completed)"
                 
-                lines.append(f"- {task.category}: {task.task_description} (Status: {status})")
-            task_history_str = "\n".join(lines)
+                unique_tasks[task.task_description] = f"- {task.category}: {task.task_description} (Status: {status})"
+            task_history_str = "\n".join(unique_tasks.values())
             
         logger.info(f"Fetched Context: Meds={len(med_logs)}, Tasks={len(daily_tasks)}")
         # ----------------------------------------------------
@@ -678,14 +675,14 @@ def analyze_patient(
         ).order_by(monitoring_logs.created_at.desc()).limit(5).all()
 
         history_list = []
-        # DISABLE HISTORY FOR DEBUGGING - IT IS CAUSING HALLUCINATIONS
-        # for log in recent_logs:
-        #     history_list.append({
-        #         "date": log.created_at.strftime("%Y-%m-%d %H:%M"),
-        #         "bp": log.blood_pressure,
-        #         "hr": log.heart_rate,
-        #         "sugar": log.blood_sugar
-        #     })
+        # Re-enabled history based on user request
+        for log in recent_logs:
+            history_list.append({
+                "date": log.created_at.strftime("%Y-%m-%d %H:%M"),
+                "bp": log.blood_pressure,
+                "hr": log.heart_rate,
+                "sugar": log.blood_sugar
+            })
 
         crew_input = {
             "name": request.name,
