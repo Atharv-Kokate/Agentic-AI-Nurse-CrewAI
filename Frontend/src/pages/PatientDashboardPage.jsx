@@ -213,7 +213,7 @@ const PatientDashboardPage = () => {
             </div>
 
             {/* Daily Tasks Section */}
-            <div className="glass-panel p-6 rounded-xl">
+            {/* <div className="glass-panel p-6 rounded-xl">
                 <div className="flex items-center justify-between mb-4">
                     <h2 className="text-xl font-bold text-slate-900">Today's Health Tasks</h2>
                     <span className="text-sm text-slate-500 font-medium">
@@ -281,7 +281,96 @@ const PatientDashboardPage = () => {
                         ))}
                     </div>
                 )}
+            </div> */}
+
+            <div className="space-y-8">
+
+  {["Diet", "Exercise", "Lifestyle"].map((category) => {
+    const categoryTasks = tasks.filter(t => t.category === category);
+
+    if (categoryTasks.length === 0) return null;
+
+    return (
+      <div key={category} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+        
+        {/* Section Header */}
+        <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center gap-3">
+            <div className={`p-2 rounded-xl ${
+              category === "Diet"
+                ? "bg-green-100 text-green-600"
+                : category === "Exercise"
+                ? "bg-orange-100 text-orange-600"
+                : "bg-indigo-100 text-indigo-600"
+            }`}>
+              {category === "Diet" ? <Utensils className="h-5 w-5" /> :
+               category === "Exercise" ? <Activity className="h-5 w-5" /> :
+               <Clock className="h-5 w-5" />}
             </div>
+
+            <h3 className="text-lg font-bold text-slate-800">
+              {category}
+            </h3>
+          </div>
+
+          <span className="text-sm text-slate-400 font-medium">
+            {categoryTasks.filter(t => t.status_patient === "COMPLETED").length}
+            / {categoryTasks.length} Completed
+          </span>
+        </div>
+
+        {/* Tasks */}
+        <div className="space-y-3">
+          {categoryTasks.map(task => {
+            const completed = task.status_patient === "COMPLETED";
+
+            return (
+              <div
+                key={task.id}
+                className={`group flex items-center justify-between p-4 rounded-xl border transition-all duration-200 ${
+                  completed
+                    ? "bg-emerald-50 border-emerald-100"
+                    : "bg-slate-50 border-slate-100 hover:bg-white hover:shadow-sm"
+                }`}
+              >
+                {/* Task Text */}
+                <div>
+                  <p className={`font-medium ${
+                    completed
+                      ? "text-slate-500 line-through"
+                      : "text-slate-800"
+                  }`}>
+                    {task.task_description}
+                  </p>
+                </div>
+
+                {/* Professional Toggle Button */}
+                <button
+                  onClick={() => toggleTaskStatus(task.id, task.status_patient)}
+                  className={`relative flex items-center justify-center w-8 h-8 rounded-full border transition-all duration-300 ${
+                    completed
+                      ? "bg-emerald-500 border-emerald-500"
+                      : "border-slate-300 hover:border-emerald-400"
+                  }`}
+                >
+                  <CheckCircle
+                    className={`w-5 h-5 transition-all duration-300 ${
+                      completed
+                        ? "text-white scale-100"
+                        : "text-transparent group-hover:text-emerald-400 scale-90"
+                    }`}
+                  />
+                </button>
+              </div>
+            );
+          })}
+        </div>
+
+      </div>
+    );
+  })}
+
+</div>
 
             {/* History Table */}
             <div className="glass-panel rounded-xl overflow-hidden">

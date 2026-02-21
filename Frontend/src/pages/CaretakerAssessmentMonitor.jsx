@@ -501,7 +501,7 @@ const CaretakerAssessmentMonitor = () => {
                             </button>
                         </div>
 
-                        <div className="overflow-y-auto flex-1 pr-2">
+                        <div className="flex-1 pr-2">
                             {loadingHistory ? (
                                 <div className="text-center py-8">Loading...</div>
                             ) : medicationHistory.length === 0 ? (

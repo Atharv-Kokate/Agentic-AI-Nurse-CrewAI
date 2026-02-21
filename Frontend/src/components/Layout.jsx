@@ -34,7 +34,7 @@ const Layout = () => {
 
             <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
 
-            <main className="flex-1 overflow-y-auto p-4 md:p-8 pt-20 md:pt-8 w-full relative">
+            <main className="flex-1 overflow-y-auto p-4 md:p-8 pt-20 md:pt-8 md:ml-64 w-full relative">
                 <div className="mx-auto max-w-7xl">
                     <Outlet />
                 </div>

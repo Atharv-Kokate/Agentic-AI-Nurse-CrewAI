@@ -241,21 +241,36 @@ Sent via offline-mode`;
                     {currentStep === 0 && (
                         <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
                             <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700">Patient Name</label>
-                                    <input {...register('name', { required: 'Name is required' })} className="mt-1 w-full rounded-md border border-slate-200 bg-slate-800 text-white p-2.5 focus:border-sky-500 focus:outline-none placeholder:text-slate-400" placeholder="John Doe" />
-                                    {errors.name && <p className="text-xs text-red-500">{errors.name.message}</p>}
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700">Age</label>
-                                    <input type="number" {...register('age', { required: 'Age is required' })} className="mt-1 w-full rounded-md border border-slate-200 bg-slate-800 text-white p-2.5 focus:border-sky-500 focus:outline-none placeholder:text-slate-400" placeholder="55" />
-                                    {errors.age && <p className="text-xs text-red-500">{errors.age.message}</p>}
-                                </div>
-                            </div>
+  <div>
+    <label className="block text-sm font-medium text-slate-700">
+      Patient Name
+    </label>
+    <input
+      {...register('name')}
+      disabled
+      className="mt-1 w-full rounded-md border border-slate-200 bg-slate-800 text-white p-2.5 disabled:opacity-70 disabled:cursor-not-allowed focus:outline-none"
+      placeholder="John Doe"
+    />
+  </div>
+
+  <div>
+    <label className="block text-sm font-medium text-slate-700">
+      Age
+    </label>
+    <input
+      type="number"
+      {...register('age')}
+      disabled
+      className="mt-1 w-full rounded-md border border-slate-200 bg-slate-800 text-white p-2.5 disabled:opacity-70 disabled:cursor-not-allowed focus:outline-none"
+      placeholder="55"
+    />
+  </div>
+</div>
+                            
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium text-slate-700">Gender</label>
-                                    <select {...register('gender')} className="mt-1 w-full rounded-md border border-slate-200 bg-slate-800 text-white p-2.5 focus:border-sky-500 focus:outline-none placeholder:text-slate-400">
+                                    <select {...register('gender')} disabled className="mt-1 w-full rounded-md border border-slate-200 bg-slate-800 text-white p-2.5 focus:border-sky-500 focus:outline-none placeholder:text-slate-400">
                                         <option>Male</option>
                                         <option>Female</option>
                                         <option>Other</option>
