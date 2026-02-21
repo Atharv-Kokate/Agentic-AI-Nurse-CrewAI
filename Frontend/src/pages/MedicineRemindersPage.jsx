@@ -46,6 +46,23 @@ const MedicineRemindersPage = () => {
         }
     };
 
+    const handleRefill = async (id) => {
+        const amountStr = window.prompt("Enter the number of pills to add (e.g., 30):");
+        if (amountStr) {
+            const amount = parseInt(amountStr, 10);
+            if (!isNaN(amount) && amount > 0) {
+                try {
+                    await client.put(`/reminders/${id}/refill`, { amount });
+                    fetchReminders();
+                } catch (error) {
+                    alert("Failed to refill medicine");
+                }
+            } else {
+                alert("Please enter a valid number");
+            }
+        }
+    };
+
     return (
         <div className="space-y-6">
             <div>
@@ -87,6 +104,17 @@ const MedicineRemindersPage = () => {
                                     className="mt-1 w-full rounded-md border border-slate-200 bg-slate-800 text-white p-2.5 focus:border-sky-500 focus:outline-none"
                                 />
                             </div>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700">Initial Quantity</label>
+                                <input
+                                    type="number"
+                                    min="1"
+                                    {...register('remaining_count', { required: 'Required', valueAsNumber: true })}
+                                    className="mt-1 w-full rounded-md border border-slate-200 bg-slate-800 text-white p-2.5 focus:border-sky-500 focus:outline-none placeholder:text-slate-400"
+                                    placeholder="e.g. 30"
+                                />
+                                {errors.remaining_count && <p className="text-xs text-red-500">{errors.remaining_count.message}</p>}
+                            </div>
                             <button
                                 type="submit"
                                 className="w-full bg-sky-500 text-white py-2 rounded-lg hover:bg-sky-600 transition-colors font-medium"
@@ -112,7 +140,7 @@ const MedicineRemindersPage = () => {
                                 key={reminder.id}
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                className="glass-panel p-4 rounded-xl flex items-center justify-between"
+                                className={`glass-panel p-4 rounded-xl flex items-center justify-between border-2 ${reminder.remaining_count < 5 ? 'border-red-400 bg-red-50/10' : 'border-transparent'}`}
                             >
                                 <div className="flex items-center gap-4">
                                     <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600">
@@ -123,14 +151,26 @@ const MedicineRemindersPage = () => {
                                         <p className="text-sm text-slate-500">{reminder.dosage}</p>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-6">
+                                <div className="flex items-center gap-4">
                                     <div className="flex items-center gap-2 text-slate-600 bg-slate-100 px-3 py-1 rounded-full text-sm">
                                         <Clock className="w-4 h-4" />
                                         <span>{reminder.schedule_time}</span>
                                     </div>
+                                    <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium ${reminder.remaining_count < 5 ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                                        <Pill className="w-4 h-4" />
+                                        <span>{reminder.remaining_count} left</span>
+                                    </div>
+                                    {reminder.remaining_count < 5 && (
+                                        <button
+                                            onClick={() => handleRefill(reminder.id)}
+                                            className="text-xs bg-red-600 text-white px-3 py-1.5 rounded-lg hover:bg-red-700 transition shadow-sm font-medium"
+                                        >
+                                            Refill Now
+                                        </button>
+                                    )}
                                     <button
                                         onClick={() => handleDelete(reminder.id)}
-                                        className="p-2 text-slate-400 hover:text-red-500 transition-colors"
+                                        className="p-2 text-slate-400 hover:text-red-500 transition-colors ml-2"
                                     >
                                         <Trash2 className="w-5 h-5" />
                                     </button>

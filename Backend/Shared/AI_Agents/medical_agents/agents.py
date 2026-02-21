@@ -29,10 +29,11 @@ groq_llama70_2 = LLM(
     temperature=0.0
 )
 
-# 4. Groq (Backup / Alternative)
-groq_gemma = LLM(
+# 5. Groq Fast (Llama 3.1 8B Instant) - Fast & Cheap for Summaries
+groq_fast = LLM(
     model="groq/llama-3.1-8b-instant",
-    api_key=os.getenv("GROQ_API_KEY")
+    api_key=os.getenv("GROQ_API_KEY"),
+    temperature=0.0
 )
 
 class MedicalAgents:
@@ -52,7 +53,8 @@ class MedicalAgents:
             verbose=True,
             allow_delegation=False,
             max_rpm=10,
-            llm=groq_llama70 # Key 1
+            max_iter=3,
+            llm=groq_fast # Simple thresholds check, use fast 8B model
         )
 
     def symptom_inquiry_agent(self):
@@ -82,6 +84,7 @@ class MedicalAgents:
             verbose=True,
             allow_delegation=False,
             max_rpm=10,
+            max_iter=3, # Prevent infinite thinking loops which cause 10k token payload blowups
             tools=tools_list,
             llm=groq_llama70_2 # Key 2 (Heavy Tool Usage)
         )
@@ -99,7 +102,8 @@ class MedicalAgents:
             verbose=True,
             allow_delegation=False,
             max_rpm=10,
-            llm=groq_llama70 # Key 1
+            max_iter=3,
+            llm=groq_fast # Simple contextual summary, use fast 8B model
         )
 
     def risk_assessment_agent(self):
@@ -114,7 +118,8 @@ class MedicalAgents:
             verbose=True,
             allow_delegation=False,
             max_rpm=10,
-            llm=groq_llama70_2 # Key 2
+            max_iter=3,
+            llm=groq_llama70_2 # Key 2 (Needs complex reasoning)
         )
 
     def decision_action_agent(self):
@@ -130,7 +135,8 @@ class MedicalAgents:
             verbose=True,
             allow_delegation=False,
             max_rpm=10,
-            llm=groq_llama70 # Key 1
+            max_iter=3,
+            llm=groq_fast # Key 1
         )
 
     def task_planner_agent(self):

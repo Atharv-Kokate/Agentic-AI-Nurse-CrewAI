@@ -125,6 +125,10 @@ def log_medication(
         status=log_data.status
     )
     
+    # Decrement count if marked taken
+    if log_data.status == "TAKEN":
+        reminder.remaining_count = max(0, reminder.remaining_count - 1)
+
     db.add(new_log)
     db.commit()
     db.refresh(new_log)
@@ -195,12 +199,27 @@ def update_log_status(
         if current_user.role not in [UserRole.ADMIN, UserRole.NURSE, UserRole.DOCTOR]:
              raise HTTPException(status_code=403, detail="Access denied")
 
+    old_status = log_entry.status
     log_entry.status = update_data.status
+    
     if update_data.status == "TAKEN" and not log_entry.taken_at:
         log_entry.taken_at = datetime.utcnow()
     elif update_data.status != "TAKEN":
         log_entry.taken_at = None # Reset if changed to missed/skipped? Or keep it? keeping it simple.
-        
+
+    # Find the reminder to adjust count
+    reminder = db.query(Reminder).filter(
+        Reminder.patient_id == log_entry.patient_id,
+        Reminder.medicine_name == log_entry.medicine_name,
+        Reminder.is_active == True
+    ).first()
+
+    if reminder:
+        if old_status != "TAKEN" and update_data.status == "TAKEN":
+            reminder.remaining_count = max(0, reminder.remaining_count - 1)
+        elif old_status == "TAKEN" and update_data.status != "TAKEN":
+            reminder.remaining_count += 1
+            
     db.commit()
     db.refresh(log_entry)
     return log_entry

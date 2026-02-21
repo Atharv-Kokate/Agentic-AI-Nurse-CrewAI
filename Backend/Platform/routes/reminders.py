@@ -15,13 +15,18 @@ class ReminderCreate(BaseModel):
     medicine_name: str
     dosage: str
     schedule_time: str # HH:MM
+    remaining_count: int = 0  # Initial stock quantity
 
 class ReminderResponse(BaseModel):
     id: str
     medicine_name: str
     dosage: str
     schedule_time: str
+    remaining_count: int
     is_active: bool
+
+class RefillModel(BaseModel):
+    amount: int
 
 # --- Routes ---
 
@@ -47,6 +52,7 @@ def get_my_reminders(
             medicine_name=r.medicine_name,
             dosage=r.dosage,
             schedule_time=r.schedule_time,
+            remaining_count=r.remaining_count,
             is_active=r.is_active
         ) for r in reminders
     ]
@@ -76,6 +82,7 @@ async def create_reminder(
         medicine_name=reminder.medicine_name,
         dosage=reminder.dosage,
         schedule_time=reminder.schedule_time,
+        remaining_count=reminder.remaining_count,
         is_active=True
     )
     
@@ -139,8 +146,87 @@ async def create_reminder(
         medicine_name=new_reminder.medicine_name,
         dosage=new_reminder.dosage,
         schedule_time=new_reminder.schedule_time,
+        remaining_count=new_reminder.remaining_count,
         is_active=new_reminder.is_active
     )
+
+@router.put("/{reminder_id}/refill", response_model=ReminderResponse)
+def refill_medicine(
+    reminder_id: str,
+    payload: RefillModel,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Manually add to the remaining count. Can be called by Patient or Caretaker.
+    """
+    reminder = db.query(Reminder).filter(Reminder.id == reminder_id).first()
+    if not reminder:
+        raise HTTPException(status_code=404, detail="Reminder not found")
+        
+    # Security checks
+    # Either the patient themselves, or a linked caretaker
+    if current_user.role == UserRole.PATIENT:
+        if current_user.patient_id != reminder.patient_id:
+             raise HTTPException(status_code=403, detail="Access denied")
+    elif current_user.role == UserRole.CARETAKER:
+        from database.models import CaretakerPatientLink
+        link = db.query(CaretakerPatientLink).filter(
+            CaretakerPatientLink.caretaker_id == current_user.id,
+            CaretakerPatientLink.patient_id == reminder.patient_id
+        ).first()
+        if not link:
+             raise HTTPException(status_code=403, detail="Access denied")
+             
+    reminder.remaining_count += payload.amount
+    db.commit()
+    db.refresh(reminder)
+    
+    return ReminderResponse(
+        id=str(reminder.id),
+        medicine_name=reminder.medicine_name,
+        dosage=reminder.dosage,
+        schedule_time=reminder.schedule_time,
+        remaining_count=reminder.remaining_count,
+        is_active=reminder.is_active
+    )
+    
+@router.get("/patient/{patient_id}", response_model=List[ReminderResponse])
+def get_patient_reminders(
+    patient_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Get all active reminders for a specific patient. Used by Caretakers.
+    """
+    if current_user.role == UserRole.CARETAKER:
+        from database.models import CaretakerPatientLink
+        link = db.query(CaretakerPatientLink).filter(
+            CaretakerPatientLink.caretaker_id == current_user.id,
+            CaretakerPatientLink.patient_id == patient_id
+        ).first()
+        if not link:
+             raise HTTPException(status_code=403, detail="You are not linked to this patient")
+    elif current_user.role == UserRole.PATIENT:
+        if str(current_user.patient_id) != patient_id:
+            raise HTTPException(status_code=403, detail="Access denied")
+
+    reminders = db.query(Reminder).filter(
+        Reminder.patient_id == patient_id,
+        Reminder.is_active == True
+    ).all()
+
+    return [
+        ReminderResponse(
+            id=str(r.id),
+            medicine_name=r.medicine_name,
+            dosage=r.dosage,
+            schedule_time=r.schedule_time,
+            remaining_count=r.remaining_count,
+            is_active=r.is_active
+        ) for r in reminders
+    ]
 
 @router.delete("/{reminder_id}")
 def delete_reminder(

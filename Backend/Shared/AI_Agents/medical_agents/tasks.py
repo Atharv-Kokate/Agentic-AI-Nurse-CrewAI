@@ -51,7 +51,7 @@ class MedicalTasks:
                 "1. CHECK [CONTEXT - VITAL ANALYSIS]. If status is 'NORMAL' AND input reported_symptoms is 'None' or empty, DO NOT ASK QUESTIONS.\n"
                 "2. If no questions needed, return \"symptom_summary\": \"No symptoms reported, patient healthy\".\n"
                 "3. SEARCH KNOWLEDGE BASE: You MUST use the 'Search Knowledge Base' tool to find the specific protocol for the patient's symptoms (e.g., 'Chest Pain', 'Hypertension').\n"
-                "4. CHECK CONTEXT FIRST (CRITICAL): Before asking a question from the protocol, CHECK [ORIGINAL PATIENT DATA].\n"
+                "4. CHECK CONTEXT FIRST (CRITICAL): Before asking a question from the protocol, CHECK [ORIGINAL PATIENT DATA & HISTORY].\n"
                 "   - If the patient has already provided the answer (e.g., 'known_conditions' answers 'history'), DO NOT ASK IT AGAIN.\n"
                 "   - If the patient's 'reported_symptoms' already covers the question (e.g., they said 'chest pain', don't ask 'do you have chest pain'), DO NOT ASK IT AGAIN.\n"
                 "5. ASK ONLY NEW QUESTIONS: Formulate your questions based ONLY on missing information from the protocol.\n"
@@ -83,7 +83,7 @@ class MedicalTasks:
                 "1. If Symptom Inquiry says 'No symptoms' and Vitals are 'NORMAL', the aggregate summary MUST reflect a healthy patient.\n"
                 "2. If Vital Analysis says 'NOT PROVIDED' or 'MISSING', DO NOT INVENT VITALS in the summary.\n"
                 "3. REVIEW [CURRENT MEDICATIONS]. explicitly mention them in the clinical summary if relevant (e.g. 'Patient on Metformin').\n"
-                "4. NUMERIC ACCURACY: You MUST exactly copy ANY numbers (like Blood Pressure, Blood Sugar, Heart Rate) from [ORIGINAL PATIENT DATA]. NEVER guess, swap, or invent numbers."
+                "4. NUMERIC ACCURACY: You MUST exactly copy ANY numbers (like Blood Pressure, Blood Sugar, Heart Rate) from [ORIGINAL PATIENT DATA & HISTORY]. NEVER guess, swap, or invent numbers."
             ),
             expected_output=(
                 "A JSON object containing:\n"
@@ -115,7 +115,7 @@ class MedicalTasks:
                 "   - Current Medications (from input)\n"
                 "   - Adherence Check (Missed Meds/Tasks?)\n"
                 "   - Reported Symptoms (detailed)\n"
-                "   - Vital Signs Evaluation (MUST EXACTLY MATCH the numbers provided in [ORIGINAL PATIENT DATA]. DO NOT INVENT OR SWAP NUMBERS.)\n"
+                "   - Vital Signs Evaluation (MUST EXACTLY MATCH the numbers provided in [ORIGINAL PATIENT DATA & HISTORY]. DO NOT INVENT OR SWAP NUMBERS.)\n"
                 "   - Potential Conditions/Diagnosis (e.g., 'Suspected Hypertensive Urgency')\n"
                 "   - Rationale for Risk Level.\n"
                 "7. OUTPUT FORMAT RULE: You MUST return ONLY the raw JSON object. Do NOT wrap it in markdown codes (like ```json). Ensure all strings use \\n for newlines. Valid JSON only."
@@ -143,7 +143,7 @@ class MedicalTasks:
                 "1. Patient Identity & Demographics\n"
                 "2. Chief Complaint & Symptoms\n"
                 "3. Medical History & Adherence: YOU MUST EXPLICITLY LIST any medications marked as 'MISSED', 'SKIPPED', or 'OVERDUE' from the logs. Do not just say 'inconsistent adherence'. Also list REFUSED tasks.\n"
-                "4. EXACT VITALS: You MUST exactly copy the Blood Pressure, Heart Rate, and Blood Sugar values from [ORIGINAL PATIENT DATA]. DO NOT HALLUCINATE OR SWAP NUMBERS.\n"
+                "4. EXACT VITALS: You MUST exactly copy the Blood Pressure, Heart Rate, and Blood Sugar values from [ORIGINAL PATIENT DATA & HISTORY]. DO NOT HALLUCINATE OR SWAP NUMBERS.\n"
                 "5. Suspected Condition & Recommended Action.\n"
                 "6. OUTPUT FORMAT RULE: You MUST return ONLY the raw JSON object. Do NOT wrap it in markdown codes (like ```json). Ensure all strings use \\n for newlines. Valid JSON only."
             ),

@@ -110,6 +110,7 @@ class Reminder(Base):
     medicine_name = Column(String, nullable=False)
     dosage = Column(String, nullable=False)
     schedule_time = Column(String, nullable=False) # Format: "HH:MM" (24h)
+    remaining_count = Column(Integer, nullable=False, default=0) # Stock quantity
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
     updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
