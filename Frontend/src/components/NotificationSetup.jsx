@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { requestForToken, onMessageListener } from '../firebase';
+import { requestForToken, onForegroundMessage } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import client from '../api/client';
 import { Bell, X } from 'lucide-react';
@@ -50,8 +50,8 @@ const NotificationSetup = () => {
 
     useEffect(() => {
         if (user && token) {
-            // Handle foreground messages
-            const unsubscribe = onMessageListener().then((payload) => {
+            // Handle ALL foreground messages (persistent listener, not one-shot)
+            const unsubscribe = onForegroundMessage((payload) => {
                 console.log("Foreground message received:", payload);
                 if (payload && payload.notification) {
                     if (Notification.permission === 'granted') {
@@ -63,7 +63,11 @@ const NotificationSetup = () => {
                         alert(`New Notification: ${payload.notification.title}\n${payload.notification.body}`);
                     }
                 }
-            }).catch(err => console.log('failed: ', err));
+            });
+
+            return () => {
+                if (typeof unsubscribe === 'function') unsubscribe();
+            };
         }
     }, [user, token]);
 

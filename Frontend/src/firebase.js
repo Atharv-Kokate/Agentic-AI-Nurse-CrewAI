@@ -51,6 +51,15 @@ export const requestForToken = async () => {
     }
 };
 
+// Listen for foreground messages — takes a callback, returns an unsubscribe function
+export const onForegroundMessage = (callback) => {
+    return onMessage(messaging, (payload) => {
+        console.log("Foreground message received:", payload);
+        callback(payload);
+    });
+};
+
+// Keep legacy export for backward compatibility (resolves once only)
 export const onMessageListener = () =>
     new Promise((resolve) => {
         onMessage(messaging, (payload) => {

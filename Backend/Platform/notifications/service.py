@@ -4,17 +4,37 @@ from sqlalchemy.orm import Session
 from typing import List, Optional, Dict, Any
 from database.models import DeviceToken, NotificationLog
 import ast
+import os
+import json
+import base64
 
 # We will initialize this gracefully so the app won't crash if credentials are not present yet.
+FIREBASE_INITIALIZED = False
 try:
-    # Use a service account
-    # In production, this path should be loaded from env vars
-    cred = credentials.Certificate("firebase-credentials.json")
-    firebase_admin.initialize_app(cred)
-    FIREBASE_INITIALIZED = True
+    if not firebase_admin._apps:
+        # Priority 1: FIREBASE_CREDENTIALS_JSON env var (base64-encoded JSON for deployments like Render)
+        cred_b64 = os.environ.get("FIREBASE_CREDENTIALS_JSON")
+        if cred_b64:
+            cred_dict = json.loads(base64.b64decode(cred_b64))
+            cred = credentials.Certificate(cred_dict)
+            firebase_admin.initialize_app(cred)
+            FIREBASE_INITIALIZED = True
+            print("Firebase Admin SDK initialized from FIREBASE_CREDENTIALS_JSON env var.")
+        # Priority 2: firebase-credentials.json file in the Platform directory
+        elif os.path.exists("firebase-credentials.json"):
+            cred = credentials.Certificate("firebase-credentials.json")
+            firebase_admin.initialize_app(cred)
+            FIREBASE_INITIALIZED = True
+            print("Firebase Admin SDK initialized from firebase-credentials.json file.")
+        else:
+            print("Warning: No Firebase credentials found. Push notifications will be mocked.")
+            print("  → Place firebase-credentials.json in Backend/Platform/")
+            print("  → Or set FIREBASE_CREDENTIALS_JSON env var (base64-encoded JSON)")
+    else:
+        FIREBASE_INITIALIZED = True
+        print("Firebase Admin SDK was already initialized.")
 except Exception as e:
     print(f"Warning: Firebase Admin SDK not initialized. Push notifications will be mocked. Error: {e}")
-    FIREBASE_INITIALIZED = False
 
 class NotificationService:
     @staticmethod
@@ -79,14 +99,30 @@ class NotificationService:
         try:
             if FIREBASE_INITIALIZED:
                 response = messaging.send_each_for_multicast(message)
-                status = "SENT" if response.success_count > 0 else "FAILED_FCM_ERROR"
+                if response.success_count > 0:
+                    status = "SENT"
+                    result_msg = f"Notification sent to {response.success_count}/{len(fcm_tokens)} devices"
+                else:
+                    status = "FAILED_FCM_ERROR"
+                    # Log individual errors for debugging
+                    errors = [str(r.exception) for r in response.responses if r.exception]
+                    result_msg = f"FCM delivery failed for all {len(fcm_tokens)} devices. Errors: {errors[:3]}"
+                    
+                # Clean up invalid tokens
+                for i, resp in enumerate(response.responses):
+                    if resp.exception and ('UNREGISTERED' in str(resp.exception) or 'INVALID_ARGUMENT' in str(resp.exception)):
+                        stale_token = fcm_tokens[i]
+                        db.query(DeviceToken).filter(DeviceToken.fcm_token == stale_token).delete()
+                        db.commit()
+                        print(f"Removed stale FCM token: {stale_token[:20]}...")
             else:
                 print(f"[MOCK PUSH] To: {fcm_tokens} | {title} - {body} | Data: {data}")
                 status = "MOCKED"
+                result_msg = "Notification MOCKED (Firebase not initialized — add firebase-credentials.json)"
                 
             NotificationService._save_log(db, user_id, event_type, {"title": title, "body": body, "data": data}, status)
             
-            return True, "Notification sent"
+            return status != "FAILED_FCM_ERROR", result_msg
         except Exception as e:
             NotificationService._save_log(db, user_id, event_type, {"title": title, "body": body, "data": data}, f"FAILED_EXCEPTION: {str(e)}")
             return False, f"Failed to send push: {str(e)}"
