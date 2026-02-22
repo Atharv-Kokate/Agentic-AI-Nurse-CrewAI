@@ -4,6 +4,11 @@ from medical_agents.tasks import MedicalTasks
 import time
 import sys
 import datetime
+import random
+
+# Cooldown between sequential crew steps (seconds)
+# Gives Groq rate limits time to reset between steps
+STEP_COOLDOWN = 15
 
 def log_debug(msg):
     with open("crew_debug.log", "a") as f:
@@ -17,21 +22,27 @@ class MedicalCrew:
         self.tasks = MedicalTasks()
 
     def kickoff_with_retry(self, crew_instance, step_name):
-        max_retries = 10
-        wait_time = 45 # seconds
+        max_retries = 6
+        base_wait = 60  # Start with 60 seconds
         for attempt in range(max_retries):
             try:
                 return crew_instance.kickoff()
             except Exception as e:
                 error_msg = str(e).lower()
-                if "rate_limit" in error_msg or "429" in error_msg or "too many requests" in error_msg or "upstream" in error_msg:
-                    # Use sys.__stdout__.write to avoid Rich FileProxy crash
-                    sys.__stdout__.write(f"\n\n[WARNING] Rate limit hit ({step_name}). Waiting {wait_time}s before retry {attempt + 1}/{max_retries}...\n")
+                if "rate_limit" in error_msg or "429" in error_msg or "too many requests" in error_msg or "upstream" in error_msg or "resource_exhausted" in error_msg:
+                    # Exponential backoff with jitter: 60s → 90s → 135s → 202s → 303s
+                    wait_time = base_wait * (1.5 ** attempt) + random.uniform(5, 15)
+                    wait_time = min(wait_time, 300)  # Cap at 5 minutes
+                    sys.__stdout__.write(f"\n[RATE LIMIT] {step_name}: Waiting {wait_time:.0f}s before retry {attempt + 1}/{max_retries}...\n")
                     time.sleep(wait_time)
-                    wait_time += 15 
                 else:
                     raise e
         raise Exception(f"Max retries exceeded for {step_name}.")
+
+    def _cooldown(self, next_step_name):
+        """Pause between crew steps to let Groq rate limits recover."""
+        sys.__stdout__.write(f"\n[COOLDOWN] Waiting {STEP_COOLDOWN}s before {next_step_name}...\n")
+        time.sleep(STEP_COOLDOWN)
 
     def run(self, patient_data):
         print(f"DEBUG: MedicalCrew.run called with: {patient_data}")
@@ -64,6 +75,7 @@ class MedicalCrew:
 
         out1 = get_output_str(res1)
         
+        self._cooldown("Symptom Inquiry")
         print("\n[2/5] Running Symptom Inquiry Agent...")
         # Manually inject context since separate Crews might break Task.context sharing
         # CRITICAL FIX: Inject ORIGINAL PATIENT DATA (which now includes history/meds) so this agent doesn't rely solely on the previous agent's summary
@@ -76,6 +88,7 @@ class MedicalCrew:
         
         out2 = get_output_str(res2)
 
+        self._cooldown("Context Aggregation")
         print("\n[3/5] Running Context Aggregation Agent...")
         # Inject previous contexts AND original data
         aggregation.description += f"\n\n[ORIGINAL PATIENT DATA & HISTORY]:\n{patient_data}\n\n[CONTEXT - VITAL ANALYSIS]:\n{out1}\n\n[CONTEXT - SYMPTOM INQUIRY]:\n{out2}"
@@ -87,6 +100,7 @@ class MedicalCrew:
 
         out3 = get_output_str(res3)
 
+        self._cooldown("Risk Assessment")
         print("\n[4/5] Running Risk Assessment Agent...")
         # Inject Ground Truth again
         risk_assessment.description += f"\n\n[ORIGINAL PATIENT DATA & HISTORY]:\n{patient_data}\n\n[CONTEXT - CLINICAL AGGREGATION]:\n{out3}"
@@ -98,6 +112,7 @@ class MedicalCrew:
 
         out4 = get_output_str(risk_result)
 
+        self._cooldown("Decision Action")
         print("\n[5/5] Running Decision & Action Agent...")
         decision_making.description += f"\n\n[ORIGINAL PATIENT DATA & HISTORY]:\n{patient_data}\n\n[CONTEXT - RISK ASSESSMENT]:\n{out4}"
         

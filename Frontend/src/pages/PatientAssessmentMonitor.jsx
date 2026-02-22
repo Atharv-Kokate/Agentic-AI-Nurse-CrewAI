@@ -12,6 +12,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { cn } from '../utils/cn';
 import VideoCallModal from '../components/VideoCallModal';
 import { getWsUrl } from '../utils/websocket';
+import TaskGrid from '../components/TaskGrid';
 
 const PatientAssessmentMonitor = () => {
     const { patientId } = useParams();
@@ -1172,54 +1173,36 @@ const PatientAssessmentMonitor = () => {
                                     </button>
                                 </div>
                             ) : (
-                                <div className="space-y-3">
-                                    {tasks.map((task) => (
-                                        <div key={task.id} className="flex items-start justify-between p-4 border border-slate-100 rounded-lg hover:bg-slate-50 group">
-                                            <div className="flex items-start gap-3">
-                                                <div className={cn("mt-1 p-2 rounded-lg",
-                                                    task.category === 'Diet' ? 'bg-green-100 text-green-700' :
-                                                        task.category === 'Exercise' ? 'bg-orange-100 text-orange-700' :
-                                                            'bg-blue-100 text-blue-700'
-                                                )}>
-                                                    {task.category === 'Diet' ? <Utensils className="h-4 w-4" /> :
-                                                        task.category === 'Exercise' ? <Activity className="h-4 w-4" /> :
-                                                            <Clock className="h-4 w-4" />}
-                                                </div>
-                                                <div>
-                                                    <p className="font-semibold text-slate-900">{task.task_description}</p>
-                                                    <div className="flex items-center gap-3 mt-1">
-                                                        <span className="text-xs text-slate-500 uppercase tracking-wide font-medium">{task.category}</span>
-
-                                                        {task.status_patient === 'COMPLETED' ? (
-                                                            <span className="text-xs flex items-center gap-1 text-emerald-600 font-bold">
-                                                                <CheckCircle className="h-3 w-3" /> Patient Done
-                                                            </span>
-                                                        ) : (
-                                                            <span className="text-xs text-slate-400">Patient: Pending</span>
-                                                        )}
-
-                                                        {task.status_caretaker === 'VALIDATED' ? (
-                                                            <span className="text-xs flex items-center gap-1 text-indigo-600 font-bold border-l pl-2 border-slate-200">
-                                                                <ShieldCheck className="h-3 w-3" /> Verified
-                                                            </span>
-                                                        ) : task.status_caretaker === 'REFUSED' ? (
-                                                            <span className="text-xs text-red-500 font-bold border-l pl-2 border-slate-200">
-                                                                Rejected
-                                                            </span>
-                                                        ) : (
-                                                            <span className="text-xs text-slate-400 border-l pl-2 border-slate-200">
-                                                                Unverified
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <button className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition">
-                                                <Trash2 className="h-4 w-4" />
-                                            </button>
+                                <TaskGrid
+                                    tasks={tasks}
+                                    compact={true}
+                                    isCompleted={(task) => task.status_patient === 'COMPLETED'}
+                                    renderBadges={(task) => (
+                                        <div className="flex items-center gap-2 flex-wrap mt-1">
+                                            {task.status_patient === 'COMPLETED' ? (
+                                                <span className="text-xs flex items-center gap-1 text-emerald-600 font-bold">
+                                                    <CheckCircle className="h-3 w-3" /> Patient Done
+                                                </span>
+                                            ) : (
+                                                <span className="text-xs text-slate-400">Patient: Pending</span>
+                                            )}
+                                            {task.status_caretaker === 'VALIDATED' ? (
+                                                <span className="text-xs flex items-center gap-1 text-indigo-600 font-bold border-l pl-2 border-slate-200">
+                                                    <ShieldCheck className="h-3 w-3" /> Verified
+                                                </span>
+                                            ) : task.status_caretaker === 'REFUSED' ? (
+                                                <span className="text-xs text-red-500 font-bold border-l pl-2 border-slate-200">Rejected</span>
+                                            ) : (
+                                                <span className="text-xs text-slate-400 border-l pl-2 border-slate-200">Unverified</span>
+                                            )}
                                         </div>
-                                    ))}
-                                </div>
+                                    )}
+                                    renderAction={(task) => (
+                                        <button className="text-slate-300 hover:text-red-500 transition">
+                                            <Trash2 className="h-4 w-4" />
+                                        </button>
+                                    )}
+                                />
                             )}
                         </div>
                     </div>

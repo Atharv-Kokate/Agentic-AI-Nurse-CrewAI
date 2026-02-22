@@ -4022,3 +4022,324 @@ LiteLLM completion() model= llama-3.3-70b-versatile; provider = groq
 LiteLLM completion() model= llama-3.3-70b-versatile; provider = groq
 2026-02-22 07:58:24,405 - LiteLLM - INFO - 
 LiteLLM completion() model= llama-3.3-70b-versatile; provider = groq
+2026-02-22 10:25:52,883 - websocket_manager - INFO - WebSocket connected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 10:25:52,887 - websocket_manager - INFO - WebSocket disconnected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 10:25:54,267 - websocket_manager - INFO - WebSocket connected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 10:25:57,641 - websocket_manager - INFO - WebSocket disconnected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 10:25:58,253 - websocket_manager - INFO - WebSocket connected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 10:26:02,657 - websocket_manager - INFO - WebSocket disconnected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 10:26:03,472 - websocket_manager - INFO - WebSocket connected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 10:26:08,169 - websocket_manager - INFO - WebSocket disconnected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 10:26:10,219 - websocket_manager - INFO - WebSocket connected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 10:26:12,867 - websocket_manager - INFO - WebSocket disconnected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 10:26:13,205 - websocket_manager - INFO - WebSocket connected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 10:26:17,877 - websocket_manager - INFO - WebSocket disconnected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 10:26:18,714 - websocket_manager - INFO - WebSocket connected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 10:26:44,661 - main - INFO - Received LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c: 18.457831791989666, 73.8505718677864
+2026-02-22 10:26:45,032 - main - INFO - Broadcasted LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 10:26:45,032 - main - INFO - Received LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c: 18.457831791989666, 73.8505718677864
+2026-02-22 10:26:45,521 - main - INFO - Broadcasted LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 10:26:45,521 - main - INFO - Received LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c: 18.457831791989666, 73.8505718677864
+2026-02-22 10:26:46,410 - main - INFO - Broadcasted LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 10:26:46,418 - main - INFO - Received LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c: 18.457831791989666, 73.8505718677864
+2026-02-22 10:26:46,801 - main - INFO - Broadcasted LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 10:26:46,803 - main - INFO - Received LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c: 18.457831791989666, 73.8505718677864
+2026-02-22 10:26:47,173 - main - INFO - Broadcasted LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 10:26:47,173 - main - INFO - Received LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c: 18.457831791989666, 73.8505718677864
+2026-02-22 10:26:47,567 - main - INFO - Broadcasted LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 10:26:47,567 - main - INFO - Received LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c: 18.457831791989666, 73.8505718677864
+2026-02-22 10:26:47,930 - main - INFO - Broadcasted LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 10:26:47,930 - main - INFO - Received LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c: 18.457831791989666, 73.8505718677864
+2026-02-22 10:26:48,330 - main - INFO - Broadcasted LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 10:28:33,442 - main - INFO - Received LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c: 18.457831560158393, 73.850576004569
+2026-02-22 10:28:34,214 - main - INFO - Broadcasted LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 10:28:34,214 - main - INFO - Received LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c: 18.457831560158393, 73.850576004569
+2026-02-22 10:28:34,693 - main - INFO - Broadcasted LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 10:38:05,127 - websocket_manager - INFO - WebSocket disconnected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 10:38:41,325 - websocket_manager - INFO - WebSocket connected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 10:38:41,339 - websocket_manager - INFO - WebSocket disconnected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 10:38:42,118 - websocket_manager - INFO - WebSocket connected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 10:38:42,960 - websocket_manager - INFO - WebSocket disconnected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 10:38:43,291 - websocket_manager - INFO - WebSocket connected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 10:38:47,978 - websocket_manager - INFO - WebSocket disconnected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 10:38:48,365 - websocket_manager - INFO - WebSocket connected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 10:38:52,955 - main - INFO - Received LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c: 18.457831791989666, 73.8505718677864
+2026-02-22 10:38:53,274 - websocket_manager - WARNING - Failed to send to WS: 
+2026-02-22 10:38:53,274 - websocket_manager - INFO - WebSocket disconnected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 10:38:53,274 - main - INFO - Broadcasted LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 10:38:53,274 - main - ERROR - WebSocket error for 12f83626-db84-4eb4-b674-0d24e647769c: WebSocket is not connected. Need to call "accept" first.
+2026-02-22 10:38:53,354 - websocket_manager - INFO - WebSocket connected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 10:38:58,013 - websocket_manager - INFO - WebSocket disconnected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 10:38:58,320 - websocket_manager - INFO - WebSocket connected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 10:39:03,035 - websocket_manager - INFO - WebSocket disconnected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 10:39:03,827 - websocket_manager - INFO - WebSocket connected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 10:39:08,048 - websocket_manager - INFO - WebSocket disconnected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 10:39:08,561 - websocket_manager - INFO - WebSocket connected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 10:39:16,228 - main - INFO - Received LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c: 18.457831560158393, 73.850576004569
+2026-02-22 10:39:16,760 - main - INFO - Broadcasted LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 10:39:16,760 - main - INFO - Received LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c: 18.457831560158393, 73.850576004569
+2026-02-22 10:39:17,299 - main - INFO - Broadcasted LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 10:39:17,299 - main - INFO - Received LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c: 18.457831560158393, 73.850576004569
+2026-02-22 10:39:18,008 - main - INFO - Broadcasted LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 10:39:18,008 - main - INFO - Received LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c: 18.457831560158393, 73.850576004569
+2026-02-22 10:39:18,644 - main - INFO - Broadcasted LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 10:39:18,644 - main - INFO - Received LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c: 18.457831560158393, 73.850576004569
+2026-02-22 10:39:19,112 - main - INFO - Broadcasted LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 10:39:19,112 - main - INFO - Received LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c: 18.457831560158393, 73.850576004569
+2026-02-22 10:39:20,059 - main - INFO - Broadcasted LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 10:55:35,115 - websocket_manager - INFO - WebSocket disconnected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 10:58:36,563 - websocket_manager - INFO - WebSocket connected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 10:58:36,563 - websocket_manager - INFO - WebSocket disconnected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 10:58:37,976 - websocket_manager - INFO - WebSocket connected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 10:58:41,345 - websocket_manager - INFO - WebSocket disconnected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 10:58:41,830 - websocket_manager - INFO - WebSocket connected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 10:58:46,360 - websocket_manager - INFO - WebSocket disconnected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 10:58:46,698 - websocket_manager - INFO - WebSocket connected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 10:58:51,379 - websocket_manager - INFO - WebSocket disconnected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 10:58:51,810 - websocket_manager - INFO - WebSocket connected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 10:58:56,390 - websocket_manager - INFO - WebSocket disconnected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 10:58:57,110 - websocket_manager - INFO - WebSocket connected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 10:59:01,399 - websocket_manager - INFO - WebSocket disconnected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 10:59:02,127 - websocket_manager - INFO - WebSocket connected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 10:59:57,409 - main - INFO - Received LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c: 18.457831560158393, 73.850576004569
+2026-02-22 10:59:57,768 - main - INFO - Broadcasted LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 10:59:57,768 - main - INFO - Received LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c: 18.457831560158393, 73.850576004569
+2026-02-22 10:59:58,686 - main - INFO - Broadcasted LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 10:59:58,686 - main - INFO - Received LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c: 18.457831560158393, 73.850576004569
+2026-02-22 10:59:59,575 - main - INFO - Broadcasted LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 10:59:59,575 - main - INFO - Received LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c: 18.457831560158393, 73.850576004569
+2026-02-22 11:00:00,415 - main - INFO - Broadcasted LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 11:00:00,416 - main - INFO - Received LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c: 18.457831560158393, 73.850576004569
+2026-02-22 11:00:01,130 - main - INFO - Broadcasted LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 11:00:01,130 - main - INFO - Received LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c: 18.457831560158393, 73.850576004569
+2026-02-22 11:00:01,744 - main - INFO - Broadcasted LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 11:00:01,744 - main - INFO - Received LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c: 18.457831560158393, 73.850576004569
+2026-02-22 11:00:02,211 - main - INFO - Broadcasted LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 11:00:02,211 - main - INFO - Received LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c: 18.457831560158393, 73.850576004569
+2026-02-22 11:00:03,136 - main - INFO - Broadcasted LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 11:00:34,599 - main - INFO - Received LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c: 18.457882608152687, 73.85055585061265
+2026-02-22 11:00:35,757 - main - INFO - Broadcasted LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 11:00:35,759 - main - INFO - Received LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c: 18.457882608152687, 73.85055585061265
+2026-02-22 11:00:36,616 - main - INFO - Broadcasted LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 11:00:44,975 - websocket_manager - INFO - WebSocket disconnected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 11:02:11,531 - websocket_manager - INFO - WebSocket connected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 11:02:11,531 - websocket_manager - INFO - WebSocket disconnected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 11:02:12,115 - websocket_manager - INFO - WebSocket connected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 11:02:15,977 - websocket_manager - INFO - WebSocket disconnected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 11:02:16,350 - websocket_manager - INFO - WebSocket connected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 11:02:21,000 - websocket_manager - INFO - WebSocket disconnected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 11:02:21,637 - websocket_manager - INFO - WebSocket connected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 11:02:26,022 - websocket_manager - INFO - WebSocket disconnected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 11:02:26,387 - websocket_manager - INFO - WebSocket connected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 11:02:31,029 - websocket_manager - INFO - WebSocket disconnected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 11:02:31,426 - websocket_manager - INFO - WebSocket connected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 11:02:34,294 - main - INFO - Received LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c: 18.457831560158393, 73.850576004569
+2026-02-22 11:02:35,259 - main - INFO - Broadcasted LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 11:02:35,259 - main - INFO - Received LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c: 18.457831560158393, 73.850576004569
+2026-02-22 11:02:35,974 - main - INFO - Broadcasted LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 11:02:35,974 - main - INFO - Received LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c: 18.457831560158393, 73.850576004569
+2026-02-22 11:02:36,344 - websocket_manager - INFO - WebSocket connected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 11:02:36,456 - websocket_manager - WARNING - Failed to send to WS: 
+2026-02-22 11:02:36,458 - websocket_manager - INFO - WebSocket disconnected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 11:02:36,459 - main - INFO - Broadcasted LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 11:02:36,459 - main - ERROR - WebSocket error for 12f83626-db84-4eb4-b674-0d24e647769c: WebSocket is not connected. Need to call "accept" first.
+2026-02-22 11:03:59,086 - websocket_manager - INFO - WebSocket disconnected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 11:04:37,490 - websocket_manager - INFO - WebSocket connected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 11:04:37,495 - websocket_manager - INFO - WebSocket connected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 11:04:37,500 - websocket_manager - INFO - WebSocket disconnected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 11:05:02,095 - websocket_manager - INFO - WebSocket disconnected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 11:05:43,476 - websocket_manager - INFO - WebSocket connected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 11:05:43,479 - websocket_manager - INFO - WebSocket connected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 11:05:43,481 - websocket_manager - INFO - WebSocket disconnected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 11:05:45,183 - websocket_manager - INFO - WebSocket disconnected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 11:05:46,728 - websocket_manager - INFO - WebSocket connected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 11:05:50,186 - websocket_manager - INFO - WebSocket disconnected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 11:05:51,198 - websocket_manager - INFO - WebSocket connected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 11:05:55,209 - websocket_manager - INFO - WebSocket disconnected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 11:05:56,129 - websocket_manager - INFO - WebSocket connected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 11:06:00,229 - websocket_manager - INFO - WebSocket disconnected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 11:06:00,653 - websocket_manager - INFO - WebSocket connected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 11:06:05,256 - websocket_manager - INFO - WebSocket disconnected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 11:06:05,669 - websocket_manager - INFO - WebSocket connected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 11:07:39,948 - main - INFO - Received LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c: 18.457831560158393, 73.850576004569
+2026-02-22 11:07:40,264 - main - INFO - Broadcasted LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 11:07:40,264 - main - INFO - Received LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c: 18.457831560158393, 73.850576004569
+2026-02-22 11:07:42,215 - main - INFO - Broadcasted LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 11:07:42,215 - main - INFO - Received LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c: 18.457831560158393, 73.850576004569
+2026-02-22 11:07:43,054 - main - INFO - Broadcasted LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 11:07:43,054 - main - INFO - Received LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c: 18.457831560158393, 73.850576004569
+2026-02-22 11:07:43,594 - main - INFO - Broadcasted LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 11:07:43,594 - main - INFO - Received LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c: 18.457831560158393, 73.850576004569
+2026-02-22 11:07:44,166 - main - INFO - Broadcasted LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 11:07:44,166 - main - INFO - Received LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c: 18.457831560158393, 73.850576004569
+2026-02-22 11:07:45,049 - main - INFO - Broadcasted LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 11:07:45,049 - main - INFO - Received LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c: 18.457831560158393, 73.850576004569
+2026-02-22 11:07:45,946 - main - INFO - Broadcasted LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 11:07:45,953 - main - INFO - Received LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c: 18.457831560158393, 73.850576004569
+2026-02-22 11:07:46,676 - main - INFO - Broadcasted LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 11:08:24,121 - main - INFO - Received analysis request for patient: Atharv Sudhir Kokate
+2026-02-22 11:08:29,301 - main - INFO - Starting background analysis for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 11:08:29,765 - main - INFO - Fetched Context: Meds=8, Tasks=12
+2026-02-22 11:08:29,765 - main - INFO - --- CREW INPUT START ---
+Analyze this PATIENT DATA:
+
+[CURRENT VITALS & CLINICAL STATUS]
+Name: Atharv Sudhir Kokate
+Age: 55
+Gender: Male
+Blood Pressure: 180/150
+Heart Rate: 90
+Blood Sugar: 150
+Meds Taken (Self-Reported): False
+Known Conditions: Diabetes, Hypertension, Cardiac Failure
+Current Medications List: Lisinopril, Ramipril, thiazide diuretics
+Reported Symptoms: dizziness , headache , vomiting
+
+========================================
+[HISTORICAL VITALS LOG (Last 5 checks)]
+(Use for trend analysis only. DO NOT confuse with current status)
+- [2026-02-22 05:38] BP: 180/150 | HR: 90 | Sugar: 150
+- [2026-02-22 05:06] BP: 150/100 | HR: 90 | Sugar: 100
+- [2026-02-22 04:29] BP: 180/120 | HR: 80 | Sugar: 110
+- [2026-02-22 04:08] BP: 180/110 | HR: 90 | Sugar: 110
+- [2026-02-22 02:12] BP: 140/110 | HR: 80 | Sugar: 110
+
+[MEDICATION ADHERENCE LOG (Last 3 Days)]
+- [2026-02-22 20:00] dispirin - Status: TAKEN
+- [2026-02-22 04:00] paracetomol - Status: TAKEN
+- [2026-02-22 04:00] aspirin - Status: TAKEN
+- [2026-02-21 20:00] sefjSJKHEFBu - Status: TAKEN
+- [2026-02-21 20:00] dispirin - Status: TAKEN
+- [2026-02-21 20:00] aspirin - Status: TAKEN
+- [2026-02-21 04:00] paracetomol - Status: TAKEN
+- [2026-02-20 20:00] sefjSJKHEFBu - Status: TAKEN
+
+[DAILY LIFESTYLE TASKS (Today)]
+- Medication: Take Lisinopril as prescribed by your doctor to manage hypertension (Status: COMPLETED)
+- Medication: Take Ramipril as prescribed by your doctor to manage hypertension (Status: PENDING (Not Completed))
+- Lifestyle: Practice stress-reducing techniques, such as deep breathing or meditation, to help manage stress and anxiety (Status: PENDING (Not Completed))
+- Exercise: Do some light stretching exercises, such as yoga or tai chi, to help improve flexibility and balance (Status: REFUSED BY CARETAKER)
+- Lifestyle: Get at least 7-8 hours of sleep tonight to help regulate blood sugar levels and improve overall health (Status: COMPLETED)
+- Diet: Choose a low-carbohydrate lunch, such as grilled chicken with roasted vegetables, to help manage diabetes (Status: PENDING (Not Completed))
+- Diet: Eat a low-sodium breakfast, such as oatmeal with fruit and nuts, to help manage hypertension (Status: REFUSED BY CARETAKER)
+- Diet: Avoid consuming high-sugar snacks, such as cookies or candy, to help manage diabetes (Status: COMPLETED)
+- Exercise: Take a 30-minute walk after breakfast to help manage blood sugar levels and improve cardiovascular health (Status: COMPLETED)
+- Medication: Take thiazide diuretics as prescribed by your doctor to manage hypertension (Status: REFUSED BY CARETAKER)
+- Exercise: Avoid strenuous exercise, such as weightlifting or high-impact aerobics, to help manage cardiac failure (Status: COMPLETED)
+- Lifestyle: Drink at least 8 glasses of water throughout the day to stay hydrated and help manage diabetes (Status: PENDING (Not Completed))
+========================================
+--- CREW INPUT END ---
+2026-02-22 11:08:29,894 - LiteLLM - INFO - 
+LiteLLM completion() model= llama-3.3-70b-versatile; provider = groq
+2026-02-22 11:08:30,581 - websocket_manager - INFO - WebSocket connected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 11:08:32,177 - LiteLLM - INFO - Wrapper: Completed Call, calling success_handler
+2026-02-22 11:08:32,313 - LiteLLM - INFO - 
+LiteLLM completion() model= llama-3.3-70b-versatile; provider = groq
+2026-02-22 11:08:32,781 - websocket_manager - INFO - WebSocket connected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 11:08:32,781 - websocket_manager - INFO - WebSocket disconnected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 11:08:33,158 - LiteLLM - INFO - Wrapper: Completed Call, calling success_handler
+2026-02-22 11:08:33,398 - LiteLLM - INFO - 
+LiteLLM completion() model= llama-3.3-70b-versatile; provider = groq
+2026-02-22 11:09:25,084 - LiteLLM - INFO - 
+LiteLLM completion() model= llama-3.3-70b-versatile; provider = groq
+2026-02-22 11:09:32,261 - websocket_manager - INFO - WebSocket disconnected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 11:10:25,955 - LiteLLM - INFO - 
+LiteLLM completion() model= llama-3.3-70b-versatile; provider = groq
+2026-02-22 11:10:29,033 - main - INFO - Received analysis request for patient: Atharv Sudhir Kokate
+2026-02-22 11:10:33,839 - main - INFO - Starting background analysis for patient 61b1ccf9-1995-4e5f-bba9-1c29d3d07757
+2026-02-22 11:10:34,321 - main - INFO - Fetched Context: Meds=0, Tasks=12
+2026-02-22 11:10:34,321 - main - INFO - --- CREW INPUT START ---
+Analyze this PATIENT DATA:
+
+[CURRENT VITALS & CLINICAL STATUS]
+Name: Atharv Sudhir Kokate
+Age: 55
+Gender: Male
+Blood Pressure: 180/140
+Heart Rate: 100
+Blood Sugar: 150
+Meds Taken (Self-Reported): False
+Known Conditions: Diabetes, Hypertension, Cardiac Failure
+Current Medications List: Lisinopril, Ramipril, thiazide diuretics
+Reported Symptoms: chest pain and difficulty in breathing
+
+========================================
+[HISTORICAL VITALS LOG (Last 5 checks)]
+(Use for trend analysis only. DO NOT confuse with current status)
+- [2026-02-22 05:40] BP: 180/140 | HR: 100 | Sugar: 150
+- [2026-02-22 05:04] BP: 150/120 | HR: 80 | Sugar: 100
+- [2026-02-22 02:09] BP: 120/80 | HR: 72 | Sugar: 90
+- [2026-02-22 02:08] BP: 160/120 | HR: 110 | Sugar: 180
+- [2026-02-22 02:01] BP: 150/160 | HR: 100 | Sugar: 100
+
+[MEDICATION ADHERENCE LOG (Last 3 Days)]
+No recent medication logs.
+
+[DAILY LIFESTYLE TASKS (Today)]
+- Diet: Eat a low-sodium breakfast, such as oatmeal with fruits and nuts, to manage hypertension and diabetes (Status: PENDING (Not Completed))
+- Exercise: Take a 30-minute brisk walk in the morning to improve cardiovascular health and manage cardiac failure (Status: PENDING (Not Completed))
+- Lifestyle: Monitor and track blood pressure and blood glucose levels throughout the day (Status: PENDING (Not Completed))
+- Medication: Take Lisinopril and Ramipril as prescribed by the doctor to manage hypertension and cardiac failure (Status: PENDING (Not Completed))
+- Diet: Include lean protein sources, such as chicken or fish, in lunch to manage diabetes and hypertension (Status: PENDING (Not Completed))
+- Exercise: Perform gentle stretches or yoga in the afternoon to improve flexibility and reduce stress (Status: PENDING (Not Completed))
+- Lifestyle: Stay hydrated by drinking at least 8-10 glasses of water throughout the day (Status: PENDING (Not Completed))
+- Medication: Take thiazide diuretics as prescribed by the doctor to manage hypertension (Status: PENDING (Not Completed))
+- Diet: Eat a balanced dinner, including complex carbohydrates, lean protein, and healthy fats, to manage diabetes and hypertension (Status: PENDING (Not Completed))
+- Exercise: Avoid heavy exercises or activities that may exacerbate cardiac failure, and opt for light activities such as reading or listening to music instead (Status: PENDING (Not Completed))
+- Lifestyle: Get at least 7-8 hours of sleep tonight to help manage stress and overall health (Status: PENDING (Not Completed))
+- Medication: Review and adjust medication schedule as needed, and consult with the doctor if any concerns or side effects arise (Status: PENDING (Not Completed))
+========================================
+--- CREW INPUT END ---
+2026-02-22 11:10:34,395 - LiteLLM - INFO - 
+LiteLLM completion() model= llama-3.3-70b-versatile; provider = groq
+2026-02-22 11:10:35,076 - LiteLLM - INFO - Wrapper: Completed Call, calling success_handler
+2026-02-22 11:10:35,179 - LiteLLM - INFO - 
+LiteLLM completion() model= llama-3.3-70b-versatile; provider = groq
+2026-02-22 11:10:35,278 - main - WARNING - WS Auth Failed for user 088c8a22-e700-4eac-85e3-8321441ebda4 on patient 61b1ccf9-1995-4e5f-bba9-1c29d3d07757
+2026-02-22 11:10:35,279 - main - ERROR - WebSocket error for 61b1ccf9-1995-4e5f-bba9-1c29d3d07757: name 'status' is not defined
+2026-02-22 11:10:36,219 - LiteLLM - INFO - Wrapper: Completed Call, calling success_handler
+2026-02-22 11:10:36,320 - LiteLLM - INFO - 
+LiteLLM completion() model= llama-3.3-70b-versatile; provider = groq
+2026-02-22 11:10:36,518 - main - WARNING - WS Auth Failed for user 088c8a22-e700-4eac-85e3-8321441ebda4 on patient 61b1ccf9-1995-4e5f-bba9-1c29d3d07757
+2026-02-22 11:10:36,520 - main - ERROR - WebSocket error for 61b1ccf9-1995-4e5f-bba9-1c29d3d07757: name 'status' is not defined
+2026-02-22 11:11:21,595 - LiteLLM - INFO - 
+LiteLLM completion() model= llama-3.3-70b-versatile; provider = groq
+2026-02-22 11:11:42,107 - LiteLLM - INFO - 
+LiteLLM completion() model= llama-3.3-70b-versatile; provider = groq
+2026-02-22 11:11:56,393 - websocket_manager - INFO - WebSocket disconnected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 11:11:59,519 - main - WARNING - WS Auth Failed for user 088c8a22-e700-4eac-85e3-8321441ebda4 on patient 61b1ccf9-1995-4e5f-bba9-1c29d3d07757
+2026-02-22 11:11:59,526 - main - ERROR - WebSocket error for 61b1ccf9-1995-4e5f-bba9-1c29d3d07757: name 'status' is not defined
+2026-02-22 11:12:01,422 - main - WARNING - WS Auth Failed for user 088c8a22-e700-4eac-85e3-8321441ebda4 on patient 61b1ccf9-1995-4e5f-bba9-1c29d3d07757
+2026-02-22 11:12:01,422 - main - ERROR - WebSocket error for 61b1ccf9-1995-4e5f-bba9-1c29d3d07757: name 'status' is not defined
+2026-02-22 11:12:02,728 - websocket_manager - INFO - WebSocket connected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 11:12:02,812 - main - INFO - Received LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c: 18.457831560158393, 73.850576004569
+2026-02-22 11:12:03,249 - main - INFO - Broadcasted LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 11:12:03,255 - main - INFO - Received LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c: 18.457831560158393, 73.850576004569
+2026-02-22 11:12:03,695 - main - INFO - Broadcasted LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 11:12:03,695 - main - INFO - Received LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c: 18.457831560158393, 73.850576004569
+2026-02-22 11:12:04,301 - main - INFO - Broadcasted LOCATION_UPDATE for 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 11:12:05,861 - websocket_manager - INFO - WebSocket disconnected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 11:12:07,314 - websocket_manager - INFO - WebSocket connected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 11:12:11,855 - websocket_manager - INFO - WebSocket disconnected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 11:12:12,253 - websocket_manager - INFO - WebSocket connected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 11:12:17,950 - websocket_manager - INFO - WebSocket disconnected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 11:12:18,869 - websocket_manager - INFO - WebSocket connected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 11:12:22,620 - LiteLLM - INFO - 
+LiteLLM completion() model= llama-3.3-70b-versatile; provider = groq
+2026-02-22 11:12:23,868 - websocket_manager - INFO - WebSocket disconnected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 11:12:24,295 - websocket_manager - INFO - WebSocket connected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 11:12:29,855 - websocket_manager - INFO - WebSocket disconnected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 11:12:30,749 - websocket_manager - INFO - WebSocket connected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 11:13:12,712 - LiteLLM - INFO - 
+LiteLLM completion() model= llama-3.3-70b-versatile; provider = groq
+2026-02-22 11:13:39,026 - LiteLLM - INFO - 
+LiteLLM completion() model= llama-3.3-70b-versatile; provider = groq
+2026-02-22 11:14:59,803 - LiteLLM - INFO - 
+LiteLLM completion() model= llama-3.3-70b-versatile; provider = groq
+2026-02-22 11:15:09,639 - LiteLLM - INFO - 
+LiteLLM completion() model= llama-3.3-70b-versatile; provider = groq
+2026-02-22 11:16:44,389 - websocket_manager - INFO - WebSocket disconnected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 11:16:55,408 - LiteLLM - INFO - 
+LiteLLM completion() model= llama-3.3-70b-versatile; provider = groq
+2026-02-22 11:17:00,274 - LiteLLM - INFO - 
+LiteLLM completion() model= llama-3.3-70b-versatile; provider = groq

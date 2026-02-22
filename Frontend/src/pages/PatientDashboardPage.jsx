@@ -7,6 +7,7 @@ import { cn } from '../utils/cn';
 import { useAuth } from '../contexts/AuthContext';
 import { getWsUrl } from '../utils/websocket';
 import VideoCallModal from '../components/VideoCallModal';
+import TaskGrid from '../components/TaskGrid';
 
 const PatientDashboardPage = () => {
     const navigate = useNavigate();
@@ -223,164 +224,43 @@ const PatientDashboardPage = () => {
             </div>
 
             {/* Daily Tasks Section */}
-            {/* <div className="glass-panel p-6 rounded-xl">
-                <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-xl font-bold text-slate-900">Today's Health Tasks</h2>
-                    <span className="text-sm text-slate-500 font-medium">
-                        {format(new Date(), 'EEEE, MMMM d')}
-                    </span>
-                </div>
-
-                {tasks.length === 0 ? (
-                    <div className="text-center py-8 text-slate-500 bg-slate-50 rounded-lg">
-                        <Sparkles className="h-6 w-6 mx-auto mb-2 text-slate-400" />
-                        <p className="mb-3">No tasks assigned for today.</p>
-                        <button
-                            onClick={generateAiPlan}
-                            disabled={generatingPlan}
-                            className="inline-flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 transition disabled:opacity-50"
-                        >
-                            {generatingPlan ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                            Generate My Plan
-                        </button>
-                    </div>
-                ) : (
-                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                        {tasks.map((task) => (
-                            <div
-                                key={task.id}
-                                className={cn(
-                                    "p-4 rounded-xl border transition-all",
-                                    task.status_patient === 'COMPLETED'
-                                        ? "bg-emerald-50 border-emerald-100 opacity-75"
-                                        : "bg-white border-slate-100 hover:shadow-md"
-                                )}
-                            >
-                                <div className="flex items-start justify-between">
-                                    <div className="flex items-start gap-3">
-                                        <div className={cn("p-2 rounded-lg mt-0.5",
-                                            task.category === 'Diet' ? 'bg-green-100 text-green-600' :
-                                                task.category === 'Exercise' ? 'bg-orange-100 text-orange-600' :
-                                                    'bg-blue-100 text-blue-600'
-                                        )}>
-                                            {task.category === 'Diet' ? <Utensils className="h-4 w-4" /> :
-                                                task.category === 'Exercise' ? <Activity className="h-4 w-4" /> :
-                                                    <Clock className="h-4 w-4" />}
-                                        </div>
-                                        <div>
-                                            <p className={cn("font-medium text-slate-900", task.status_patient === 'COMPLETED' && "line-through text-slate-500")}>
-                                                {task.task_description}
-                                            </p>
-                                            <span className="text-xs text-slate-400 font-medium uppercase tracking-wider">{task.category}</span>
-                                        </div>
-                                    </div>
-
-                                    <button
-                                        onClick={() => toggleTaskStatus(task.id, task.status_patient)}
-                                        className={cn(
-                                            "flex items-center justify-center w-6 h-6 rounded-full border transition-all",
-                                            task.status_patient === 'COMPLETED'
-                                                ? "bg-emerald-500 border-emerald-500 text-white"
-                                                : "bg-transparent border-slate-300 text-transparent hover:border-emerald-500"
-                                        )}
-                                    >
-                                        <CheckCircle className="w-4 h-4" />
-                                    </button>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
+            <TaskGrid
+                tasks={tasks}
+                isCompleted={(task) => task.status_patient === 'COMPLETED'}
+                renderAction={(task) => (
+                    <button
+                        onClick={() => toggleTaskStatus(task.id, task.status_patient)}
+                        className={`relative flex items-center justify-center w-8 h-8 rounded-full border transition-all duration-300 ${
+                            task.status_patient === 'COMPLETED'
+                                ? "bg-emerald-500 border-emerald-500"
+                                : "border-slate-300 hover:border-emerald-400"
+                        }`}
+                    >
+                        <CheckCircle
+                            className={`w-5 h-5 transition-all duration-300 ${
+                                task.status_patient === 'COMPLETED'
+                                    ? "text-white scale-100"
+                                    : "text-transparent group-hover:text-emerald-400 scale-90"
+                            }`}
+                        />
+                    </button>
                 )}
-            </div> */}
+            />
 
-            <div className="space-y-8">
-
-  {["Diet", "Exercise", "Lifestyle"].map((category) => {
-    const categoryTasks = tasks.filter(t => t.category === category);
-
-    if (categoryTasks.length === 0) return null;
-
-    return (
-      <div key={category} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
-        
-        {/* Section Header */}
-        <div className="flex items-center justify-between mb-5">
-          <div className="flex items-center gap-3">
-            <div className={`p-2 rounded-xl ${
-              category === "Diet"
-                ? "bg-green-100 text-green-600"
-                : category === "Exercise"
-                ? "bg-orange-100 text-orange-600"
-                : "bg-indigo-100 text-indigo-600"
-            }`}>
-              {category === "Diet" ? <Utensils className="h-5 w-5" /> :
-               category === "Exercise" ? <Activity className="h-5 w-5" /> :
-               <Clock className="h-5 w-5" />}
-            </div>
-
-            <h3 className="text-lg font-bold text-slate-800">
-              {category}
-            </h3>
-          </div>
-
-          <span className="text-sm text-slate-400 font-medium">
-            {categoryTasks.filter(t => t.status_patient === "COMPLETED").length}
-            / {categoryTasks.length} Completed
-          </span>
-        </div>
-
-        {/* Tasks */}
-        <div className="space-y-3">
-          {categoryTasks.map(task => {
-            const completed = task.status_patient === "COMPLETED";
-
-            return (
-              <div
-                key={task.id}
-                className={`group flex items-center justify-between p-4 rounded-xl border transition-all duration-200 ${
-                  completed
-                    ? "bg-emerald-50 border-emerald-100"
-                    : "bg-slate-50 border-slate-100 hover:bg-white hover:shadow-sm"
-                }`}
-              >
-                {/* Task Text */}
-                <div>
-                  <p className={`font-medium ${
-                    completed
-                      ? "text-slate-500 line-through"
-                      : "text-slate-800"
-                  }`}>
-                    {task.task_description}
-                  </p>
+            {tasks.length === 0 && (
+                <div className="text-center py-8 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                    <Sparkles className="h-6 w-6 mx-auto mb-2 text-slate-400" />
+                    <p className="text-slate-500 mb-3">No tasks assigned for today.</p>
+                    <button
+                        onClick={generateAiPlan}
+                        disabled={generatingPlan}
+                        className="inline-flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 transition disabled:opacity-50"
+                    >
+                        {generatingPlan ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                        Generate My Plan
+                    </button>
                 </div>
-
-                {/* Professional Toggle Button */}
-                <button
-                  onClick={() => toggleTaskStatus(task.id, task.status_patient)}
-                  className={`relative flex items-center justify-center w-8 h-8 rounded-full border transition-all duration-300 ${
-                    completed
-                      ? "bg-emerald-500 border-emerald-500"
-                      : "border-slate-300 hover:border-emerald-400"
-                  }`}
-                >
-                  <CheckCircle
-                    className={`w-5 h-5 transition-all duration-300 ${
-                      completed
-                        ? "text-white scale-100"
-                        : "text-transparent group-hover:text-emerald-400 scale-90"
-                    }`}
-                  />
-                </button>
-              </div>
-            );
-          })}
-        </div>
-
-      </div>
-    );
-  })}
-
-</div>
+            )}
 
             {/* History Table */}
             <div className="glass-panel rounded-xl overflow-hidden">

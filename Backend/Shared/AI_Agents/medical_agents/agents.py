@@ -1,38 +1,38 @@
 import os
 from crewai import Agent, LLM
 from medical_agents.tools import AskPatientTool
-# Initialize Native CrewAI LLMs
-# 1. Ollama (Llama 3 8B) - Running Locally
-ollama_llama3 = LLM(
-    model="ollama/llama3:8b",
-    base_url="http://localhost:11434"
-)
 
-# 2. Ollama (Phi 3) - Running Locally
-ollama_phi = LLM(
-    model="ollama/phi3",
-    base_url="http://localhost:11434"
-)
+# ─── LLM Configuration ───────────────────────────────────────────────
+# Strategy: Use 8B-instant for simple tasks (higher Groq TPM limits)
+#           Use 70B-versatile only for reasoning-heavy tasks
+#           Round-robin across 2 API keys to double effective rate limits
+# ─────────────────────────────────────────────────────────────────────
 
-# 3. Groq (Llama 3.1 8B Instant) - Cloud
-# Ensure GROQ_API_KEY is in .env
-# 3. Groq (Llama 3.1 8B Instant) - Cloud
-# Ensure GROQ_API_KEY is in .env
-groq_llama70 = LLM(
+_KEY_1 = os.getenv("GROQ_API_KEY")
+_KEY_2 = os.getenv("GROQ_API_KEY_2") or _KEY_1  # Fallback to key1 if key2 missing
+
+# 70B — Deep reasoning (symptom inquiry, risk assessment)
+groq_70b_key1 = LLM(
     model="groq/llama-3.3-70b-versatile",
-    api_key=os.getenv("GROQ_API_KEY")
+    api_key=_KEY_1,
+    num_retries=3,
 )
-
-# 4. Groq (Secondary Key to double rate limits)
-groq_llama70_2 = LLM(
+groq_70b_key2 = LLM(
     model="groq/llama-3.3-70b-versatile",
-    api_key=os.getenv("GROQ_API_KEY_2")
+    api_key=_KEY_2,
+    num_retries=3,
 )
 
-# 4. Groq (Backup / Alternative)
-groq_gemma = LLM(
+# 8B — Fast, high-throughput (vitals, aggregation, decision, planning)
+groq_8b_key1 = LLM(
     model="groq/llama-3.1-8b-instant",
-    api_key=os.getenv("GROQ_API_KEY")
+    api_key=_KEY_1,
+    num_retries=3,
+)
+groq_8b_key2 = LLM(
+    model="groq/llama-3.1-8b-instant",
+    api_key=_KEY_2,
+    num_retries=3,
 )
 
 class MedicalAgents:
@@ -51,8 +51,8 @@ class MedicalAgents:
             ),
             verbose=True,
             allow_delegation=False,
-            max_rpm=10,
-            llm=groq_llama70 # Key 1
+            max_rpm=6,
+            llm=groq_8b_key1  # 8B fast model, Key 1 — classification task
         )
 
     def symptom_inquiry_agent(self):
@@ -81,9 +81,9 @@ class MedicalAgents:
             ),
             verbose=True,
             allow_delegation=False,
-            max_rpm=10,
+            max_rpm=6,
             tools=tools_list,
-            llm=groq_llama70_2 # Key 2 (Heavy Tool Usage)
+            llm=groq_70b_key2  # 70B reasoning model, Key 2 (heavy tool usage)
         )
 
     def context_aggregation_agent(self):
@@ -98,8 +98,8 @@ class MedicalAgents:
             ),
             verbose=True,
             allow_delegation=False,
-            max_rpm=10,
-            llm=groq_llama70 # Key 1
+            max_rpm=6,
+            llm=groq_8b_key1  # 8B fast model, Key 1 — summarization task
         )
 
     def risk_assessment_agent(self):
@@ -113,8 +113,8 @@ class MedicalAgents:
             ),
             verbose=True,
             allow_delegation=False,
-            max_rpm=10,
-            llm=groq_llama70_2 # Key 2
+            max_rpm=6,
+            llm=groq_70b_key1  # 70B reasoning model, Key 1 — critical reasoning
         )
 
     def decision_action_agent(self):
@@ -129,8 +129,8 @@ class MedicalAgents:
             ),
             verbose=True,
             allow_delegation=False,
-            max_rpm=10,
-            llm=groq_llama70 # Key 1
+            max_rpm=6,
+            llm=groq_8b_key2  # 8B fast model, Key 2 — structured output task
         )
 
     def task_planner_agent(self):
@@ -146,6 +146,7 @@ class MedicalAgents:
             IMPORTANT: When calling tools, ensure you use strictly JSON format. Do NOT use fake XML tags like <function>.""",
             verbose=True,
             tools=[SearchTaskKnowledgeBaseTool()],
-            llm=groq_llama70,
+            llm=groq_8b_key2,  # 8B fast model, Key 2 — task generation
+            max_rpm=6,
             max_iter=3
         )

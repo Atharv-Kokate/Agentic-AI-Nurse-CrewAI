@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Activity, Thermometer, Droplet, Clock, ChevronRight, ActivitySquare, Brain, Phone, MapPin, Pill, CheckCircle2, AlertTriangle, PhoneCall } from 'lucide-react';
+import { Activity, Thermometer, Droplet, Clock, ChevronRight, ActivitySquare, Brain, Phone, MapPin, Pill, CheckCircle2, AlertTriangle, PhoneCall, CheckCircle, ShieldCheck } from 'lucide-react';
 import client from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
+import TaskGrid from '../components/TaskGrid';
 
 function CaretakerDashboardPage() {
     const { user } = useAuth();
@@ -503,75 +504,59 @@ function CaretakerDashboardPage() {
                                     No tasks assigned for today.
                                 </div>
                             ) : (
-                                <div className="space-y-4">
-                                    {tasks.map((task) => (
-                                        <div key={task.id} className="p-4 border border-slate-100 rounded-lg hover:bg-slate-50 shadow-sm">
-                                            <div className="flex justify-between items-start mb-3">
-                                                <div>
-                                                    <span className="inline-block px-2 py-0.5 rounded text-xs font-semibold bg-blue-50 text-blue-600 mb-1">
-                                                        {task.category}
-                                                    </span>
-                                                    <p className="font-semibold text-slate-900">{task.task_description}</p>
-                                                </div>
-                                                <div className="text-right">
-                                                    <div className="text-xs text-slate-500 mb-1">Patient Status</div>
-                                                    {task.status_patient === 'COMPLETED' ? (
-                                                        <span className="text-green-600 font-medium text-sm flex items-center gap-1 justify-end">
-                                                            ✓ Done
-                                                        </span>
-                                                    ) : (
-                                                        <span className="text-amber-600 font-medium text-sm flex items-center gap-1 justify-end">
-                                                            ○ Pending
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            </div>
-
-                                            <div className="border-t pt-3 flex items-center justify-between">
-                                                <div className="text-sm">
-                                                    <span className="text-slate-500 mr-2">Verification:</span>
-                                                    {task.status_caretaker === 'VALIDATED' ? (
-                                                        <span className="text-green-700 font-semibold">Verified ✅</span>
-                                                    ) : task.status_caretaker === 'REFUSED' ? (
-                                                        <span className="text-red-600 font-semibold">Refused ❌</span>
-                                                    ) : (
-                                                        <span className="text-slate-400 italic">Unverified</span>
-                                                    )}
-                                                </div>
-
-                                                <div className="flex gap-2">
-                                                    {task.status_caretaker === 'PENDING' && (
-                                                        <>
-                                                            <button
-                                                                onClick={() => validateTask(task.id, 'VALIDATED')}
-                                                                className="px-3 py-1.5 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition"
-                                                                title="Verify this task"
-                                                            >
-                                                                Verify
-                                                            </button>
-                                                            <button
-                                                                onClick={() => validateTask(task.id, 'REFUSED')}
-                                                                className="px-3 py-1.5 bg-red-100 text-red-700 rounded-lg text-sm font-medium hover:bg-red-200 transition"
-                                                                title="Refuse/Reject this task"
-                                                            >
-                                                                Refuse
-                                                            </button>
-                                                        </>
-                                                    )}
-
-                                                    {(task.status_caretaker === 'VALIDATED' || task.status_caretaker === 'REFUSED') && (
-                                                        <button
-                                                            onClick={() => validateTask(task.id, 'PENDING')}
-                                                            className="text-xs text-slate-500 hover:text-slate-700 underline"
-                                                        >
-                                                            Revoke ({task.status_caretaker})
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            </div>
+                                <TaskGrid
+                                    tasks={tasks}
+                                    compact={true}
+                                    isCompleted={(task) => task.status_patient === 'COMPLETED'}
+                                    renderBadges={(task) => (
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                            {task.status_patient === 'COMPLETED' ? (
+                                                <span className="text-xs flex items-center gap-1 text-emerald-600 font-bold">
+                                                    <CheckCircle className="h-3 w-3" /> Done
+                                                </span>
+                                            ) : (
+                                                <span className="text-xs text-slate-400">Pending</span>
+                                            )}
+                                            {task.status_caretaker === 'VALIDATED' ? (
+                                                <span className="text-xs flex items-center gap-1 text-indigo-600 font-bold border-l pl-2 border-slate-200">
+                                                    <ShieldCheck className="h-3 w-3" /> Verified
+                                                </span>
+                                            ) : task.status_caretaker === 'REFUSED' ? (
+                                                <span className="text-xs text-red-500 font-bold border-l pl-2 border-slate-200">Rejected</span>
+                                            ) : (
+                                                <span className="text-xs text-slate-400 border-l pl-2 border-slate-200">Unverified</span>
+                                            )}
                                         </div>
-                                    ))}
-                                </div>
+                                    )}
+                                    renderAction={(task) => (
+                                        <div className="flex gap-1.5 flex-shrink-0">
+                                            {task.status_caretaker === 'PENDING' && (
+                                                <>
+                                                    <button
+                                                        onClick={() => validateTask(task.id, 'VALIDATED')}
+                                                        className="px-2.5 py-1 bg-green-600 text-white rounded-lg text-xs font-medium hover:bg-green-700 transition"
+                                                    >
+                                                        Verify
+                                                    </button>
+                                                    <button
+                                                        onClick={() => validateTask(task.id, 'REFUSED')}
+                                                        className="px-2.5 py-1 bg-red-100 text-red-700 rounded-lg text-xs font-medium hover:bg-red-200 transition"
+                                                    >
+                                                        Refuse
+                                                    </button>
+                                                </>
+                                            )}
+                                            {(task.status_caretaker === 'VALIDATED' || task.status_caretaker === 'REFUSED') && (
+                                                <button
+                                                    onClick={() => validateTask(task.id, 'PENDING')}
+                                                    className="text-xs text-slate-500 hover:text-slate-700 underline"
+                                                >
+                                                    Revoke
+                                                </button>
+                                            )}
+                                        </div>
+                                    )}
+                                />
                             )}
                         </div>
                         <div className="mt-6 pt-4 border-t flex justify-end">
