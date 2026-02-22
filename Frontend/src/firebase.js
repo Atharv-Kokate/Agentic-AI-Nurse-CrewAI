@@ -2,7 +2,6 @@
 import { initializeApp } from "firebase/app";
 import { getMessaging, getToken, onMessage } from "firebase/messaging";
 
-// You will provide these credentials later
 const firebaseConfig = {
     apiKey: "AIzaSyCsEEKPMsVJwvzzurMtLJDZ8gYHhDvag1M",
     authDomain: "aviral---notification.firebaseapp.com",
@@ -15,38 +14,50 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// Initialize Firebase Cloud Messaging and get a reference to the service
+// Initialize Firebase Cloud Messaging
 export const messaging = getMessaging(app);
+
+const VAPID_KEY = 'BOqy6tuOEJkcVgznUig2jTOBhKUS7tI_Bev6oV5BFRSlD6I9iSUMrSm9GwJ200sWDXvuFnPNb4l_zL9WVCg7yiA';
 
 export const requestForToken = async () => {
     try {
-        console.log('Requesting notification permission...');
+        console.log('[Firebase] Requesting notification permission...');
         const permission = await Notification.requestPermission();
-        if (permission === 'granted') {
-            console.log('Notification permission granted.');
+        if (permission !== 'granted') {
+            console.warn('[Firebase] Notification permission denied.');
+            return null;
+        }
+        console.log('[Firebase] Notification permission granted.');
+
+        // Register the Firebase messaging service worker explicitly
+        let swRegistration = null;
+        if ('serviceWorker' in navigator) {
             try {
-                const currentToken = await getToken(messaging, { vapidKey: 'BOqy6tuOEJkcVgznUig2jTOBhKUS7tI_Bev6oV5BFRSlD6I9iSUMrSm9GwJ200sWDXvuFnPNb4l_zL9WVCg7yiA' });
-                if (currentToken) {
-                    console.log('FCM Token:', currentToken);
-                    return currentToken;
-                } else {
-                    console.log('No registration token available. Request permission to generate one.');
-                    alert("Firebase error: No registration token available. Check vapidKey.");
-                    return null;
-                }
-            } catch (tokenErr) {
-                console.error("FCM getToken Error:", tokenErr);
-                alert("FCM getToken Error: " + tokenErr.message);
-                return null;
+                swRegistration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', { scope: '/' });
+                console.log('[Firebase] Service worker registered:', swRegistration.scope);
+                // Wait for the SW to be ready
+                await navigator.serviceWorker.ready;
+            } catch (swErr) {
+                console.warn('[Firebase] Service worker registration failed, using default:', swErr);
             }
+        }
+
+        // Get FCM token with explicit SW registration
+        const tokenOptions = { vapidKey: VAPID_KEY };
+        if (swRegistration) {
+            tokenOptions.serviceWorkerRegistration = swRegistration;
+        }
+
+        const currentToken = await getToken(messaging, tokenOptions);
+        if (currentToken) {
+            console.log('[Firebase] FCM Token obtained:', currentToken.substring(0, 20) + '...');
+            return currentToken;
         } else {
-            console.log('Unable to get permission to notify.');
-            alert("Permission denied by browser. Check site settings.");
+            console.warn('[Firebase] No registration token available.');
             return null;
         }
     } catch (err) {
-        console.log('An error occurred while retrieving token. ', err);
-        alert('An error occurred while retrieving token: ' + err.message);
+        console.error('[Firebase] Error getting token:', err);
         return null;
     }
 };
@@ -54,15 +65,7 @@ export const requestForToken = async () => {
 // Listen for foreground messages — takes a callback, returns an unsubscribe function
 export const onForegroundMessage = (callback) => {
     return onMessage(messaging, (payload) => {
-        console.log("Foreground message received:", payload);
+        console.log("[Firebase] Foreground message received:", payload);
         callback(payload);
     });
 };
-
-// Keep legacy export for backward compatibility (resolves once only)
-export const onMessageListener = () =>
-    new Promise((resolve) => {
-        onMessage(messaging, (payload) => {
-            resolve(payload);
-        });
-    });

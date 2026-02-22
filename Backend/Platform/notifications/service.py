@@ -86,13 +86,29 @@ class NotificationService:
 
         fcm_tokens = [t.fcm_token for t in tokens]
         
-        # Payload format for FCM
+        # Build data dict — FCM data values must be strings
+        str_data = {k: str(v) for k, v in data.items()} if data else {}
+        # Also put title/body in data so the service worker can access them
+        str_data["title"] = title
+        str_data["body"] = body
+        
+        # Payload format for FCM — includes webpush config for proper OS notification on browsers
         message = messaging.MulticastMessage(
             notification=messaging.Notification(
                 title=title,
                 body=body,
             ),
-            data=data,
+            webpush=messaging.WebpushConfig(
+                notification=messaging.WebpushNotification(
+                    title=title,
+                    body=body,
+                    icon="/pwa-192x192.png",
+                ),
+                fcm_options=messaging.WebpushFCMOptions(
+                    link=str_data.get("click_action", "/dashboard")
+                ),
+            ),
+            data=str_data,
             tokens=fcm_tokens,
         )
 

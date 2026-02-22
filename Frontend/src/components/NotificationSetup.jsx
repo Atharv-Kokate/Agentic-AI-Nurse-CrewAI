@@ -16,14 +16,14 @@ const NotificationSetup = () => {
         } else if ('Notification' in window && Notification.permission === 'granted') {
             // If already granted, try to register quietly in background
             if (user && token && !isRegistered) {
-                handleEnableNotifications();
+                handleEnableNotifications(true);
             }
         }
     }, [user, token, isRegistered]);
 
-    const handleEnableNotifications = async () => {
+    const handleEnableNotifications = async (silent = false) => {
         if (!user) {
-            alert("Please log in first to enable notifications!");
+            if (!silent) alert("Please log in first to enable notifications!");
             setShowPrompt(false);
             return;
         }
@@ -35,16 +35,14 @@ const NotificationSetup = () => {
                     fcm_token: fcmToken,
                     platform: 'web'
                 });
-                console.log("FCM Token registered with backend successfully");
-                alert("Notifications Enabled Successfully!");
+                console.log("[NotificationSetup] FCM Token registered with backend successfully");
                 setIsRegistered(true);
                 setShowPrompt(false);
             } else {
-                alert("Failed to get FCM token. Please check your browser notification settings or Firebase setup.");
+                if (!silent) console.warn("[NotificationSetup] Failed to get FCM token.");
             }
         } catch (error) {
-            console.error("Failed to register FCM token with backend", error);
-            alert("Error registering token: " + (error.message || "Unknown error"));
+            console.error("[NotificationSetup] Failed to register FCM token with backend:", error);
         }
     };
 
@@ -52,16 +50,15 @@ const NotificationSetup = () => {
         if (user && token) {
             // Handle ALL foreground messages (persistent listener, not one-shot)
             const unsubscribe = onForegroundMessage((payload) => {
-                console.log("Foreground message received:", payload);
-                if (payload && payload.notification) {
-                    if (Notification.permission === 'granted') {
-                        new Notification(payload.notification.title, {
-                            body: payload.notification.body,
-                            icon: '/pwa-192x192.png'
-                        });
-                    } else {
-                        alert(`New Notification: ${payload.notification.title}\n${payload.notification.body}`);
-                    }
+                console.log("[NotificationSetup] Foreground message received:", payload);
+                // Extract title/body from notification field or data field (fallback)
+                const title = payload?.notification?.title || payload?.data?.title || 'New Notification';
+                const body = payload?.notification?.body || payload?.data?.body || '';
+                if (Notification.permission === 'granted') {
+                    new Notification(title, {
+                        body: body,
+                        icon: '/pwa-192x192.png'
+                    });
                 }
             });
 
