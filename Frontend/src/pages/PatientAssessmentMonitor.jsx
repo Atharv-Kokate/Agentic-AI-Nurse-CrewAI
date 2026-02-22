@@ -40,6 +40,12 @@ const PatientAssessmentMonitor = () => {
     const [isVideoCallOpen, setIsVideoCallOpen] = useState(false);
     const [signalQueue, setSignalQueue] = useState([]);
     const [isInitiator, setIsInitiator] = useState(false);
+    const isVideoCallOpenRef = useRef(false);
+
+    // Keep ref in sync so the WS closure always sees current value
+    useEffect(() => {
+        isVideoCallOpenRef.current = isVideoCallOpen;
+    }, [isVideoCallOpen]);
 
     // ==========================================
     // MAP & NEARBY SEARCH STATE (Overpass API)
@@ -92,8 +98,11 @@ const PatientAssessmentMonitor = () => {
                 } else if (data.type === 'WEBRTC_SIGNAL') {
                     if (data.payload) {
                         setSignalQueue(prev => [...prev, data.payload]);
-                        setIsInitiator(false);
-                        setIsVideoCallOpen(true);
+                        // Only treat as new incoming call if modal isn't already open
+                        if (!isVideoCallOpenRef.current) {
+                            setIsInitiator(false);
+                            setIsVideoCallOpen(true);
+                        }
                     }
                 }
             } catch (e) {
@@ -1037,7 +1046,7 @@ const PatientAssessmentMonitor = () => {
 
             <VideoCallModal
                 isOpen={isVideoCallOpen}
-                onClose={() => setIsVideoCallOpen(false)}
+                onClose={() => { setIsVideoCallOpen(false); setSignalQueue([]); }}
                 onSignal={handleWebRTCSignal}
                 signalQueue={signalQueue}
                 isInitiator={isInitiator}

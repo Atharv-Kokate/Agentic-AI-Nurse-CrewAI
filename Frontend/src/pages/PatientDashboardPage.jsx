@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Activity, Calendar, Clock, AlertTriangle, CheckCircle, Plus, Copy, Sparkles, Utensils, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
@@ -77,6 +77,13 @@ const PatientDashboardPage = () => {
     const [isVideoCallOpen, setIsVideoCallOpen] = useState(false);
     const [signalQueue, setSignalQueue] = useState([]);
     const [isInitiator, setIsInitiator] = useState(false);
+    const wsRef = useRef(null);
+    const isVideoCallOpenRef = useRef(false);
+
+    // Keep ref in sync so the WS closure always sees current value
+    useEffect(() => {
+        isVideoCallOpenRef.current = isVideoCallOpen;
+    }, [isVideoCallOpen]);
 
     useEffect(() => {
         if (!user || !user.patient_id) return;
@@ -120,8 +127,11 @@ const PatientDashboardPage = () => {
                 const data = JSON.parse(event.data);
                 if (data.type === 'WEBRTC_SIGNAL' && data.payload) {
                     setSignalQueue(prev => [...prev, data.payload]);
-                    setIsInitiator(false);
-                    setIsVideoCallOpen(true);
+                    // Only treat as new incoming call if modal isn't already open
+                    if (!isVideoCallOpenRef.current) {
+                        setIsInitiator(false);
+                        setIsVideoCallOpen(true);
+                    }
                 }
             } catch (e) {
                 console.error("WS Parse Error", e);
@@ -429,7 +439,7 @@ const PatientDashboardPage = () => {
 
             <VideoCallModal
                 isOpen={isVideoCallOpen}
-                onClose={() => setIsVideoCallOpen(false)}
+                onClose={() => { setIsVideoCallOpen(false); setSignalQueue([]); }}
                 onSignal={handleWebRTCSignal}
                 signalQueue={signalQueue}
                 isInitiator={isInitiator}

@@ -27,6 +27,9 @@ const VideoCallModal = ({ isOpen, onClose, onSignal, incomingSignal, signalQueue
             }
         } else {
             endCall(false); // Clean up if closed externally
+            // Reset tracking so future calls process signals from the beginning
+            lastProcessedIndex.current = -1;
+            setOfferSignal(null);
         }
     }, [isOpen, isInitiator]);
 
@@ -54,7 +57,7 @@ const VideoCallModal = ({ isOpen, onClose, onSignal, incomingSignal, signalQueue
                 }
 
                 // Pass ALL signals to service - it handles buffering internally
-                if (isInitiator || callState === 'CONNECTED' || callState === 'ANSWERING') {
+                if (isInitiator || callState === 'CALLING' || callState === 'CONNECTED' || callState === 'ANSWERING') {
                     await webrtcService.handleSignal(signal);
                 }
 
@@ -162,6 +165,8 @@ const VideoCallModal = ({ isOpen, onClose, onSignal, incomingSignal, signalQueue
             console.error("Failed to answer call:", error);
             if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
                 alert("Camera/Microphone permission denied. Please allow access in your browser settings to answer the call.");
+            } else if (error.name === 'NotReadableError') {
+                alert("Camera/Microphone is in use by another application. Try closing other tabs or apps using the camera.");
             }
             endCall();
         }

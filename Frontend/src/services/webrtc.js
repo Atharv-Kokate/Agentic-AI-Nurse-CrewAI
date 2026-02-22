@@ -18,13 +18,27 @@ class WebRTCService {
     }
 
     async startLocalStream() {
-        try {
-            this.localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-            return this.localStream;
-        } catch (err) {
-            console.error("Error accessing media devices:", err);
-            throw err;
+        // Try video+audio first, then fallback to audio-only, then dummy stream
+        const attempts = [
+            { video: true, audio: true },
+            { video: false, audio: true },
+            { video: true, audio: false },
+        ];
+
+        for (const constraints of attempts) {
+            try {
+                this.localStream = await navigator.mediaDevices.getUserMedia(constraints);
+                console.log("Got local stream with constraints:", constraints);
+                return this.localStream;
+            } catch (err) {
+                console.warn(`getUserMedia failed for ${JSON.stringify(constraints)}:`, err.name);
+            }
         }
+
+        // All attempts failed — create a silent dummy stream so signaling still works
+        console.warn("All media attempts failed. Using dummy stream (no camera/mic).");
+        this.localStream = new MediaStream();
+        return this.localStream;
     }
 
     createPeerConnection() {

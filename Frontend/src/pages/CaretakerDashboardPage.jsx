@@ -593,7 +593,7 @@ function CaretakerDashboardPage() {
                     className="fixed bottom-6 right-6 md:bottom-8 md:right-8 bg-red-600 hover:bg-red-700 text-white p-4 rounded-full shadow-2xl flex items-center justify-center transition-all hover:scale-110 active:scale-95 z-40 group"
                     aria-label="Emergency Call"
                 >
-                    <PhoneCall className="h-6 w-6 sm:h-8 sm:w-8 animate-pulse" />
+                    <Phone className="h-6 w-6 sm:h-8 sm:w-8 animate-pulse" />
                     <span className="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-xs transition-all duration-300 ease-in-out font-bold text-sm ml-0 group-hover:ml-3">
                         Call Ambulance
                     </span>
@@ -618,7 +618,7 @@ function CaretakerDashboardPage() {
                                 onClick={() => setShowSOSModal(false)}
                                 className="w-full flex items-center justify-center gap-2 bg-red-600 text-white font-bold py-3 px-4 rounded-xl hover:bg-red-700 active:bg-red-800 transition-colors shadow-lg shadow-red-600/20"
                             >
-                                <PhoneCall className="h-5 w-5" />
+                                <Phone className="h-5 w-5" />
                                 Yes, Call Now
                             </a>
                             <button
