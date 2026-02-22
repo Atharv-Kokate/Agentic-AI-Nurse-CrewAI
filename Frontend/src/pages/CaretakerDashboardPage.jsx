@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Activity, Thermometer, Droplet, Clock, ChevronRight, ActivitySquare, Brain, Phone, MapPin, Pill, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { Activity, Thermometer, Droplet, Clock, ChevronRight, ActivitySquare, Brain, Phone, MapPin, Pill, CheckCircle2, AlertTriangle, PhoneCall } from 'lucide-react';
 import client from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
 
