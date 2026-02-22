@@ -4004,3 +4004,21 @@ LiteLLM completion() model= llama-3.3-70b-versatile; provider = groq
 LiteLLM completion() model= llama-3.3-70b-versatile; provider = groq
 2026-02-22 07:47:08,990 - websocket_manager - INFO - WebSocket disconnected for patient 12f83626-db84-4eb4-b674-0d24e647769c
 2026-02-22 07:47:08,991 - websocket_manager - INFO - WebSocket disconnected for patient 12f83626-db84-4eb4-b674-0d24e647769c
+2026-02-22 07:48:38,955 - LiteLLM - INFO - 
+LiteLLM completion() model= llama-3.3-70b-versatile; provider = groq
+2026-02-22 07:48:50,889 - LiteLLM - INFO - 
+LiteLLM completion() model= llama-3.3-70b-versatile; provider = groq
+2026-02-22 07:50:51,197 - LiteLLM - INFO - 
+LiteLLM completion() model= llama-3.3-70b-versatile; provider = groq
+2026-02-22 07:50:54,842 - LiteLLM - INFO - 
+LiteLLM completion() model= llama-3.3-70b-versatile; provider = groq
+2026-02-22 07:53:06,623 - LiteLLM - INFO - 
+LiteLLM completion() model= llama-3.3-70b-versatile; provider = groq
+2026-02-22 07:53:25,442 - LiteLLM - INFO - 
+LiteLLM completion() model= llama-3.3-70b-versatile; provider = groq
+2026-02-22 07:55:37,249 - LiteLLM - INFO - 
+LiteLLM completion() model= llama-3.3-70b-versatile; provider = groq
+2026-02-22 07:56:12,460 - LiteLLM - INFO - 
+LiteLLM completion() model= llama-3.3-70b-versatile; provider = groq
+2026-02-22 07:58:24,405 - LiteLLM - INFO - 
+LiteLLM completion() model= llama-3.3-70b-versatile; provider = groq
