@@ -152,7 +152,7 @@ const PatientAssessmentMonitor = () => {
             setStatus(data.status);
         }
 
-        if (data.current_location && !location) {
+        if (data.current_location) {
             setLocation(data.current_location);
         }
 
@@ -859,7 +859,7 @@ const PatientAssessmentMonitor = () => {
                         </div>
 
                         {/* HIGH RISK ALERT BANNER */}
-                         {/* EMERGENCY MAP — Only shown when risk_score > 75 */}
+                        {/* EMERGENCY MAP — Only shown when risk_score > 75 */}
                         {showMap && renderEmergencyMap()}
                         {showMap && (
                             <motion.div

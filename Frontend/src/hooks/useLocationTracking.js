@@ -164,7 +164,7 @@ const useLocationTracking = () => {
             watchId = navigator.geolocation.watchPosition(
                 (position) => sendLocation(position.coords),
                 (err) => console.error("Geo Error", err),
-                { enableHighAccuracy: true, timeout: 30000, maximumAge: 10000 }
+                { enableHighAccuracy: true, timeout: 30000, maximumAge: 0 }
             );
         };
 

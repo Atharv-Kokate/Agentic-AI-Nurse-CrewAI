@@ -120,7 +120,7 @@ const CaretakerAssessmentMonitor = () => {
             setStatus(data.status);
         }
 
-        if (data.current_location && !location) {
+        if (data.current_location) {
             setLocation(data.current_location);
         }
 
