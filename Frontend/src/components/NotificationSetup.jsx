@@ -5,21 +5,22 @@ import client from '../api/client';
 import { Bell, X } from 'lucide-react';
 
 const NotificationSetup = () => {
-    const { user, token } = useAuth();
+    const { user } = useAuth();
     const [showPrompt, setShowPrompt] = useState(false);
     const [isRegistered, setIsRegistered] = useState(false);
 
     useEffect(() => {
         // Only show prompt if permission is 'default' (not yet asked) AND user is logged in
+        const jwtToken = localStorage.getItem('token');
         if ('Notification' in window && Notification.permission === 'default' && user) {
             setShowPrompt(true);
         } else if ('Notification' in window && Notification.permission === 'granted') {
             // If already granted, try to register quietly in background
-            if (user && token && !isRegistered) {
+            if (user && jwtToken && !isRegistered) {
                 handleEnableNotifications(true);
             }
         }
-    }, [user, token, isRegistered]);
+    }, [user, isRegistered]);
 
     const handleEnableNotifications = async (silent = false) => {
         if (!user) {
@@ -47,7 +48,7 @@ const NotificationSetup = () => {
     };
 
     useEffect(() => {
-        if (user && token) {
+        if (user && localStorage.getItem('token')) {
             // Handle ALL foreground messages (persistent listener, not one-shot)
             const unsubscribe = onForegroundMessage((payload) => {
                 console.log("[NotificationSetup] Foreground message received:", payload);
@@ -66,7 +67,7 @@ const NotificationSetup = () => {
                 if (typeof unsubscribe === 'function') unsubscribe();
             };
         }
-    }, [user, token]);
+    }, [user]);
 
     if (!showPrompt) return null;
 
