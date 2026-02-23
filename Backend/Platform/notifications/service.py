@@ -92,6 +92,12 @@ class NotificationService:
         str_data["title"] = title
         str_data["body"] = body
         
+        # Ensure click_action is a full HTTPS URL (FCM requirement)
+        frontend_url = os.getenv("FRONTEND_URL", "https://vital-iq.onrender.com")
+        click_action = str_data.get("click_action", "/dashboard")
+        if not click_action.startswith("http"):
+            click_action = f"{frontend_url.rstrip('/')}{click_action}"
+        
         # Payload format for FCM — includes webpush config for proper OS notification on browsers
         message = messaging.MulticastMessage(
             notification=messaging.Notification(
@@ -105,7 +111,7 @@ class NotificationService:
                     icon="/pwa-192x192.png",
                 ),
                 fcm_options=messaging.WebpushFCMOptions(
-                    link=str_data.get("click_action", "/dashboard")
+                    link=click_action
                 ),
             ),
             data=str_data,
