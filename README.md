@@ -714,6 +714,6 @@ This project is for educational and demonstration purposes.
 
 **Built with ❤️ using CrewAI, FastAPI, React, and Groq**
 
-*VitalIQ — Because every patient deserves an intelligent guardian.*
+*Aviral — Because every patient deserves an intelligent guardian.*
 
 </div>
