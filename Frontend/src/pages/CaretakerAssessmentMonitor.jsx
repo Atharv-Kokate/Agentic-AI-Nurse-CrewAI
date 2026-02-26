@@ -133,10 +133,10 @@ const CaretakerAssessmentMonitor = () => {
                 lastInteractionIdRef.current = data.pending_interaction.interaction_id;
             }
         }
-        else {
-            // If running, we might want to clear old result
-            // setPollingData(null); 
-            // Actually, don't clear logic to prevent flashing if we just get a "RUNNING" ping
+        else if (data.status === 'RUNNING') {
+            // New checkup started — clear old results so loading animation shows
+            setPollingData(null);
+            lastInteractionIdRef.current = null;
         }
     };
 
@@ -159,7 +159,7 @@ const CaretakerAssessmentMonitor = () => {
         setMedicationHistory([]);
         setShowMedicationModal(true);
         try {
-            const response = await client.get(`/medication/history/${patientId}`);
+            const response = await client.get(`/medication/history/${patientId}?today_only=true`);
             setMedicationHistory(response.data);
         } catch (error) {
             console.error("Failed to fetch medication history", error);

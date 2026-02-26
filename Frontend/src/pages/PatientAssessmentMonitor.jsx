@@ -165,6 +165,11 @@ const PatientAssessmentMonitor = () => {
                 lastInteractionIdRef.current = data.pending_interaction.interaction_id;
             }
         }
+        else if (data.status === 'RUNNING') {
+            // New checkup started — clear old results so loading animation shows
+            setPollingData(null);
+            lastInteractionIdRef.current = null;
+        }
     };
 
     const handleWebRTCSignal = (signal) => {
@@ -186,7 +191,7 @@ const PatientAssessmentMonitor = () => {
         setMedicationHistory([]);
         setShowMedicationModal(true);
         try {
-            const response = await client.get(`/medication/history/${patientId}`);
+            const response = await client.get(`/medication/history/${patientId}?today_only=true`);
             setMedicationHistory(response.data);
         } catch (error) {
             console.error("Failed to fetch medication history", error);

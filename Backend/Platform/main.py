@@ -763,39 +763,39 @@ def check_status(
         )
 
     # 2. Check for Completion (Assessment Exists)
-    # Ensure we get the Result corresponding to the LATEST analysis request.
-    # We use the latest monitoring_log as a proxy for the start of the analysis.
+    # Only return COMPLETED if the assessment was created AFTER the latest monitoring log.
+    # This prevents returning stale results from a previous checkup while a new one is running.
     latest_log = db.query(monitoring_logs).filter(
         monitoring_logs.patient_id == patient_id
     ).order_by(monitoring_logs.created_at.desc()).first()
 
-    assessment = None
     if latest_log:
-        # Check for assessment created AFTER the log
+        # Check for assessment created AFTER the latest log (= current checkup finished)
         assessment = db.query(ai_assesments).filter(
             ai_assesments.patient_id == patient_id,
             ai_assesments.created_at >= latest_log.created_at
         ).first()
-    
-    # Fallback/Safety: Get latest assessment generally
-    if not assessment:
-        assessment = db.query(ai_assesments).filter(
-            ai_assesments.patient_id == patient_id
-        ).order_by(ai_assesments.created_at.desc()).first()
 
-    if assessment:
+        if assessment:
+            return StatusResponse(
+                status="COMPLETED",
+                result={
+                    "risk_level": assessment.risk_level,
+                    "risk_score": assessment.risk_score,
+                    "reasoning": assessment.reasoning
+                },
+                patient_data=patient_info,
+                current_location=current_location
+            )
+        
+        # No assessment yet for the latest log — checkup is still running
         return StatusResponse(
-            status="COMPLETED",
-            result={
-                "risk_level": assessment.risk_level,
-                "risk_score": assessment.risk_score,
-                "reasoning": assessment.reasoning
-            },
+            status="RUNNING",
             patient_data=patient_info,
             current_location=current_location
         )
 
-    # 3. Default: Completed (Stable/Idle)
+    # 3. No monitoring logs at all — patient has never had a checkup
     return StatusResponse(
         status="COMPLETED", 
         result={

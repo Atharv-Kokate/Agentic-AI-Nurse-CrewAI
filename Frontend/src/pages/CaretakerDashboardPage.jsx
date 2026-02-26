@@ -57,7 +57,7 @@ function CaretakerDashboardPage() {
         setLoadingMedications(true);
         try {
             const [logsRes, remindersRes] = await Promise.all([
-                client.get(`/medication/history/${patientId}`),
+                client.get(`/medication/history/${patientId}?today_only=true`),
                 client.get(`/reminders/patient/${patientId}`)
             ]);
             setMedicationLogs(logsRes.data);
@@ -351,14 +351,14 @@ function CaretakerDashboardPage() {
 
                                     {medicationLogs.map((log) => (
                                         <div key={log.id} className={`p-4 rounded-xl border ${log.status_caretaker === 'CONFIRMED_TAKEN' ? 'border-green-200 bg-green-50' :
-                                                log.status_caretaker === 'CONFIRMED_SKIPPED' ? 'border-red-200 bg-red-50' :
-                                                    'border-slate-200 bg-slate-50'
+                                            log.status_caretaker === 'CONFIRMED_SKIPPED' ? 'border-red-200 bg-red-50' :
+                                                'border-slate-200 bg-slate-50'
                                             }`}>
                                             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                                                 <div className="flex items-start gap-4">
                                                     <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${log.status_caretaker === 'CONFIRMED_TAKEN' ? 'bg-green-100 text-green-600' :
-                                                            log.status_caretaker === 'CONFIRMED_SKIPPED' ? 'bg-red-100 text-red-600' :
-                                                                'bg-slate-200 text-slate-500'
+                                                        log.status_caretaker === 'CONFIRMED_SKIPPED' ? 'bg-red-100 text-red-600' :
+                                                            'bg-slate-200 text-slate-500'
                                                         }`}>
                                                         {log.status_caretaker === 'CONFIRMED_TAKEN' ? <CheckCircle2 className="w-5 h-5" /> :
                                                             log.status_caretaker === 'CONFIRMED_SKIPPED' ? <AlertTriangle className="w-5 h-5" /> :
