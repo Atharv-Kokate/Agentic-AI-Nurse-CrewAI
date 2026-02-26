@@ -144,12 +144,14 @@ def log_medication(
 @router.get("/history/{patient_id}", response_model=List[MedicationLogResponse])
 def get_medication_history(
     patient_id: uuid.UUID,
+    today_only: bool = False,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
     """
     Get medication history for a patient.
     Auto-generates daily logs if missing.
+    If today_only=True, returns only today's scheduled medications.
     """
     # Access Control
     if current_user.role == UserRole.PATIENT and current_user.patient_id != patient_id:
@@ -167,9 +169,20 @@ def get_medication_history(
     # Lazy Generation of Daily Logs
     ensure_daily_logs(patient_id, db)
 
-    logs = db.query(MedicationLog).filter(
+    query = db.query(MedicationLog).filter(
         MedicationLog.patient_id == patient_id
-    ).order_by(MedicationLog.scheduled_time.desc()).limit(50).all()
+    )
+
+    if today_only:
+        now = datetime.utcnow()
+        today_start = datetime.combine(now.date(), datetime.min.time())
+        today_end = datetime.combine(now.date(), datetime.max.time())
+        query = query.filter(
+            MedicationLog.scheduled_time >= today_start,
+            MedicationLog.scheduled_time <= today_end
+        )
+
+    logs = query.order_by(MedicationLog.scheduled_time.desc()).limit(50).all()
     
     return logs
 

@@ -38,7 +38,7 @@ const PatientDashboardPage = () => {
                     // 4. Get Today's Medications
                     setLoadingMeds(true);
                     try {
-                        const medsRes = await client.get(`/medication/history/${meRes.data.id}`);
+                        const medsRes = await client.get(`/medication/history/${meRes.data.id}?today_only=true`);
                         setMedications(medsRes.data);
                     } catch (medErr) {
                         console.error("Failed to fetch medications", medErr);
@@ -355,14 +355,14 @@ const PatientDashboardPage = () => {
                     <button
                         onClick={() => toggleTaskStatus(task.id, task.status_patient)}
                         className={`relative flex items-center justify-center w-8 h-8 rounded-full border transition-all duration-300 ${task.status_patient === 'COMPLETED'
-                                ? "bg-emerald-500 border-emerald-500"
-                                : "border-slate-300 hover:border-emerald-400"
+                            ? "bg-emerald-500 border-emerald-500"
+                            : "border-slate-300 hover:border-emerald-400"
                             }`}
                     >
                         <CheckCircle
                             className={`w-5 h-5 transition-all duration-300 ${task.status_patient === 'COMPLETED'
-                                    ? "text-white scale-100"
-                                    : "text-transparent group-hover:text-emerald-400 scale-90"
+                                ? "text-white scale-100"
+                                : "text-transparent group-hover:text-emerald-400 scale-90"
                                 }`}
                         />
                     </button>
