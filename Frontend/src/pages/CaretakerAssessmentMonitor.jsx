@@ -170,10 +170,10 @@ const CaretakerAssessmentMonitor = () => {
 
     const updateMedicationStatus = async (logId, newStatus) => {
         try {
-            await client.put(`/medication/log/${logId}`, { status: newStatus });
+            await client.put(`/medication/log/${logId}`, { status_caretaker: newStatus });
             // Optimistic update
             setMedicationHistory(prev => prev.map(log =>
-                log.id === logId ? { ...log, status: newStatus } : log
+                log.id === logId ? { ...log, status_caretaker: newStatus } : log
             ));
         } catch (error) {
             console.error("Failed to update status", error);
@@ -500,18 +500,21 @@ const CaretakerAssessmentMonitor = () => {
             />
 
 
-            {/* Medication History Modal */}
+            {/* Medication Validation Modal */}
             {showMedicationModal && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-                    <div className="bg-white rounded-xl p-6 w-full max-w-xl max-h-[80vh] flex flex-col">
+                    <div className="bg-white rounded-xl p-6 w-full max-w-2xl max-h-[80vh] flex flex-col">
                         <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-xl font-bold">Medication Tracker</h2>
+                            <div>
+                                <h2 className="text-xl font-bold">Medication Validation</h2>
+                                <p className="text-sm text-slate-500">Verify if the patient actually took their pills</p>
+                            </div>
                             <button onClick={() => setShowMedicationModal(false)} className="text-slate-400 hover:text-slate-600">
                                 ✕
                             </button>
                         </div>
 
-                        <div className="flex-1 pr-2">
+                        <div className="overflow-y-auto flex-1 pr-2">
                             {loadingHistory ? (
                                 <div className="text-center py-8">Loading...</div>
                             ) : medicationHistory.length === 0 ? (
@@ -521,52 +524,79 @@ const CaretakerAssessmentMonitor = () => {
                             ) : (
                                 <div className="space-y-3">
                                     {medicationHistory.map((log) => (
-                                        <div key={log.id} className="flex items-center justify-between p-4 border border-slate-100 rounded-lg hover:bg-slate-50">
-                                            <div>
-                                                <p className="font-semibold text-slate-900">{log.medicine_name}</p>
-                                                <p className="text-xs text-slate-500">
-                                                    Scheduled: {new Date(log.scheduled_time).toLocaleString(undefined, {
-                                                        weekday: 'short', month: 'short', day: 'numeric',
-                                                        hour: '2-digit', minute: '2-digit'
-                                                    })}
-                                                </p>
-                                            </div>
+                                        <div key={log.id} className={cn(
+                                            "p-4 rounded-xl border transition-all",
+                                            log.status_caretaker === 'CONFIRMED_TAKEN' ? "border-green-200 bg-green-50" :
+                                                log.status_caretaker === 'CONFIRMED_SKIPPED' ? "border-red-200 bg-red-50" :
+                                                    "border-slate-200 bg-slate-50"
+                                        )}>
+                                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                                <div>
+                                                    <h4 className="font-semibold text-slate-900">{log.medicine_name}</h4>
+                                                    <p className="text-xs text-slate-500">
+                                                        {new Date(log.scheduled_time).toLocaleDateString()} at {new Date(log.scheduled_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                    </p>
+                                                    {/* Patient self-report badge */}
+                                                    <div className="mt-1">
+                                                        {log.status_patient === 'TAKEN' ? (
+                                                            <span className="text-xs font-semibold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-200">
+                                                                👤 Patient says: Taken
+                                                            </span>
+                                                        ) : log.status_patient === 'SKIPPED' ? (
+                                                            <span className="text-xs font-semibold text-red-700 bg-red-100 px-2 py-0.5 rounded-full border border-red-200">
+                                                                👤 Patient says: Skipped
+                                                            </span>
+                                                        ) : (
+                                                            <span className="text-xs text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">
+                                                                👤 Patient hasn't responded yet
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
 
-                                            {/* Action Buttons */}
-                                            <div className="flex items-center gap-2">
-                                                {log.status === 'TAKEN' ? (
-                                                    <span className="flex items-center gap-1 text-green-600 font-bold bg-green-50 px-3 py-1 rounded-full border border-green-100">
-                                                        ✅ Taken
-                                                    </span>
-                                                ) : log.status === 'MISSED' ? (
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="text-red-600 font-medium bg-red-50 px-3 py-1 rounded-full border border-red-100">
-                                                            ❌ Missed
-                                                        </span>
-                                                        {/* Allow undo */}
-                                                        <button
-                                                            onClick={() => updateMedicationStatus(log.id, 'TAKEN')}
-                                                            className="text-xs text-blue-600 underline hover:text-blue-800"
-                                                        >
-                                                            Undo
-                                                        </button>
-                                                    </div>
-                                                ) : (
-                                                    <div className="flex items-center gap-2">
-                                                        <button
-                                                            onClick={() => updateMedicationStatus(log.id, 'TAKEN')}
-                                                            className="bg-green-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-green-700 transition"
-                                                        >
-                                                            Mark Taken
-                                                        </button>
-                                                        <button
-                                                            onClick={() => updateMedicationStatus(log.id, 'MISSED')}
-                                                            className="bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-slate-200 transition"
-                                                        >
-                                                            Missed
-                                                        </button>
-                                                    </div>
-                                                )}
+                                                {/* Caretaker Validation Buttons */}
+                                                <div className="flex items-center gap-2 shrink-0">
+                                                    {log.status_caretaker === 'CONFIRMED_TAKEN' ? (
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="flex items-center gap-1 text-green-600 font-bold bg-green-50 px-3 py-1 rounded-full border border-green-100">
+                                                                <ShieldCheck className="w-4 h-4" /> Confirmed Taken
+                                                            </span>
+                                                            <button
+                                                                onClick={() => updateMedicationStatus(log.id, 'PENDING')}
+                                                                className="text-xs text-slate-500 hover:text-slate-700 underline"
+                                                            >
+                                                                Revoke
+                                                            </button>
+                                                        </div>
+                                                    ) : log.status_caretaker === 'CONFIRMED_SKIPPED' ? (
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-red-600 font-medium bg-red-50 px-3 py-1 rounded-full border border-red-100">
+                                                                ❌ Confirmed Skipped
+                                                            </span>
+                                                            <button
+                                                                onClick={() => updateMedicationStatus(log.id, 'PENDING')}
+                                                                className="text-xs text-slate-500 hover:text-slate-700 underline"
+                                                            >
+                                                                Revoke
+                                                            </button>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="flex items-center gap-2">
+                                                            <button
+                                                                onClick={() => updateMedicationStatus(log.id, 'CONFIRMED_TAKEN')}
+                                                                className="bg-green-600 text-white px-4 py-1.5 rounded-lg text-sm font-medium hover:bg-green-700 transition"
+                                                            >
+                                                                ✓ Confirm Taken
+                                                            </button>
+                                                            <button
+                                                                onClick={() => updateMedicationStatus(log.id, 'CONFIRMED_SKIPPED')}
+                                                                className="bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-slate-300 transition"
+                                                            >
+                                                                Confirm Skipped
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
                                     ))}

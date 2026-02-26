@@ -145,7 +145,9 @@ class MedicationLog(Base):
     medicine_name = Column(String, nullable=False)
     scheduled_time = Column(DateTime, nullable=False) # The theoretical time
     taken_at = Column(DateTime, nullable=True) # Actual time taken
-    status = Column(String, nullable=False) # TAKEN, MISSED, SKIPPED
+    status = Column(String, nullable=False) # TAKEN, MISSED, SKIPPED — resolved/legacy
+    status_patient = Column(String, default="PENDING")   # PENDING, TAKEN, SKIPPED
+    status_caretaker = Column(String, default="PENDING")  # PENDING, CONFIRMED_TAKEN, CONFIRMED_SKIPPED
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
 
 

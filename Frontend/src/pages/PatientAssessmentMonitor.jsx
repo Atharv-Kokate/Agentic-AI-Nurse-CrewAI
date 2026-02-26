@@ -197,9 +197,9 @@ const PatientAssessmentMonitor = () => {
 
     const updateMedicationStatus = async (logId, newStatus) => {
         try {
-            await client.put(`/medication/log/${logId}`, { status: newStatus });
+            await client.put(`/medication/log/${logId}`, { status_patient: newStatus });
             setMedicationHistory(prev => prev.map(log =>
-                log.id === logId ? { ...log, status: newStatus } : log
+                log.id === logId ? { ...log, status_patient: newStatus } : log
             ));
         } catch (error) {
             console.error("Failed to update status", error);
@@ -1059,7 +1059,7 @@ const PatientAssessmentMonitor = () => {
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
                     <div className="bg-white rounded-xl p-6 w-full max-w-xl max-h-[80vh] flex flex-col">
                         <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-xl font-bold">Medication Tracker</h2>
+                            <h2 className="text-xl font-bold">My Medications</h2>
                             <button onClick={() => setShowMedicationModal(false)} className="text-slate-400 hover:text-slate-600">
                                 ✕
                             </button>
@@ -1075,7 +1075,12 @@ const PatientAssessmentMonitor = () => {
                             ) : (
                                 <div className="space-y-3">
                                     {medicationHistory.map((log) => (
-                                        <div key={log.id} className="flex items-center justify-between p-4 border border-slate-100 rounded-lg hover:bg-slate-50">
+                                        <div key={log.id} className={cn(
+                                            "flex items-center justify-between p-4 border rounded-lg transition-all",
+                                            log.status_patient === 'TAKEN' ? "border-green-200 bg-green-50" :
+                                                log.status_patient === 'SKIPPED' ? "border-red-200 bg-red-50" :
+                                                    "border-slate-100 hover:bg-slate-50"
+                                        )}>
                                             <div>
                                                 <p className="font-semibold text-slate-900">{log.medicine_name}</p>
                                                 <p className="text-xs text-slate-500">
@@ -1084,20 +1089,39 @@ const PatientAssessmentMonitor = () => {
                                                         hour: '2-digit', minute: '2-digit'
                                                     })}
                                                 </p>
+                                                {/* Caretaker verification badge */}
+                                                {log.status_caretaker && log.status_caretaker !== 'PENDING' ? (
+                                                    <span className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100">
+                                                        <ShieldCheck className="w-3 h-3" />
+                                                        {log.status_caretaker === 'CONFIRMED_TAKEN' ? 'Verified Taken' : 'Verified Skipped'}
+                                                    </span>
+                                                ) : log.status_patient !== 'PENDING' ? (
+                                                    <span className="mt-1 inline-flex items-center gap-1 text-xs text-slate-400">
+                                                        <Clock className="w-3 h-3" /> Awaiting verification
+                                                    </span>
+                                                ) : null}
                                             </div>
 
                                             <div className="flex items-center gap-2">
-                                                {log.status === 'TAKEN' ? (
-                                                    <span className="flex items-center gap-1 text-green-600 font-bold bg-green-50 px-3 py-1 rounded-full border border-green-100">
-                                                        ✅ Taken
-                                                    </span>
-                                                ) : log.status === 'MISSED' ? (
+                                                {log.status_patient === 'TAKEN' ? (
                                                     <div className="flex items-center gap-2">
-                                                        <span className="text-red-600 font-medium bg-red-50 px-3 py-1 rounded-full border border-red-100">
-                                                            ❌ Missed
+                                                        <span className="flex items-center gap-1 text-green-600 font-bold bg-green-50 px-3 py-1 rounded-full border border-green-100">
+                                                            ✅ Taken
                                                         </span>
                                                         <button
-                                                            onClick={() => updateMedicationStatus(log.id, 'TAKEN')}
+                                                            onClick={() => updateMedicationStatus(log.id, 'PENDING')}
+                                                            className="text-xs text-blue-600 underline hover:text-blue-800"
+                                                        >
+                                                            Undo
+                                                        </button>
+                                                    </div>
+                                                ) : log.status_patient === 'SKIPPED' ? (
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-red-600 font-medium bg-red-50 px-3 py-1 rounded-full border border-red-100">
+                                                            ❌ Skipped
+                                                        </span>
+                                                        <button
+                                                            onClick={() => updateMedicationStatus(log.id, 'PENDING')}
                                                             className="text-xs text-blue-600 underline hover:text-blue-800"
                                                         >
                                                             Undo
@@ -1112,10 +1136,10 @@ const PatientAssessmentMonitor = () => {
                                                             Mark Taken
                                                         </button>
                                                         <button
-                                                            onClick={() => updateMedicationStatus(log.id, 'MISSED')}
+                                                            onClick={() => updateMedicationStatus(log.id, 'SKIPPED')}
                                                             className="bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-slate-200 transition"
                                                         >
-                                                            Missed
+                                                            Skip
                                                         </button>
                                                     </div>
                                                 )}

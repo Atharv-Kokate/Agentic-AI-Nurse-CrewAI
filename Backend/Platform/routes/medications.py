@@ -18,7 +18,9 @@ class MedicationLogCreate(BaseModel):
     taken_at: Optional[datetime] = None
 
 class MedicationLogUpdate(BaseModel):
-    status: str # TAKEN, MISSED, SKIPPED
+    status: Optional[str] = None # Legacy — TAKEN, MISSED, SKIPPED
+    status_patient: Optional[str] = None  # PENDING, TAKEN, SKIPPED
+    status_caretaker: Optional[str] = None  # PENDING, CONFIRMED_TAKEN, CONFIRMED_SKIPPED
 
 class MedicationLogResponse(BaseModel):
     id: uuid.UUID
@@ -27,6 +29,8 @@ class MedicationLogResponse(BaseModel):
     scheduled_time: datetime
     taken_at: Optional[datetime]
     status: str
+    status_patient: Optional[str] = "PENDING"
+    status_caretaker: Optional[str] = "PENDING"
     created_at: datetime
     
     class Config:
@@ -78,7 +82,9 @@ def ensure_daily_logs(patient_id: uuid.UUID, db: Session):
                 patient_id=patient_id,
                 medicine_name=reminder.medicine_name,
                 scheduled_time=scheduled_dt,
-                status="PENDING"
+                status="PENDING",
+                status_patient="PENDING",
+                status_caretaker="PENDING"
             )
             db.add(new_log)
     
@@ -175,7 +181,10 @@ def update_log_status(
     current_user: User = Depends(get_current_active_user)
 ):
     """
-    Update the status of a medication log (e.g. Caretaker creating manual entry or verifying).
+    Update the status of a medication log.
+    - PATIENT can only set status_patient (TAKEN, SKIPPED)
+    - CARETAKER/NURSE/ADMIN can only set status_caretaker (CONFIRMED_TAKEN, CONFIRMED_SKIPPED)
+    - The resolved 'status' field is auto-computed: caretaker's answer takes priority.
     """
     log_entry = db.query(MedicationLog).filter(MedicationLog.id == log_id).first()
     if not log_entry:
@@ -194,18 +203,44 @@ def update_log_status(
          if not link:
              raise HTTPException(status_code=403, detail="Access denied")
     else:
-        # Admin/Nurse/Doctor allow?
-        pass # For now assume okay if they have the ID, or restrict. strict is better.
         if current_user.role not in [UserRole.ADMIN, UserRole.NURSE, UserRole.DOCTOR]:
              raise HTTPException(status_code=403, detail="Access denied")
 
     old_status = log_entry.status
-    log_entry.status = update_data.status
+
+    # Role-based status update
+    if current_user.role == UserRole.PATIENT:
+        # Patient can only set their own status
+        if update_data.status_patient:
+            log_entry.status_patient = update_data.status_patient
+        elif update_data.status:  # Legacy fallback
+            log_entry.status_patient = update_data.status
+    else:
+        # Caretaker/Nurse/Admin set the caretaker validation status
+        if update_data.status_caretaker:
+            log_entry.status_caretaker = update_data.status_caretaker
+        elif update_data.status:  # Legacy fallback
+            log_entry.status_caretaker = update_data.status
+
+    # Auto-resolve the main status field:
+    # Caretaker's answer is final when present, otherwise use patient's
+    if log_entry.status_caretaker == 'CONFIRMED_TAKEN':
+        resolved = 'TAKEN'
+    elif log_entry.status_caretaker == 'CONFIRMED_SKIPPED':
+        resolved = 'SKIPPED'
+    elif log_entry.status_patient == 'TAKEN':
+        resolved = 'TAKEN'
+    elif log_entry.status_patient == 'SKIPPED':
+        resolved = 'SKIPPED'
+    else:
+        resolved = 'PENDING'
     
-    if update_data.status == "TAKEN" and not log_entry.taken_at:
+    log_entry.status = resolved
+    
+    if resolved == "TAKEN" and not log_entry.taken_at:
         log_entry.taken_at = datetime.utcnow()
-    elif update_data.status != "TAKEN":
-        log_entry.taken_at = None # Reset if changed to missed/skipped? Or keep it? keeping it simple.
+    elif resolved != "TAKEN":
+        log_entry.taken_at = None
 
     # Find the reminder to adjust count
     reminder = db.query(Reminder).filter(
@@ -215,9 +250,9 @@ def update_log_status(
     ).first()
 
     if reminder:
-        if old_status != "TAKEN" and update_data.status == "TAKEN":
+        if old_status != "TAKEN" and resolved == "TAKEN":
             reminder.remaining_count = max(0, reminder.remaining_count - 1)
-        elif old_status == "TAKEN" and update_data.status != "TAKEN":
+        elif old_status == "TAKEN" and resolved != "TAKEN":
             reminder.remaining_count += 1
             
     db.commit()

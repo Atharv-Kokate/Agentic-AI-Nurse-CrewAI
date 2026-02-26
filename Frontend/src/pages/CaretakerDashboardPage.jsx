@@ -71,7 +71,7 @@ function CaretakerDashboardPage() {
 
     const updateMedicationStatus = async (logId, status) => {
         try {
-            await client.put(`/medication/log/${logId}`, { status });
+            await client.put(`/medication/log/${logId}`, { status_caretaker: status });
             // Refresh
             handleMedicationTracking(patientIdForMedication);
         } catch (error) {
@@ -309,12 +309,15 @@ function CaretakerDashboardPage() {
                 </div>
             )}
 
-            {/* Medication History Modal */}
+            {/* Medication Validation Modal */}
             {showMedicationModal && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
                     <div className="bg-white rounded-xl p-6 w-full max-w-2xl max-h-[80vh] flex flex-col">
                         <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-xl font-bold">Medication Tracker</h2>
+                            <div>
+                                <h2 className="text-xl font-bold">Medication Validation</h2>
+                                <p className="text-sm text-slate-500">Verify if the patient actually took their pills</p>
+                            </div>
                             <button onClick={() => setShowMedicationModal(false)} className="text-slate-400 hover:text-slate-600">
                                 ✕
                             </button>
@@ -347,73 +350,91 @@ function CaretakerDashboardPage() {
                                     )}
 
                                     {medicationLogs.map((log) => (
-                                        <div key={log.id} className={`p-4 rounded-xl border ${log.status === 'TAKEN' ? 'border-green-200 bg-green-50' : log.status === 'MISSED' ? 'border-red-200 bg-red-50' : 'border-slate-200 bg-slate-50'}`}>
+                                        <div key={log.id} className={`p-4 rounded-xl border ${log.status_caretaker === 'CONFIRMED_TAKEN' ? 'border-green-200 bg-green-50' :
+                                                log.status_caretaker === 'CONFIRMED_SKIPPED' ? 'border-red-200 bg-red-50' :
+                                                    'border-slate-200 bg-slate-50'
+                                            }`}>
                                             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                                                 <div className="flex items-start gap-4">
-                                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${log.status === 'TAKEN' ? 'bg-green-100 text-green-600' : 'bg-slate-200 text-slate-500'}`}>
-                                                        {log.status === 'TAKEN' ? <CheckCircle2 className="w-5 h-5" /> : <Clock className="w-5 h-5" />}
+                                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${log.status_caretaker === 'CONFIRMED_TAKEN' ? 'bg-green-100 text-green-600' :
+                                                            log.status_caretaker === 'CONFIRMED_SKIPPED' ? 'bg-red-100 text-red-600' :
+                                                                'bg-slate-200 text-slate-500'
+                                                        }`}>
+                                                        {log.status_caretaker === 'CONFIRMED_TAKEN' ? <CheckCircle2 className="w-5 h-5" /> :
+                                                            log.status_caretaker === 'CONFIRMED_SKIPPED' ? <AlertTriangle className="w-5 h-5" /> :
+                                                                <Clock className="w-5 h-5" />}
                                                     </div>
                                                     <div className="flex-1">
-                                                        <div className="flex justify-between items-start">
-                                                            <div>
-                                                                <h4 className="font-semibold text-slate-900">{log.medicine_name}</h4>
-                                                                <p className="text-sm text-slate-500">
-                                                                    {new Date(log.scheduled_time).toLocaleDateString()} at {new Date(log.scheduled_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                                </p>
-                                                                {(() => {
-                                                                    const reminder = patientReminders.find(r => r.medicine_name === log.medicine_name);
-                                                                    return reminder ? (
-                                                                        <span className={`text-xs mt-1 inline-block px-2 py-0.5 rounded-full ${reminder.remaining_count < 5 ? 'bg-red-100 text-red-700' : 'bg-slate-200 text-slate-600'}`}>
-                                                                            Stock: {reminder.remaining_count} left
-                                                                        </span>
-                                                                    ) : null;
-                                                                })()}
-                                                            </div>
+                                                        <h4 className="font-semibold text-slate-900">{log.medicine_name}</h4>
+                                                        <p className="text-sm text-slate-500">
+                                                            {new Date(log.scheduled_time).toLocaleDateString()} at {new Date(log.scheduled_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                        </p>
+                                                        {/* Patient self-report badge */}
+                                                        <div className="mt-1">
+                                                            {log.status_patient === 'TAKEN' ? (
+                                                                <span className="text-xs font-semibold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-200">
+                                                                    👤 Patient says: Taken
+                                                                </span>
+                                                            ) : log.status_patient === 'SKIPPED' ? (
+                                                                <span className="text-xs font-semibold text-red-700 bg-red-100 px-2 py-0.5 rounded-full border border-red-200">
+                                                                    👤 Patient says: Skipped
+                                                                </span>
+                                                            ) : (
+                                                                <span className="text-xs text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">
+                                                                    👤 Patient hasn't responded yet
+                                                                </span>
+                                                            )}
                                                         </div>
+                                                        {(() => {
+                                                            const reminder = patientReminders.find(r => r.medicine_name === log.medicine_name);
+                                                            return reminder ? (
+                                                                <span className={`text-xs mt-1 inline-block px-2 py-0.5 rounded-full ${reminder.remaining_count < 5 ? 'bg-red-100 text-red-700' : 'bg-slate-200 text-slate-600'}`}>
+                                                                    Stock: {reminder.remaining_count} left
+                                                                </span>
+                                                            ) : null;
+                                                        })()}
                                                     </div>
                                                 </div>
 
-                                                {/* Action Buttons */}
+                                                {/* Caretaker Validation Buttons */}
                                                 <div className="flex items-center gap-2 shrink-0">
-                                                    {log.status === 'TAKEN' ? (
+                                                    {log.status_caretaker === 'CONFIRMED_TAKEN' ? (
                                                         <div className="flex items-center gap-2">
                                                             <span className="flex items-center gap-1 text-green-600 font-bold bg-green-50 px-3 py-1 rounded-full border border-green-100">
-                                                                ✅ Taken
+                                                                <ShieldCheck className="w-4 h-4" /> Confirmed Taken
                                                             </span>
                                                             <button
-                                                                onClick={() => updateMedicationStatus(log.id, 'MISSED')}
-                                                                className="text-xs text-red-500 hover:text-red-700 underline"
-                                                                title="Correct to Missed"
+                                                                onClick={() => updateMedicationStatus(log.id, 'PENDING')}
+                                                                className="text-xs text-slate-500 hover:text-slate-700 underline"
                                                             >
-                                                                Mark Missed
+                                                                Revoke
                                                             </button>
                                                         </div>
-                                                    ) : log.status === 'MISSED' || log.status === 'SKIPPED' ? (
+                                                    ) : log.status_caretaker === 'CONFIRMED_SKIPPED' ? (
                                                         <div className="flex items-center gap-2">
                                                             <span className="text-red-600 font-medium bg-red-50 px-3 py-1 rounded-full border border-red-100">
-                                                                ❌ {log.status === 'SKIPPED' ? 'Skipped' : 'Missed'}
+                                                                ❌ Confirmed Skipped
                                                             </span>
                                                             <button
-                                                                onClick={() => updateMedicationStatus(log.id, 'TAKEN')}
-                                                                className="text-xs text-blue-600 underline"
-                                                                title="Correct to Taken"
+                                                                onClick={() => updateMedicationStatus(log.id, 'PENDING')}
+                                                                className="text-xs text-slate-500 hover:text-slate-700 underline"
                                                             >
-                                                                Mark Taken
+                                                                Revoke
                                                             </button>
                                                         </div>
                                                     ) : (
                                                         <div className="flex items-center gap-2">
                                                             <button
-                                                                onClick={() => updateMedicationStatus(log.id, 'TAKEN')}
+                                                                onClick={() => updateMedicationStatus(log.id, 'CONFIRMED_TAKEN')}
                                                                 className="bg-green-600 text-white px-4 py-1.5 rounded-lg text-sm font-medium hover:bg-green-700 transition"
                                                             >
-                                                                Mark Taken
+                                                                ✓ Confirm Taken
                                                             </button>
                                                             <button
-                                                                onClick={() => updateMedicationStatus(log.id, 'MISSED')}
+                                                                onClick={() => updateMedicationStatus(log.id, 'CONFIRMED_SKIPPED')}
                                                                 className="bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-slate-300 transition"
                                                             >
-                                                                Missed
+                                                                Confirm Skipped
                                                             </button>
                                                         </div>
                                                     )}
