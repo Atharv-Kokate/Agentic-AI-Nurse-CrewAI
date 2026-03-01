@@ -189,7 +189,7 @@ export default function PatientHealthDashboard() {
     const fetchData = useCallback(async () => {
         if (!resolvedPatientId) return;
         try {
-            const res = await client.get(`/api/v1/patients/${resolvedPatientId}/health-summary`);
+            const res = await client.get(`/patients/${resolvedPatientId}/health-summary`);
             setData(res.data);
             setError(null);
             setLastRefresh(new Date());
