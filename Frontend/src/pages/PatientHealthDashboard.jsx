@@ -10,13 +10,12 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { cn } from '../utils/cn';
 import { getWsUrl } from '../utils/websocket';
+import client from '../api/client';
 import {
     LineChart, Line, AreaChart, Area, BarChart, Bar,
     XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
     RadialBarChart, RadialBar, Legend, Cell
 } from 'recharts';
-
-const API = import.meta.env.VITE_API_URL || '';
 
 // ─── Helpers ───────────────────────────────────────────────
 const getHealthColor = (score) => {
@@ -150,9 +149,10 @@ const CustomTooltip = ({ active, payload, label }) => {
 export default function PatientHealthDashboard() {
     const { patientId } = useParams();
     const navigate = useNavigate();
-    const { user, token } = useAuth();
+    const { user } = useAuth();
     const wsRef = useRef(null);
 
+    const [resolvedPatientId, setResolvedPatientId] = useState(patientId || null);
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -166,39 +166,55 @@ export default function PatientHealthDashboard() {
     const isCaretaker = user?.role === 'CARETAKER';
     const isStaff = ['ADMIN', 'NURSE', 'DOCTOR'].includes(user?.role);
 
-    // --- Resolve Patient ID ---
-    const resolvedPatientId = patientId || (isPatient ? user?.patient_id : null);
+    // --- Resolve Patient ID (for patients, fetch from /patients/me) ---
+    useEffect(() => {
+        if (patientId) {
+            setResolvedPatientId(patientId);
+            return;
+        }
+        if (isPatient) {
+            client.get('/patients/me')
+                .then(res => {
+                    setResolvedPatientId(res.data.id);
+                })
+                .catch(err => {
+                    console.error('Failed to resolve patient ID:', err);
+                    setError('Could not find your patient record.');
+                    setLoading(false);
+                });
+        }
+    }, [patientId, isPatient]);
 
     // ─── Fetch Data ────────────────────────────────────────
     const fetchData = useCallback(async () => {
         if (!resolvedPatientId) return;
         try {
-            const res = await fetch(`${API}/api/v1/patients/${resolvedPatientId}/health-summary`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            const json = await res.json();
-            setData(json);
+            const res = await client.get(`/api/v1/patients/${resolvedPatientId}/health-summary`);
+            setData(res.data);
             setError(null);
             setLastRefresh(new Date());
         } catch (err) {
             console.error('Failed to fetch health summary:', err);
-            setError(err.message);
+            setError(err.response?.data?.detail || err.message);
         } finally {
             setLoading(false);
         }
-    }, [resolvedPatientId, token]);
+    }, [resolvedPatientId]);
 
     // ─── Initial Fetch + 30s Poll ──────────────────────────
     useEffect(() => {
+        if (!resolvedPatientId) return;
         fetchData();
         const interval = setInterval(fetchData, 30000);
         return () => clearInterval(interval);
-    }, [fetchData]);
+    }, [fetchData, resolvedPatientId]);
 
     // ─── WebSocket for Real-time Updates ───────────────────
     useEffect(() => {
-        if (!resolvedPatientId || !token) return;
+        if (!resolvedPatientId) return;
+
+        const token = localStorage.getItem('token');
+        if (!token) return;
 
         const wsUrl = `${getWsUrl()}/ws/${resolvedPatientId}?token=${token}`;
         const ws = new WebSocket(wsUrl);
@@ -207,7 +223,6 @@ export default function PatientHealthDashboard() {
         ws.onmessage = (event) => {
             try {
                 const msg = JSON.parse(event.data);
-                // If we get a COMPLETED status, refresh all data
                 if (msg.status === 'COMPLETED' || msg.type === 'vitals_update') {
                     fetchData();
                 }
@@ -219,7 +234,7 @@ export default function PatientHealthDashboard() {
         return () => {
             if (wsRef.current) wsRef.current.close();
         };
-    }, [resolvedPatientId, token, fetchData]);
+    }, [resolvedPatientId, fetchData]);
 
     // ─── Toggle Sections ─────────────────────────────────
     const toggleSection = (key) => setExpandedSections(prev => ({ ...prev, [key]: !prev[key] }));
