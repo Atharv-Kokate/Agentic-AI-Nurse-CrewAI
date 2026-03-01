@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Activity, Thermometer, Droplet, Clock, ChevronRight, ActivitySquare, Brain, Phone, MapPin, Pill, CheckCircle2, AlertTriangle, PhoneCall, CheckCircle, ShieldCheck } from 'lucide-react';
+import { Activity, Thermometer, Droplet, Clock, ChevronRight, ActivitySquare, Brain, Phone, MapPin, Pill, CheckCircle2, AlertTriangle, PhoneCall, CheckCircle, ShieldCheck, HeartPulse } from 'lucide-react';
 import client from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
 import TaskGrid from '../components/TaskGrid';
@@ -215,7 +215,7 @@ function CaretakerDashboardPage() {
                             </Link>
 
                             {/* Actions Footer */}
-                            <div className="border-t pt-4 mt-auto flex gap-2">
+                            <div className="border-t pt-4 mt-auto flex flex-wrap gap-2">
                                 <button
                                     onClick={(e) => {
                                         e.preventDefault();
@@ -242,6 +242,16 @@ function CaretakerDashboardPage() {
                                     className="flex-1 py-2 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-lg text-sm font-medium transition-colors border border-slate-200"
                                 >
                                     📋 Tasks
+                                </button>
+                                <button
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        navigate(`/health-dashboard/${patient.patient_id}`);
+                                    }}
+                                    className="w-full py-2 bg-sky-50 hover:bg-sky-100 text-sky-700 rounded-lg text-sm font-medium transition-colors border border-sky-200 flex items-center justify-center gap-1.5"
+                                >
+                                    <HeartPulse className="h-4 w-4" />
+                                    Health Dashboard
                                 </button>
                             </div>
                         </div>

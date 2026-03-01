@@ -13,6 +13,7 @@ import PatientDashboardPage from './pages/PatientDashboardPage';
 import MedicineRemindersPage from './pages/MedicineRemindersPage';
 import DoctorAdvicePage from './pages/DoctorAdvicePage';
 import CaretakerDashboardPage from './pages/CaretakerDashboardPage';
+import PatientHealthDashboard from './pages/PatientHealthDashboard';
 import NotificationSetup from './components/NotificationSetup';
 import { useAuth } from './contexts/AuthContext';
 
@@ -30,6 +31,7 @@ function App() {
                         <Route path="/assessments/new" element={<NewAssessmentPage />} />
                         <Route path="/assessments/monitor/:patientId" element={<AssessmentMonitorPage />} />
                         <Route path="/doctor-advice" element={<DoctorAdvicePage />} />
+                        <Route path="/health-dashboard/:patientId" element={<PatientHealthDashboard />} />
 
                         {/* Staff Only Routes */}
                         <Route element={<ProtectedRoute roles={['ADMIN', 'NURSE', 'DOCTOR']} />}>
@@ -41,6 +43,7 @@ function App() {
                         {/* Patient Only Routes */}
                         <Route element={<ProtectedRoute roles={['PATIENT']} />}>
                             <Route path="/my-dashboard" element={<PatientDashboardPage />} />
+                            <Route path="/my-health" element={<PatientHealthDashboard />} />
                             <Route path="/reminders" element={<MedicineRemindersPage />} />
                         </Route>
 

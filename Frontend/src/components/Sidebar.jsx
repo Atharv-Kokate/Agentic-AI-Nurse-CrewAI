@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Users, Activity, LogOut, Bell, X, FileText } from 'lucide-react';
+import { LayoutDashboard, Users, Activity, LogOut, Bell, X, FileText, HeartPulse } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 const Sidebar = ({ isOpen, onClose }) => {
@@ -13,6 +13,7 @@ const Sidebar = ({ isOpen, onClose }) => {
     if (isPatient) {
         navItems = [
             { icon: LayoutDashboard, label: 'My Dashboard', path: '/my-dashboard' },
+            { icon: HeartPulse, label: 'Health Dashboard', path: '/my-health' },
             { icon: Activity, label: 'New Check-up', path: '/assessments/new' },
             { icon: Bell, label: 'Reminders', path: '/reminders' },
             { icon: FileText, label: 'Doctor Advice', path: '/doctor-advice' },

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Plus, User, Calendar, Loader2 } from 'lucide-react';
+import { Search, Plus, User, Calendar, Loader2, HeartPulse } from 'lucide-react';
 import { motion } from 'framer-motion';
 import client from '../api/client';
 import { format } from 'date-fns';
@@ -102,10 +102,17 @@ const PatientsPage = () => {
                                 </div>
                             </div>
 
-                            <div className="mt-4">
+                            <div className="mt-4 flex items-center gap-2">
                                 <span className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/20">
                                     Active
                                 </span>
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); navigate(`/health-dashboard/${patient.id}`); }}
+                                    className="inline-flex items-center gap-1 rounded-full bg-sky-50 px-2.5 py-1 text-xs font-medium text-sky-700 ring-1 ring-inset ring-sky-600/20 hover:bg-sky-100 transition-colors"
+                                >
+                                    <HeartPulse className="h-3 w-3" />
+                                    Health
+                                </button>
                             </div>
                         </motion.div>
                     ))}
