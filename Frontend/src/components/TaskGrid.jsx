@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { CheckCircle2, Circle, Utensils, Dumbbell, Sun, ListChecks, ChevronDown, ChevronUp, Activity, Clock } from 'lucide-react';
+import { CheckCircle2, Circle, Utensils, Dumbbell, Sun, ListChecks, ChevronDown, ChevronUp, Activity, Clock, Pill, HeartPulse, Sparkles, AlertTriangle } from 'lucide-react';
+
 
 const categoryConfig = {
     Diet: {
@@ -44,6 +45,34 @@ const categoryConfig = {
         completedBg: 'bg-indigo-50 border-indigo-100',
         pendingBg: 'bg-white border-slate-100 hover:shadow-sm',
     },
+    Medication: {
+        icon: Pill,
+        label: 'Medication',
+        gradient: 'from-rose-500 to-pink-500',
+        lightBg: 'bg-rose-50',
+        border: 'border-rose-200',
+        iconColor: 'text-rose-600',
+        checkColor: 'text-rose-500',
+        hoverBg: 'hover:bg-rose-50/50',
+        progressBg: 'bg-rose-100',
+        progressFill: 'bg-rose-500',
+        completedBg: 'bg-rose-50 border-rose-100',
+        pendingBg: 'bg-white border-slate-100 hover:shadow-sm',
+    },
+    Monitoring: {
+        icon: HeartPulse,
+        label: 'Monitoring',
+        gradient: 'from-cyan-500 to-teal-500',
+        lightBg: 'bg-cyan-50',
+        border: 'border-cyan-200',
+        iconColor: 'text-cyan-600',
+        checkColor: 'text-cyan-500',
+        hoverBg: 'hover:bg-cyan-50/50',
+        progressBg: 'bg-cyan-100',
+        progressFill: 'bg-cyan-500',
+        completedBg: 'bg-cyan-50 border-cyan-100',
+        pendingBg: 'bg-white border-slate-100 hover:shadow-sm',
+    },
 };
 
 const defaultConfig = {
@@ -60,6 +89,34 @@ const defaultConfig = {
     completedBg: 'bg-slate-50 border-slate-100',
     pendingBg: 'bg-white border-slate-100 hover:shadow-sm',
 };
+
+// Priority badge config
+const priorityConfig = {
+    CRITICAL: { label: 'Critical', color: 'bg-red-100 text-red-700 border-red-200', dot: 'bg-red-500', animate: true },
+    HIGH: { label: 'High', color: 'bg-amber-100 text-amber-700 border-amber-200', dot: 'bg-amber-500', animate: false },
+    NORMAL: { label: null, color: '', dot: '', animate: false },
+    LOW: { label: null, color: '', dot: '', animate: false },
+};
+
+function PriorityBadge({ priority }) {
+    const cfg = priorityConfig[priority] || priorityConfig.NORMAL;
+    if (!cfg.label) return null;
+    return (
+        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${cfg.color}`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot} ${cfg.animate ? 'animate-pulse' : ''}`} />
+            {cfg.label}
+        </span>
+    );
+}
+
+function SmartTaskBadge() {
+    return (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-violet-100 text-violet-700 border border-violet-200" title="Personalized based on your recent activity">
+            <Sparkles className="w-3 h-3" />
+            Smart Task
+        </span>
+    );
+}
 
 function CategoryColumn({ categoryKey, tasks, config, isCompleted, renderAction, renderBadges }) {
     const Icon = config.icon;
@@ -117,25 +174,26 @@ function CategoryColumn({ categoryKey, tasks, config, isCompleted, renderAction,
                 <div className="p-3 flex-1 flex flex-col gap-2">
                     {tasks.map((task, index) => {
                         const done = isCompleted(task);
+                        const isSmartTask = task.source === 'SMART_REMEDIATION';
+                        const hasPriority = task.priority === 'HIGH' || task.priority === 'CRITICAL';
                         return (
                             <div
                                 key={task.id || index}
-                                className={`group flex items-start gap-3 p-3.5 rounded-xl border transition-all duration-200 ${
-                                    done ? config.completedBg : config.pendingBg
-                                }`}
+                                className={`group flex items-start gap-3 p-3.5 rounded-xl border transition-all duration-200 ${done ? config.completedBg : config.pendingBg
+                                    } ${hasPriority && !done ? 'ring-1 ring-amber-300/50' : ''}`}
                             >
                                 {/* Task Content */}
                                 <div className="flex-1 min-w-0">
-                                    <p className={`text-sm leading-relaxed ${
-                                        done ? 'line-through text-slate-400' : 'text-slate-800'
-                                    }`}>
+                                    <p className={`text-sm leading-relaxed ${done ? 'line-through text-slate-400' : 'text-slate-800'
+                                        }`}>
                                         {task.task_description}
                                     </p>
-                                    {renderBadges && (
-                                        <div className="mt-1.5">
-                                            {renderBadges(task)}
-                                        </div>
-                                    )}
+                                    {/* Priority & Smart Task Badges */}
+                                    <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                                        <PriorityBadge priority={task.priority} />
+                                        {isSmartTask && <SmartTaskBadge />}
+                                        {renderBadges && renderBadges(task)}
+                                    </div>
                                 </div>
 
                                 {/* Action Area */}
@@ -188,12 +246,22 @@ export default function TaskGrid({ tasks = [], isCompleted, renderAction, render
     });
 
     // Ordered categories
-    const orderedKeys = ['Diet', 'Exercise', 'Lifestyle'];
+    const orderedKeys = ['Diet', 'Exercise', 'Lifestyle', 'Medication', 'Monitoring'];
     Object.keys(grouped).forEach((key) => {
         if (!orderedKeys.includes(key)) orderedKeys.push(key);
     });
 
     const activeCategories = orderedKeys.filter((key) => grouped[key] && grouped[key].length > 0);
+
+    // Sort tasks within each category: CRITICAL first, then HIGH, then NORMAL, then LOW
+    const priorityOrder = { CRITICAL: 0, HIGH: 1, NORMAL: 2, LOW: 3 };
+    activeCategories.forEach(key => {
+        grouped[key].sort((a, b) => {
+            const pa = priorityOrder[a.priority] ?? 2;
+            const pb = priorityOrder[b.priority] ?? 2;
+            return pa - pb;
+        });
+    });
 
     if (activeCategories.length === 0) {
         return (

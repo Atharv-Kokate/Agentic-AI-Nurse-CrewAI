@@ -263,9 +263,6 @@ def delete_patient(
     db.delete(patient)
     db.commit()
     
-    db.delete(patient)
-    db.commit()
-    
     return None
 
 from database.models import ai_assesments, monitoring_logs

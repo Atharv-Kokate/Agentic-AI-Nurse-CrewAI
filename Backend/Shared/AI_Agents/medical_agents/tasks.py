@@ -163,19 +163,57 @@ class MedicalTasks:
     def create_daily_plan_task(self, agent, patient_data):
         return Task(
             description=(
-                f"Create a daily health plan for the following patient: {patient_data}. "
-                "1. SEARCH the Task Knowledge Base for protocols relevant to the patient's known conditions (e.g., 'Hypertension', 'Diabetes'). "
-                "2. Generate 10 to 12 specific, actionable tasks for TODAY. "
-                "3. Tasks must span categories: Diet, Exercise, Lifestyle, Medication (if applicable). "
-                "4. OUTPUT FORMAT RULE: Return ONLY a JSON list of objects. "
-                "Example: [{\"category\": \"Diet\", \"task_description\": \"Eat a low-sodium lunch...\"}, ...]"
+                f"Create a PERSONALIZED daily health plan for the following patient.\n\n"
+                f"PATIENT CONTEXT (JSON):\n{patient_data}\n\n"
+
+                "=== CONTEXT SECTIONS EXPLAINED ===\n"
+                "- profile: basic info (age, gender, conditions, medications, symptoms)\n"
+                "- compliance: 7-day task completion rates broken down by category (Diet, Exercise, Lifestyle, etc.)\n"
+                "- repeatedly_skipped_tasks: tasks the patient skipped 2+ days — these need EASIER alternatives\n"
+                "- medication_adherence: 7-day adherence rate + names of missed medications\n"
+                "- vitals_summary: latest vital readings + any anomalies in the past 7 days\n"
+                "- risk: current risk score (0-100), level (LOW/MODERATE/HIGH/CRITICAL), and trend\n"
+                "- active_alerts: unresolved medical alerts that need attention\n"
+                "- health_score: composite health score (0-100) and trend direction\n"
+                "- recent_recommendations: unreviewed doctor recommendations\n\n"
+
+                "=== ADAPTIVE PLANNING RULES (FOLLOW STRICTLY) ===\n"
+                "1. SEARCH the Task Knowledge Base for protocols matching the patient's known_conditions. "
+                "Include baseline tasks from these protocols — these are the foundation.\n"
+                "2. CHECK compliance.by_category: If a category has completion_rate < 50%, simplify tasks in that category "
+                "(e.g., 'Walk 30 mins' → 'Walk 10 mins', 'Full DASH diet lunch' → 'Replace one snack with fruit').\n"
+                "3. CHECK repeatedly_skipped_tasks: For each item, generate an EASIER alternative in the same category. "
+                "Mark these as source='SMART_REMEDIATION' and add a brief '(adjusted from: <original>)' note.\n"
+                "4. CHECK medication_adherence: If rate_7d < 80%, add 1-2 medication reminder tasks "
+                "(e.g., 'Set alarm and take [med_name] at prescribed time'). Mark priority='HIGH'.\n"
+                "5. CHECK vitals_summary.anomalies: If anomalies exist, add specific monitoring tasks "
+                "(e.g., 'Measure and record blood pressure after breakfast'). Mark priority='HIGH'.\n"
+                "6. CHECK risk.level: If HIGH or CRITICAL, add safety/monitoring tasks and mark them priority='CRITICAL'. "
+                "Also reduce physical intensity (light stretching instead of brisk walks).\n"
+                "7. CHECK active_alerts: For each unresolved alert, add a relevant task (e.g., BP alert → 'Take BP reading now').\n"
+                "8. If health_score.trend is 'improving', you may include 1-2 progressive/challenging tasks to maintain momentum.\n\n"
+
+                "=== OUTPUT FORMAT ===\n"
+                "Generate 10 to 14 tasks. Return ONLY a JSON array of objects.\n"
+                "Each object MUST have:\n"
+                "- category: 'Diet' | 'Exercise' | 'Lifestyle' | 'Medication' | 'Monitoring'\n"
+                "- task_description: specific, actionable task in simple language\n"
+                "- source: 'KB_BASELINE' (from knowledge base protocols) | 'AI_GENERATED' (personalized) | 'SMART_REMEDIATION' (easier alternative for skipped task)\n"
+                "- priority: 'LOW' | 'NORMAL' | 'HIGH' | 'CRITICAL'\n\n"
+
+                "Example:\n"
+                '[{"category": "Diet", "task_description": "Eat a low-sodium lunch with vegetables", "source": "KB_BASELINE", "priority": "NORMAL"}, '
+                '{"category": "Exercise", "task_description": "Take a gentle 10-minute walk after lunch (adjusted from: Walk 30 mins)", "source": "SMART_REMEDIATION", "priority": "NORMAL"}, '
+                '{"category": "Monitoring", "task_description": "Measure blood pressure and record reading", "source": "AI_GENERATED", "priority": "HIGH"}]'
             ),
             expected_output=(
-                "A JSON array containing:\n"
+                "A JSON array containing 10-14 task objects:\n"
                 "[\n"
                 "  {\n"
-                "    \"category\": \"Diet | Exercise | Lifestyle | Medication\",\n"
-                "    \"task_description\": \"Specific action item\"\n"
+                "    \"category\": \"Diet | Exercise | Lifestyle | Medication | Monitoring\",\n"
+                "    \"task_description\": \"Specific action item\",\n"
+                "    \"source\": \"KB_BASELINE | AI_GENERATED | SMART_REMEDIATION\",\n"
+                "    \"priority\": \"LOW | NORMAL | HIGH | CRITICAL\"\n"
                 "  }\n"
                 "]"
             ),

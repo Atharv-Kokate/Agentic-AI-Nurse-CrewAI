@@ -51,6 +51,8 @@ class TaskEntry(BaseModel):
     category: str
     status_patient: Optional[str] = "PENDING"
     status_caretaker: Optional[str] = "PENDING"
+    source: Optional[str] = "AI_GENERATED"
+    priority: Optional[str] = "NORMAL"
 
 class AlertEntry(BaseModel):
     id: str
@@ -386,7 +388,9 @@ def get_health_summary(
         task_description=t.task_description,
         category=t.category,
         status_patient=t.status_patient,
-        status_caretaker=t.status_caretaker
+        status_caretaker=t.status_caretaker,
+        source=getattr(t, 'source', 'AI_GENERATED'),
+        priority=getattr(t, 'priority', 'NORMAL'),
     ) for t in today_tasks]
     
     # Weekly compliance

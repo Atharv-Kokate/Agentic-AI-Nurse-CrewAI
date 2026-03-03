@@ -22,6 +22,7 @@ class TaskCreate(BaseModel):
     task_description: str
     category: str
     scheduled_date: Optional[date] = None
+    priority: Optional[str] = "NORMAL"
 
 class TaskUpdate(BaseModel):
     status_patient: Optional[str] = None
@@ -35,6 +36,8 @@ class TaskResponse(BaseModel):
     scheduled_date: datetime
     status_patient: str
     status_caretaker: str
+    source: Optional[str] = "AI_GENERATED"
+    priority: Optional[str] = "NORMAL"
     created_at: datetime
     
     class Config:
@@ -88,7 +91,9 @@ def create_manual_task(
         category=task_data.category,
         scheduled_date=scheduled_dt,
         status_patient="PENDING",
-        status_caretaker="PENDING"
+        status_caretaker="PENDING",
+        source="MANUAL",
+        priority=task_data.priority or "NORMAL",
     )
     db.add(new_task)
     db.commit()
@@ -127,19 +132,42 @@ def generate_daily_tasks(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    # Retrieve Patient Data
+    """
+    Generate adaptive daily tasks using the AI planner.
+
+    Passes the full patient context (compliance history, vitals trends,
+    medication adherence, risk assessment, active alerts) so the AI can
+    produce personalized, difficulty-adjusted, and priority-tagged tasks.
+    """
+    # Retrieve Patient
     patient = db.query(Patient).filter(Patient.id == patient_id).first()
     if not patient:
         raise HTTPException(status_code=404, detail="Patient not found")
 
-    # Serialize patient data for AI
-    patient_data_str = json.dumps({
-        "age": patient.age,
-        "gender": patient.gender,
-        "known_conditions": patient.known_conditions,
-        "current_medications": patient.current_medications,
-        "reported_symptoms": patient.reported_symptoms
-    }, default=str)
+    # Check if tasks already generated today (prevent duplicates)
+    today_start = datetime.combine(date.today(), datetime.min.time())
+    today_end = datetime.combine(date.today(), datetime.max.time())
+    existing_ai_tasks = db.query(DailyTask).filter(
+        DailyTask.patient_id == patient_id,
+        DailyTask.scheduled_date >= today_start,
+        DailyTask.scheduled_date <= today_end,
+        DailyTask.source.in_(["AI_GENERATED", "KB_BASELINE", "SMART_REMEDIATION"]),
+    ).count()
+
+    if existing_ai_tasks > 0:
+        raise HTTPException(
+            status_code=409,
+            detail="Tasks already generated for today. Use the regenerate endpoint to replace them."
+        )
+
+    # Build rich patient context (the core improvement)
+    from routes.patient_context import build_patient_context
+    context = build_patient_context(patient_id, db)
+
+    if "error" in context:
+        raise HTTPException(status_code=404, detail=context["error"])
+
+    patient_data_str = json.dumps(context, default=str)
 
     # Run AI Crew
     try:
@@ -147,14 +175,8 @@ def generate_daily_tasks(
         result = crew.run_planning_crew(patient_data_str)
         
         # Parse Result (Expect JSON List)
-        # Result might be a string or object depending on CrewAI version/output
-        # We need to extract the JSON content.
-        
         output_str = str(result)
-        # Attempt to find JSON array in the output if it's wrapped in text
         try:
-             # Logic to extract JSON if needed, or assume clean output if agent is good
-             # Simple clean:
              start = output_str.find('[')
              end = output_str.rfind(']') + 1
              if start != -1 and end != -1:
@@ -163,13 +185,21 @@ def generate_daily_tasks(
                  json_content = json.loads(output_str)
         except Exception as e:
             print(f"JSON Parse Error: {e} - Content: {output_str}")
-            # Return the raw content in the error for debugging
             raise HTTPException(status_code=500, detail=f"AI Output Parse Error: {str(e)}. Raw Output: {output_str[:200]}...")
 
         generated_tasks = []
         today = date.today()
         
         for item in json_content:
+            # Validate and normalize source/priority from AI output
+            raw_source = item.get("source", "AI_GENERATED")
+            valid_sources = {"AI_GENERATED", "KB_BASELINE", "SMART_REMEDIATION"}
+            source = raw_source if raw_source in valid_sources else "AI_GENERATED"
+
+            raw_priority = item.get("priority", "NORMAL")
+            valid_priorities = {"LOW", "NORMAL", "HIGH", "CRITICAL"}
+            priority = raw_priority if raw_priority in valid_priorities else "NORMAL"
+
             new_task = DailyTask(
                 id=uuid.uuid4(),
                 patient_id=patient_id,
@@ -177,7 +207,9 @@ def generate_daily_tasks(
                 category=item.get("category", "General"),
                 scheduled_date=datetime.combine(today, datetime.min.time()),
                 status_patient="PENDING",
-                status_caretaker="PENDING"
+                status_caretaker="PENDING",
+                source=source,
+                priority=priority,
             )
             db.add(new_task)
             generated_tasks.append(new_task)
@@ -185,9 +217,98 @@ def generate_daily_tasks(
         db.commit()
         return generated_tasks
 
+    except HTTPException:
+        raise
     except Exception as e:
          print(f"Error generating tasks: {e}")
          raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/regenerate/{patient_id}", response_model=List[TaskResponse])
+def regenerate_daily_tasks(
+    patient_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Clear today's AI-generated tasks and regenerate with fresh context.
+    Manual tasks are preserved.
+    """
+    # Only staff can regenerate
+    if current_user.role == UserRole.PATIENT:
+        raise HTTPException(status_code=403, detail="Patients cannot regenerate tasks.")
+
+    patient = db.query(Patient).filter(Patient.id == patient_id).first()
+    if not patient:
+        raise HTTPException(status_code=404, detail="Patient not found")
+
+    # Delete today's AI-generated tasks (keep MANUAL ones)
+    today_start = datetime.combine(date.today(), datetime.min.time())
+    today_end = datetime.combine(date.today(), datetime.max.time())
+
+    db.query(DailyTask).filter(
+        DailyTask.patient_id == patient_id,
+        DailyTask.scheduled_date >= today_start,
+        DailyTask.scheduled_date <= today_end,
+        DailyTask.source.in_(["AI_GENERATED", "KB_BASELINE", "SMART_REMEDIATION"]),
+    ).delete(synchronize_session="fetch")
+    db.commit()
+
+    # Build context and regenerate
+    from routes.patient_context import build_patient_context
+    context = build_patient_context(patient_id, db)
+    patient_data_str = json.dumps(context, default=str)
+
+    try:
+        crew = MedicalCrew(patient_id=str(patient_id))
+        result = crew.run_planning_crew(patient_data_str)
+        
+        output_str = str(result)
+        try:
+            start = output_str.find('[')
+            end = output_str.rfind(']') + 1
+            if start != -1 and end != -1:
+                json_content = json.loads(output_str[start:end])
+            else:
+                json_content = json.loads(output_str)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"AI Output Parse Error: {str(e)}")
+
+        generated_tasks = []
+        today = date.today()
+        
+        for item in json_content:
+            raw_source = item.get("source", "AI_GENERATED")
+            valid_sources = {"AI_GENERATED", "KB_BASELINE", "SMART_REMEDIATION"}
+            source = raw_source if raw_source in valid_sources else "AI_GENERATED"
+
+            raw_priority = item.get("priority", "NORMAL")
+            valid_priorities = {"LOW", "NORMAL", "HIGH", "CRITICAL"}
+            priority = raw_priority if raw_priority in valid_priorities else "NORMAL"
+
+            new_task = DailyTask(
+                id=uuid.uuid4(),
+                patient_id=patient_id,
+                task_description=item.get("task_description", "Unnamed Task"),
+                category=item.get("category", "General"),
+                scheduled_date=datetime.combine(today, datetime.min.time()),
+                status_patient="PENDING",
+                status_caretaker="PENDING",
+                source=source,
+                priority=priority,
+            )
+            db.add(new_task)
+            generated_tasks.append(new_task)
+        
+        db.commit()
+        return generated_tasks
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error regenerating tasks: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 @router.get("/summary/{patient_id}")
 def get_task_summary(

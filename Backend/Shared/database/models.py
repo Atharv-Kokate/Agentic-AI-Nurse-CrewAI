@@ -160,6 +160,8 @@ class DailyTask(Base):
     scheduled_date = Column(DateTime, nullable=False) # The date this task is for
     status_patient = Column(String, default="PENDING") # PENDING, COMPLETED, SKIPPED
     status_caretaker = Column(String, default="PENDING") # PENDING, VALIDATED, REFUSED
+    source = Column(String, default="AI_GENERATED")  # AI_GENERATED | KB_BASELINE | MANUAL | SMART_REMEDIATION
+    priority = Column(String, default="NORMAL")       # LOW | NORMAL | HIGH | CRITICAL
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
     updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
 

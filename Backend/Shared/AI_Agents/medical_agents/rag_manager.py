@@ -123,6 +123,24 @@ class RAGManager:
             logger.error(f"Failed to initialize RAGManager: {e}")
             raise e
 
+    def reingest_task_kb(self):
+        """
+        Clear and re-ingest the task planning knowledge base.
+        Call this after updating task_planning_kb.md.
+        """
+        try:
+            self.client.delete_collection(self.task_collection_name)
+            self.task_collection = self.client.get_or_create_collection(
+                name=self.task_collection_name,
+                embedding_function=self.embedding_fn
+            )
+            self.ingest_knowledge_base('task_planning_kb.md', self.task_collection)
+            logger.info("Task KB re-ingested successfully.")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to reingest task KB: {e}")
+            return False
+
     def ingest_knowledge_base(self, filename: str, collection):
         """
         Reads a markdown file, splits by headers, and ingests into the specified collection.
@@ -170,14 +188,20 @@ class RAGManager:
         except Exception as e:
             logger.error(f"Error ingesting {filename}: {e}")
 
-    def search(self, query: str, k: int = 1, collection_type: str = "clinical") -> str:
+    def search(self, query: str, k: int = None, collection_type: str = "clinical") -> str:
         """
         Semantic search for relevant protocols.
         collection_type: 'clinical' or 'task'
+        For task queries, defaults to k=3 to ensure the condition protocol
+        + adaptive escalation protocols are both returned.
         """
         try:
             # Select collection based on type
             target_collection = self.task_collection if collection_type == "task" else self.collection
+
+            # Default k: 3 for task (protocol + escalation + related), 1 for clinical
+            if k is None:
+                k = 3 if collection_type == "task" else 1
 
             results = target_collection.query(
                 query_texts=[query],

@@ -138,11 +138,25 @@ class MedicalAgents:
         from medical_agents.tools import SearchTaskKnowledgeBaseTool
         
         return Agent(
-            role='Daily Health Task Planner',
-            goal='Generate a structured daily plan (Diet, Exercise, Lifestyle) for a patient based on their specific medical conditions.',
-            backstory="""You are an expert Lifestyle Medicine specialist. You create personalized, practical daily routines for patients. 
-            You ALWAYS check the trusted knowledge base for condition-specific protocols (e.g., Diabetes Diet, Hypertension Exercise) before assigning tasks.
-            Your plans are simple, actionable, and strictly based on medical guidelines.
+            role='Adaptive Daily Health Task Planner',
+            goal='Generate a personalized, adaptive daily plan based on the patient\'s medical conditions, historical compliance, vitals trends, and risk level.',
+            backstory="""You are an expert Lifestyle Medicine specialist who creates ADAPTIVE daily routines.
+            You receive a comprehensive patient context that includes not just their conditions, but also:
+            - Their 7-day task compliance rates by category
+            - Tasks they repeatedly skip (which need easier alternatives)
+            - Medication adherence rate and missed medications
+            - Vitals trends and anomalies
+            - Current risk level and health score trend
+            - Active medical alerts
+            
+            You ALWAYS search the knowledge base for condition-specific protocols first.
+            Then you ADAPT the difficulty based on the patient's actual behavior:
+            - Low compliance → simpler, smaller tasks
+            - Skipped tasks → easier alternatives (SMART_REMEDIATION)
+            - High risk → more monitoring tasks with HIGH/CRITICAL priority
+            - Improving trend → progressive challenges
+            
+            You tag each task with source (KB_BASELINE/AI_GENERATED/SMART_REMEDIATION) and priority (LOW/NORMAL/HIGH/CRITICAL).
             IMPORTANT: When calling tools, ensure you use strictly JSON format. Do NOT use fake XML tags like <function>.""",
             verbose=True,
             tools=[SearchTaskKnowledgeBaseTool()],
