@@ -54,6 +54,24 @@ import requests
 # Initialize DB tables
 Base.metadata.create_all(bind=engine)
 
+# --- Auto-Migration: Add new columns to existing tables ---
+# create_all only creates NEW tables, not new columns on existing tables.
+# This safely adds columns if they don't exist yet (idempotent).
+from sqlalchemy import text
+with engine.connect() as conn:
+    migrations = [
+        "ALTER TABLE daily_tasks ADD COLUMN IF NOT EXISTS source VARCHAR DEFAULT 'AI_GENERATED'",
+        "ALTER TABLE daily_tasks ADD COLUMN IF NOT EXISTS priority VARCHAR DEFAULT 'NORMAL'",
+    ]
+    for sql in migrations:
+        try:
+            conn.execute(text(sql))
+            conn.commit()
+        except Exception as e:
+            # Column likely already exists or other non-critical issue
+            print(f"Migration note: {e}")
+    print("DB migrations checked.")
+
 app = FastAPI(
     title="Agentic AI Nurse API",
     version="1.0.0",
