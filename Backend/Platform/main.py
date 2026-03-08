@@ -118,6 +118,17 @@ app.include_router(health_summary_router)
 app.include_router(monitoring_router)
 app.include_router(notifications_router)
 
+# --- Scheduler Lifecycle ---
+from scheduler import start_scheduler, stop_scheduler
+
+@app.on_event("startup")
+def on_startup():
+    start_scheduler()
+
+@app.on_event("shutdown")
+def on_shutdown():
+    stop_scheduler()
+
 # Setup Logging
 logging.basicConfig(
     level=logging.INFO,
@@ -306,6 +317,45 @@ async def run_crew_background(crew_input: dict, patient_id_str: str):
             task_history_str = "\n".join(unique_tasks.values())
             
         logger.info(f"Fetched Context: Meds={len(med_logs)}, Tasks={len(daily_tasks)}")
+
+        # 3. Monitoring Check-In Signals (Self-Reported, Last 3 Days)
+        from database.models import MonitoringCheckIn, MonitoringQuestion, MonitoringResponse
+        checkin_since = current_time - timedelta(days=3)
+        recent_check_ins = db.query(MonitoringCheckIn).filter(
+            MonitoringCheckIn.patient_id == patient_id_str,
+            MonitoringCheckIn.created_at >= checkin_since,
+        ).order_by(MonitoringCheckIn.created_at.desc()).limit(3).all()
+
+        monitoring_signals_str = "No recent monitoring check-in data."
+        if recent_check_ins:
+            signal_lines = []
+            red_count = 0
+            orange_count = 0
+            for ci in recent_check_ins:
+                questions = db.query(MonitoringQuestion).filter(
+                    MonitoringQuestion.check_in_id == ci.id
+                ).all()
+                for q in questions:
+                    resp = db.query(MonitoringResponse).filter(
+                        MonitoringResponse.question_id == q.id
+                    ).first()
+                    if resp:
+                        sev = resp.evaluated_severity or "UNKNOWN"
+                        signal_lines.append(
+                            f"- [{ci.created_at.strftime('%Y-%m-%d')}] "
+                            f"Q: \"{q.question_text}\" → A: \"{resp.answer_value}\" (Severity: {sev})"
+                        )
+                        if sev == "RED":
+                            red_count += 1
+                        elif sev == "ORANGE":
+                            orange_count += 1
+            if signal_lines:
+                monitoring_signals_str = (
+                    f"Red flags: {red_count}, Orange flags: {orange_count}\n"
+                    + "\n".join(signal_lines)
+                )
+
+        logger.info(f"Fetched monitoring signals: {len(recent_check_ins)} check-ins")
         # ----------------------------------------------------
 
         # Format input for LLM clarity to avoid hallucinations/history confusion
@@ -337,7 +387,10 @@ async def run_crew_background(crew_input: dict, patient_id_str: str):
             f"[MEDICATION ADHERENCE LOG (Last 3 Days)]\n"
             f"{med_history_str}\n\n"
             f"[DAILY LIFESTYLE TASKS (Today)]\n"
-            f"{task_history_str}\n"
+            f"{task_history_str}\n\n"
+            f"[MONITORING CHECK-IN SIGNALS (Self-Reported, Last 3 Days)]\n"
+            f"(Patient and caretaker responses from daily health check-ins)\n"
+            f"{monitoring_signals_str}\n"
             f"========================================"
         )
         

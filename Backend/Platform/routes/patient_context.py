@@ -17,7 +17,8 @@ from uuid import UUID
 
 from database.models import (
     Patient, DailyTask, MedicationLog, monitoring_logs,
-    ai_assesments, alerts, DoctorRecommendation
+    ai_assesments, alerts, DoctorRecommendation,
+    MonitoringCheckIn, MonitoringQuestion, MonitoringResponse
 )
 
 
@@ -283,6 +284,61 @@ def build_patient_context(patient_id: UUID, db: Session) -> dict:
     rec_summaries = [r.recommendation_summary[:120] for r in recent_recs]
 
     # -----------------------------------------------------------------------
+    # 10. MONITORING CHECK-IN SIGNALS (last 7 days)
+    # Provides: self-reported symptoms, severity flags, response patterns
+    # -----------------------------------------------------------------------
+    recent_check_ins = db.query(MonitoringCheckIn).filter(
+        MonitoringCheckIn.patient_id == patient_id,
+        MonitoringCheckIn.created_at >= seven_days_ago,
+    ).order_by(MonitoringCheckIn.created_at.desc()).limit(5).all()
+
+    checkins_completed = sum(
+        1 for ci in recent_check_ins
+        if ci.status_patient == "COMPLETED"
+    )
+    checkins_skipped = sum(
+        1 for ci in recent_check_ins
+        if ci.status_patient == "SKIPPED"
+    )
+
+    concerning_responses = []
+    red_flag_count = 0
+    orange_flag_count = 0
+
+    for ci in recent_check_ins:
+        questions = db.query(MonitoringQuestion).filter(
+            MonitoringQuestion.check_in_id == ci.id
+        ).all()
+        for q in questions:
+            resp = db.query(MonitoringResponse).filter(
+                MonitoringResponse.question_id == q.id
+            ).first()
+            if resp and resp.evaluated_severity in ("ORANGE", "RED"):
+                concerning_responses.append({
+                    "question": q.question_text[:80],
+                    "answer": resp.answer_value,
+                    "severity": resp.evaluated_severity,
+                    "date": ci.created_at.strftime("%Y-%m-%d"),
+                })
+                if resp.evaluated_severity == "RED":
+                    red_flag_count += 1
+                elif resp.evaluated_severity == "ORANGE":
+                    orange_flag_count += 1
+
+    # Cap at 5 most recent concerning signals
+    concerning_responses = concerning_responses[:5]
+
+    # Compute monitoring engagement trend
+    monitoring_trend = "stable"
+    if len(recent_check_ins) >= 2:
+        if checkins_skipped > checkins_completed:
+            monitoring_trend = "disengaging"
+        elif red_flag_count + orange_flag_count >= 3:
+            monitoring_trend = "deteriorating"
+        elif red_flag_count + orange_flag_count == 0 and checkins_completed >= 2:
+            monitoring_trend = "improving"
+
+    # -----------------------------------------------------------------------
     # ASSEMBLE CONTEXT (compact, token-efficient)
     # -----------------------------------------------------------------------
     return {
@@ -307,4 +363,12 @@ def build_patient_context(patient_id: UUID, db: Session) -> dict:
             "trend": current_risk["trend"],
         },
         "recent_recommendations": rec_summaries,
+        "monitoring_signals": {
+            "check_ins_completed_7d": checkins_completed,
+            "check_ins_skipped_7d": checkins_skipped,
+            "recent_concerning_responses": concerning_responses,
+            "red_flag_count_7d": red_flag_count,
+            "orange_flag_count_7d": orange_flag_count,
+            "trend": monitoring_trend,
+        },
     }

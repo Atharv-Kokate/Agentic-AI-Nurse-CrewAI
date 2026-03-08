@@ -65,18 +65,25 @@ class MonitoringAgent:
             "2. Generate exactly 1-2 questions for the CARETAKER.\n"
             "3. The `target_role` MUST be exactly 'PATIENT' or 'CARETAKER'.\n"
             "4. The `response_type` MUST be exactly one of: 'YES_NO', 'EMOJI_SCALE', 'COMPARISON', 'FREE_TEXT'.\n"
-            "5. Keep `question_text` extremely simple and colloquial. (e.g., 'Are your ankles swelling today?' not 'Are you experiencing peripheral edema?')."
+            "5. Keep `question_text` extremely simple and colloquial. (e.g., 'Are your ankles swelling today?' not 'Are you experiencing peripheral edema?').\n"
+            "6. If recent response history is provided, DO NOT repeat the exact same questions. Instead:\n"
+            "   - Follow up on concerning answers (e.g., if swelling was YES last time, ask about severity change)\n"
+            "   - Ask about new aspects of the same condition\n"
+            "   - Use COMPARISON type to track trends from previous answers"
         )
         
         prompt = (
             f"Patient Context:\n"
             f"Name: {patient_name}\n"
             f"Condition Tags: {condition_tags}\n\n"
-            f"Recent History & Notes: {recent_history}\n\n"
+            f"=== RECENT CHECK-IN HISTORY ===\n"
+            f"{recent_history}\n"
+            f"===============================\n\n"
             f"=== MONITORING PROTOCOLS (From RAG Knowledge Base) ===\n"
             f"{protocols_context}\n"
             f"====================================================\n\n"
-            f"Task: Generate the precise list of questions to float to the patient and caretaker right now based on the protocols."
+            f"Task: Based on the protocols AND the recent history above, generate the next set of targeted questions. "
+            f"Prioritize follow-ups on any concerning (ORANGE/RED) previous answers."
         )
 
         logger.info(f"Calling Gemini ({self.model_name}) for monitoring question generation...")
@@ -105,3 +112,43 @@ class MonitoringAgent:
         except Exception as e:
             logger.error(f"Failed to generate monitoring questions: {e}")
             raise e
+
+    def evaluate_free_text(
+        self,
+        question_text: str,
+        answer_text: str,
+        condition_tag: str = "GENERAL",
+    ) -> str:
+        """
+        Use Gemini to evaluate the severity of a free-text response.
+        Returns one of: GREEN, YELLOW, ORANGE, RED.
+        """
+        prompt = (
+            f"You are a Clinical Severity Evaluator.\n"
+            f"A patient was asked: \"{question_text}\"\n"
+            f"Their condition tag is: {condition_tag}\n"
+            f"They answered: \"{answer_text}\"\n\n"
+            f"Evaluate the clinical severity of this response.\n"
+            f"Respond with EXACTLY one word: GREEN, YELLOW, ORANGE, or RED.\n"
+            f"- GREEN: Normal, no concern\n"
+            f"- YELLOW: Mildly concerning, worth monitoring\n"
+            f"- ORANGE: Moderately concerning, notify nurse\n"
+            f"- RED: Critically concerning, immediate attention needed"
+        )
+
+        try:
+            response = self.client.models.generate_content(
+                model=self.model_name,
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    temperature=0.0,
+                ),
+            )
+            result = response.text.strip().upper()
+            if result in ("GREEN", "YELLOW", "ORANGE", "RED"):
+                return result
+            logger.warning(f"Unexpected severity response: {result}, defaulting to YELLOW")
+            return "YELLOW"
+        except Exception as e:
+            logger.error(f"Free-text severity evaluation failed: {e}")
+            return "YELLOW"
