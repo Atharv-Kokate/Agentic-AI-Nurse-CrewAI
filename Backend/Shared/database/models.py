@@ -188,3 +188,40 @@ class NotificationLog(Base):
     
     user = sa_relationship("User")
 
+class MonitoringCheckIn(Base):
+    __tablename__ = "monitoring_check_ins"
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    patient_id = Column(UUID(as_uuid=True), ForeignKey("patients.id"), nullable=False, index=True)
+    scheduled_for = Column(DateTime, nullable=False)
+    status_patient = Column(String, default="PENDING") # PENDING, COMPLETED, SKIPPED
+    status_caretaker = Column(String, default="PENDING") # PENDING, COMPLETED, SKIPPED, NOT_REQUIRED
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    
+    patient = sa_relationship("Patient")
+    questions = sa_relationship("MonitoringQuestion", back_populates="check_in", cascade="all, delete-orphan")
+
+class MonitoringQuestion(Base):
+    __tablename__ = "monitoring_questions"
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    check_in_id = Column(UUID(as_uuid=True), ForeignKey("monitoring_check_ins.id"), nullable=False, index=True)
+    target_role = Column(String, nullable=False) # PATIENT or CARETAKER
+    question_text = Column(String, nullable=False)
+    response_type = Column(String, nullable=False) # YES_NO, EMOJI_SCALE, COMPARISON, FREE_TEXT
+    condition_tag = Column(String, nullable=True) # E.g., POST_SURGERY (for tracking why it was asked)
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    
+    check_in = sa_relationship("MonitoringCheckIn", back_populates="questions")
+    responses = sa_relationship("MonitoringResponse", back_populates="question", cascade="all, delete-orphan")
+
+class MonitoringResponse(Base):
+    __tablename__ = "monitoring_responses"
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    question_id = Column(UUID(as_uuid=True), ForeignKey("monitoring_questions.id"), nullable=False, index=True)
+    responder_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False) # The user who answered
+    answer_value = Column(String, nullable=False) # The raw answer (e.g. "YES", "BAD", "WORSE")
+    notes = Column(String, nullable=True) # Optional additional context
+    evaluated_severity = Column(String, nullable=True) # GREEN, YELLOW, ORANGE, RED (assessed by AI/rules)
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    
+    question = sa_relationship("MonitoringQuestion", back_populates="responses")
+    responder = sa_relationship("User")

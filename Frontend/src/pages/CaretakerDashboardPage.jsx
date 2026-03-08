@@ -5,6 +5,7 @@ import { Activity, Thermometer, Droplet, Clock, ChevronRight, ActivitySquare, Br
 import client from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
 import TaskGrid from '../components/TaskGrid';
+import MonitoringCheckInCard from '../components/monitoring/MonitoringCheckInCard';
 
 function CaretakerDashboardPage() {
     const { user } = useAuth();
@@ -196,63 +197,69 @@ function CaretakerDashboardPage() {
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {patients.map((patient) => (
-                        <div key={patient.patient_id} className="bg-white rounded-xl shadow-sm hover:shadow-md transition p-6 border border-slate-100 flex flex-col">
-                            <Link
-                                to={`/assessments/monitor/${patient.patient_id}`}
-                                className="block flex-1"
-                            >
-                                <div className="flex justify-between items-start mb-4">
-                                    <div className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-semibold">
-                                        {patient.relationship}
+                        <div key={patient.patient_id} className="flex flex-col gap-4">
+                            <MonitoringCheckInCard
+                                patientId={patient.patient_id}
+                                role="CARETAKER"
+                            />
+                            <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition p-6 border border-slate-100 flex flex-col h-full">
+                                <Link
+                                    to={`/assessments/monitor/${patient.patient_id}`}
+                                    className="block flex-1"
+                                >
+                                    <div className="flex justify-between items-start mb-4">
+                                        <div className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-semibold">
+                                            {patient.relationship}
+                                        </div>
                                     </div>
-                                </div>
-                                <h3 className="text-xl font-bold text-slate-900 mb-1">{patient.name}</h3>
-                                <p className="text-slate-500 text-sm mb-4">Phone: {patient.contact_number}</p>
+                                    <h3 className="text-xl font-bold text-slate-900 mb-1">{patient.name}</h3>
+                                    <p className="text-slate-500 text-sm mb-4">Phone: {patient.contact_number}</p>
 
-                                <div className="mb-4">
-                                    <span className="text-blue-600 text-sm font-medium">Monitor Live Vitals →</span>
-                                </div>
-                            </Link>
+                                    <div className="mb-4">
+                                        <span className="text-blue-600 text-sm font-medium">Monitor Live Vitals →</span>
+                                    </div>
+                                </Link>
 
-                            {/* Actions Footer */}
-                            <div className="border-t pt-4 mt-auto flex flex-wrap gap-2">
-                                <button
-                                    onClick={(e) => {
-                                        e.preventDefault();
-                                        handleMedicationTracking(patient.patient_id);
-                                    }}
-                                    className="flex-1 py-2 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-lg text-sm font-medium transition-colors border border-slate-200"
-                                >
-                                    💊 Pills
-                                </button>
-                                <button
-                                    onClick={(e) => {
-                                        e.preventDefault();
-                                        fetchVitalsHistory(patient.patient_id);
-                                    }}
-                                    className="flex-1 py-2 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-lg text-sm font-medium transition-colors border border-slate-200"
-                                >
-                                    ❤️ Vitals
-                                </button>
-                                <button
-                                    onClick={(e) => {
-                                        e.preventDefault();
-                                        fetchTasks(patient.patient_id);
-                                    }}
-                                    className="flex-1 py-2 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-lg text-sm font-medium transition-colors border border-slate-200"
-                                >
-                                    📋 Tasks
-                                </button>
-                                <button
-                                    onClick={(e) => {
-                                        e.preventDefault();
-                                        navigate(`/health-dashboard/${patient.patient_id}`);
-                                    }}
-                                    className="w-full py-2 bg-sky-50 hover:bg-sky-100 text-sky-700 rounded-lg text-sm font-medium transition-colors border border-sky-200 flex items-center justify-center gap-1.5"
-                                >
-                                    <HeartPulse className="h-4 w-4" />
-                                    Health Dashboard
-                                </button>
+                                {/* Actions Footer */}
+                                <div className="border-t pt-4 mt-auto flex flex-wrap gap-2">
+                                    <button
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            handleMedicationTracking(patient.patient_id);
+                                        }}
+                                        className="flex-1 py-2 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-lg text-sm font-medium transition-colors border border-slate-200"
+                                    >
+                                        💊 Pills
+                                    </button>
+                                    <button
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            fetchVitalsHistory(patient.patient_id);
+                                        }}
+                                        className="flex-1 py-2 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-lg text-sm font-medium transition-colors border border-slate-200"
+                                    >
+                                        ❤️ Vitals
+                                    </button>
+                                    <button
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            fetchTasks(patient.patient_id);
+                                        }}
+                                        className="flex-1 py-2 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-lg text-sm font-medium transition-colors border border-slate-200"
+                                    >
+                                        📋 Tasks
+                                    </button>
+                                    <button
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            navigate(`/health-dashboard/${patient.patient_id}`);
+                                        }}
+                                        className="w-full py-2 bg-sky-50 hover:bg-sky-100 text-sky-700 rounded-lg text-sm font-medium transition-colors border border-sky-200 flex items-center justify-center gap-1.5"
+                                    >
+                                        <HeartPulse className="h-4 w-4" />
+                                        Health Dashboard
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     ))}

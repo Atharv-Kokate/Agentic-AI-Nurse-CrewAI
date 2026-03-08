@@ -48,6 +48,7 @@ from routes.caretaker import router as caretaker_router
 from routes.medications import router as medications_router
 from routes.tasks import router as tasks_router
 from routes.health_summary import router as health_summary_router
+from routes.monitoring import router as monitoring_router
 from notifications.router import router as notifications_router
 import requests
 
@@ -114,6 +115,7 @@ app.include_router(caretaker_router)
 app.include_router(medications_router)
 app.include_router(tasks_router)
 app.include_router(health_summary_router)
+app.include_router(monitoring_router)
 app.include_router(notifications_router)
 
 # Setup Logging

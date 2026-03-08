@@ -16,6 +16,7 @@ import {
     XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
     RadialBarChart, RadialBar, Legend, Cell
 } from 'recharts';
+import MonitoringCheckInCard from '../components/monitoring/MonitoringCheckInCard';
 
 // ─── Helpers ───────────────────────────────────────────────
 const getHealthColor = (score) => {
@@ -307,6 +308,15 @@ export default function PatientHealthDashboard() {
                     <RefreshCw className="h-4 w-4 text-slate-500 group-hover:text-sky-500 transition-colors" />
                 </button>
             </div>
+
+            {/* ══════ PROACTIVE MONITORING CHECK-IN ══════════════ */}
+            {patient && (
+                <MonitoringCheckInCard
+                    patientId={patientId}
+                    role="PATIENT"
+                    onComplete={fetchData}
+                />
+            )}
 
             {/* ══════ HERO: Health Score + Profile ══════════════ */}
             <motion.div

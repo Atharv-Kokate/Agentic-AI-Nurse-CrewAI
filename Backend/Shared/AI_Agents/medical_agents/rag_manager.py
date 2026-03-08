@@ -108,6 +108,13 @@ class RAGManager:
                 embedding_function=self.embedding_fn
             )
 
+            # --- Collection 3: Monitoring Protocols ---
+            self.monitoring_collection_name = "monitoring_protocols"
+            self.monitoring_collection = self.client.get_or_create_collection(
+                name=self.monitoring_collection_name,
+                embedding_function=self.embedding_fn
+            )
+
             logger.info(f"RAGManager initialized. DB Path: {self.persist_directory}")
             
             # Auto-ingest if empty
@@ -118,6 +125,10 @@ class RAGManager:
             if self.task_collection.count() == 0:
                 logger.info("Task Collection empty. Auto-ingesting task knowledge base...")
                 self.ingest_knowledge_base('task_planning_kb.md', self.task_collection)
+
+            if self.monitoring_collection.count() == 0:
+                logger.info("Monitoring Collection empty. Auto-ingesting monitoring knowledge base...")
+                self.ingest_knowledge_base('monitoring_protocols_kb.md', self.monitoring_collection)
                 
         except Exception as e:
             logger.error(f"Failed to initialize RAGManager: {e}")
@@ -191,17 +202,22 @@ class RAGManager:
     def search(self, query: str, k: int = None, collection_type: str = "clinical") -> str:
         """
         Semantic search for relevant protocols.
-        collection_type: 'clinical' or 'task'
-        For task queries, defaults to k=3 to ensure the condition protocol
+        collection_type: 'clinical', 'task', or 'monitoring'
+        For task/monitoring queries, defaults to k=3 to ensure the condition protocol
         + adaptive escalation protocols are both returned.
         """
         try:
             # Select collection based on type
-            target_collection = self.task_collection if collection_type == "task" else self.collection
+            if collection_type == "task":
+                target_collection = self.task_collection
+            elif collection_type == "monitoring":
+                target_collection = self.monitoring_collection
+            else:
+                target_collection = self.collection
 
-            # Default k: 3 for task (protocol + escalation + related), 1 for clinical
+            # Default k: 3 for task/monitoring (protocol + escalation + related), 1 for clinical
             if k is None:
-                k = 3 if collection_type == "task" else 1
+                k = 1 if collection_type == "clinical" else 3
 
             results = target_collection.query(
                 query_texts=[query],
