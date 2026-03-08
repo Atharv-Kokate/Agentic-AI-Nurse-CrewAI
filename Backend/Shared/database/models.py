@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, JSON, Boolean, Enum
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy.dialects.postgresql import UUID, JSONB, ARRAY
 from sqlalchemy.orm import relationship as sa_relationship
 from database.session import Base
 import enum
@@ -49,6 +49,7 @@ class Patient(Base):
     last_latitude = Column(String, nullable=True)
     last_longitude = Column(String, nullable=True)
     current_medications = Column(JSONB, nullable=True) # List of doc prescribed meds
+    condition_tags = Column(ARRAY(String), default=[], server_default='{}')  # Standardized tags for feature routing
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
     updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
     

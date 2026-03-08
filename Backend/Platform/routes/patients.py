@@ -24,6 +24,7 @@ class PatientCreate(BaseModel):
     assigned_doctor: Optional[str] = None
     next_appointment_date: Optional[datetime] = None
     current_medications: Optional[dict] = Field(default_factory=dict)
+    condition_tags: Optional[List[str]] = Field(default_factory=list)
 
     model_config = {
         "json_schema_extra": {
@@ -55,6 +56,7 @@ class PatientUpdate(BaseModel):
     assigned_doctor: Optional[str] = None
     next_appointment_date: Optional[datetime] = None
     current_medications: Optional[dict] = None
+    condition_tags: Optional[List[str]] = None
 
 
 class PatientResponse(BaseModel):
@@ -68,6 +70,7 @@ class PatientResponse(BaseModel):
     assigned_doctor: Optional[str] = None
     next_appointment_date: Optional[datetime] = None
     current_medications: Optional[dict] = None
+    condition_tags: Optional[List[str]] = None
     created_at: datetime
     updated_at: datetime
 
@@ -77,6 +80,24 @@ class PatientResponse(BaseModel):
 
 
 # --- Routes ---
+
+# Condition tags config (must be before /{patient_id} route to avoid conflict)
+AVAILABLE_CONDITION_TAGS = [
+    {"value": "HYPERTENSION", "label": "Hypertension"},
+    {"value": "DIABETES_TYPE_2", "label": "Diabetes Type 2"},
+    {"value": "POST_SURGERY", "label": "Post-Surgery Recovery"},
+    {"value": "HEART_FAILURE", "label": "Heart Failure / CHF"},
+    {"value": "COPD", "label": "COPD"},
+    {"value": "POST_STROKE", "label": "Post-Stroke Recovery"},
+    {"value": "ASTHMA", "label": "Asthma"},
+    {"value": "KIDNEY_DISEASE", "label": "Kidney Disease"},
+    {"value": "CANCER_TREATMENT", "label": "Cancer Treatment"},
+]
+
+@router.get("/config/condition-tags")
+def get_available_condition_tags():
+    """Return the list of standardized condition tags for the frontend tag picker."""
+    return AVAILABLE_CONDITION_TAGS
 
 @router.post("/", response_model=PatientResponse, status_code=status.HTTP_201_CREATED)
 def create_patient(
@@ -107,7 +128,8 @@ def create_patient(
         reported_symptoms=patient_data.reported_symptoms,
         assigned_doctor=patient_data.assigned_doctor,
         next_appointment_date=patient_data.next_appointment_date,
-        current_medications=patient_data.current_medications
+        current_medications=patient_data.current_medications,
+        condition_tags=patient_data.condition_tags or []
     )
     
     db.add(new_patient)

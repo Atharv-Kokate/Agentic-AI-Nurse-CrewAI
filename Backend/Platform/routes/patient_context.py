@@ -84,6 +84,7 @@ def build_patient_context(patient_id: UUID, db: Session) -> dict:
         "age": patient.age,
         "gender": patient.gender,
         "known_conditions": patient.known_conditions or [],
+        "condition_tags": patient.condition_tags or [],
         "current_medications": patient.current_medications or [],
         "reported_symptoms": patient.reported_symptoms or [],
     }

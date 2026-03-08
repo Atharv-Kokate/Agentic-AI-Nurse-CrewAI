@@ -102,7 +102,7 @@ const PatientsPage = () => {
                                 </div>
                             </div>
 
-                            <div className="mt-4 flex items-center gap-2">
+                            <div className="mt-4 flex flex-wrap items-center gap-2">
                                 <span className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/20">
                                     Active
                                 </span>
@@ -113,6 +113,11 @@ const PatientsPage = () => {
                                     <HeartPulse className="h-3 w-3" />
                                     Health
                                 </button>
+                                {patient.condition_tags && patient.condition_tags.map((tag, i) => (
+                                    <span key={i} className="inline-flex items-center rounded-full bg-teal-50 px-2 py-1 text-[10px] font-semibold text-teal-700 ring-1 ring-inset ring-teal-600/20">
+                                        {tag.replace(/_/g, ' ')}
+                                    </span>
+                                ))}
                             </div>
                         </motion.div>
                     ))}

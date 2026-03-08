@@ -78,6 +78,7 @@ class PatientProfile(BaseModel):
     known_conditions: Any
     reported_symptoms: Any
     current_medications: Any
+    condition_tags: Optional[List[str]] = None
     assigned_doctor: Optional[str] = None
     next_appointment_date: Optional[str] = None
 
@@ -230,6 +231,7 @@ def get_health_summary(
         known_conditions=patient.known_conditions,
         reported_symptoms=patient.reported_symptoms,
         current_medications=patient.current_medications,
+        condition_tags=patient.condition_tags or [],
         assigned_doctor=patient.assigned_doctor,
         next_appointment_date=str(patient.next_appointment_date) if patient.next_appointment_date else None
     )

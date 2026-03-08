@@ -364,9 +364,23 @@ export default function PatientHealthDashboard() {
                     </div>
                 </div>
 
-                {/* Conditions Strip */}
+                {/* Condition Tags */}
+                {patient?.condition_tags && patient.condition_tags.length > 0 && (
+                    <div className="mt-4 pt-4 border-t border-slate-100">
+                        <p className="text-[10px] font-semibold text-slate-400 uppercase mb-2">Condition Tags</p>
+                        <div className="flex flex-wrap gap-1.5">
+                            {patient.condition_tags.map((tag, i) => (
+                                <span key={i} className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-teal-50 text-teal-700 border border-teal-200">
+                                    {tag.replace(/_/g, ' ')}
+                                </span>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* Known Conditions Strip */}
                 {patient?.known_conditions && (
-                    <div className="mt-5 pt-5 border-t border-slate-100">
+                    <div className="mt-4 pt-4 border-t border-slate-100">
                         <p className="text-[10px] font-semibold text-slate-400 uppercase mb-2">Known Conditions</p>
                         <div className="flex flex-wrap gap-2">
                             {(typeof patient.known_conditions === 'object'

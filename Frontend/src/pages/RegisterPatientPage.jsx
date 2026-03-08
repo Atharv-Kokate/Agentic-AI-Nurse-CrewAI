@@ -1,28 +1,69 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
-import { UserPlus, User, Lock, Mail, Activity, Loader2 } from 'lucide-react';
+import { UserPlus, User, Lock, Mail, Activity, Loader2, Tag } from 'lucide-react';
 import client from '../api/client';
 import { motion } from 'framer-motion';
 
 const RegisterPatientPage = () => {
     const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(false);
+    const [availableTags, setAvailableTags] = useState([]);
+    const [selectedTags, setSelectedTags] = useState([]);
     const { register, handleSubmit, formState: { errors } } = useForm();
+
+    // Fetch available condition tags from backend
+    useEffect(() => {
+        const fetchTags = async () => {
+            try {
+                const response = await client.get('/patients/config/condition-tags');
+                setAvailableTags(response.data);
+            } catch (err) {
+                console.error("Failed to fetch condition tags", err);
+                // Fallback tags if API fails
+                setAvailableTags([
+                    { value: "HYPERTENSION", label: "Hypertension" },
+                    { value: "DIABETES_TYPE_2", label: "Diabetes Type 2" },
+                    { value: "POST_SURGERY", label: "Post-Surgery Recovery" },
+                    { value: "HEART_FAILURE", label: "Heart Failure / CHF" },
+                    { value: "COPD", label: "COPD" },
+                    { value: "POST_STROKE", label: "Post-Stroke Recovery" },
+                    { value: "ASTHMA", label: "Asthma" },
+                    { value: "KIDNEY_DISEASE", label: "Kidney Disease" },
+                    { value: "CANCER_TREATMENT", label: "Cancer Treatment" },
+                ]);
+            }
+        };
+        fetchTags();
+    }, []);
+
+    const toggleTag = (tagValue) => {
+        setSelectedTags(prev =>
+            prev.includes(tagValue)
+                ? prev.filter(t => t !== tagValue)
+                : [...prev, tagValue]
+        );
+    };
 
     const onSubmit = async (data) => {
         setIsLoading(true);
         try {
             // 1. Create Patient Record
+            // Auto-generate known_conditions from selected tags + any additional notes
+            const tagLabels = selectedTags.map(tv => availableTags.find(t => t.value === tv)?.label || tv);
+            const additionalNotes = data.additional_notes?.trim();
+            const allConditions = [...tagLabels, ...(additionalNotes ? [additionalNotes] : [])];
+
             const patientPayload = {
                 name: data.name,
                 age: parseInt(data.age),
                 gender: data.gender,
                 contact_number: data.contact_number,
-                known_conditions: { conditions: data.known_conditions.split(',').map(c => c.trim()) },
-                reported_symptoms: {}, // Empty initially
+                known_conditions: { conditions: allConditions },
+                reported_symptoms: {},
                 assigned_doctor: data.assigned_doctor,
-                current_medications: { medications: data.current_medications ? data.current_medications.split(',').map(m => m.trim()) : [] }
+                current_medications: { medications: data.current_medications ? data.current_medications.split(',').map(m => m.trim()).filter(Boolean) : [] },
+                condition_tags: selectedTags,
             };
 
             const patientResponse = await client.post('/patients/', patientPayload);
@@ -92,9 +133,35 @@ const RegisterPatientPage = () => {
                                 <label className="block text-sm font-medium text-slate-700">Contact Number</label>
                                 <input {...register('contact_number', { required: 'Required' })} className="mt-1 w-full rounded-md border border-slate-200 text-white p-2.5 focus:border-sky-500 focus:outline-none" placeholder="555-0000" />
                             </div>
+
+                            {/* Condition Tags Multi-Select */}
                             <div className="md:col-span-2">
-                                <label className="block text-sm font-medium text-slate-700">Known Conditions</label>
-                                <textarea {...register('known_conditions')} className="mt-1 w-full rounded-md border border-slate-200 text-white p-2.5 focus:border-sky-500 focus:outline-none" placeholder="e.g. Asthma, Hypertension (comma separated)" rows={2} />
+                                <label className="block text-sm font-medium text-slate-700 mb-2 flex items-center gap-1.5">
+                                    <Tag className="w-4 h-4 text-teal-500" />
+                                    Condition Tags
+                                </label>
+                                <p className="text-xs text-slate-400 mb-3">Select all applicable conditions. These enable condition-specific features.</p>
+                                <div className="flex flex-wrap gap-2">
+                                    {availableTags.map(tag => (
+                                        <button
+                                            key={tag.value}
+                                            type="button"
+                                            onClick={() => toggleTag(tag.value)}
+                                            className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all duration-200 ${selectedTags.includes(tag.value)
+                                                ? 'bg-teal-500 text-white border-teal-500 shadow-md shadow-teal-200'
+                                                : 'bg-slate-800 text-slate-300 border-slate-600 hover:border-teal-400 hover:text-teal-300'
+                                                }`}
+                                        >
+                                            {selectedTags.includes(tag.value) ? '✓ ' : ''}{tag.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="md:col-span-2">
+                                <label className="block text-sm font-medium text-slate-700">Additional Notes (Optional)</label>
+                                <input {...register('additional_notes')} className="mt-1 w-full rounded-md border border-slate-200 text-white p-2.5 focus:border-sky-500 focus:outline-none" placeholder="e.g. discharged after knee surgery on March 1st, history of allergic reactions" />
+                                <p className="text-xs text-slate-400 mt-1">Any extra context not covered by the tags above.</p>
                             </div>
                             <div className="md:col-span-2">
                                 <label className="block text-sm font-medium text-slate-700">Current Medications (Doctor Prescribed)</label>
