@@ -152,6 +152,24 @@ class RAGManager:
             logger.error(f"Failed to reingest task KB: {e}")
             return False
 
+    def reingest_monitoring_kb(self):
+        """
+        Clear and re-ingest the monitoring protocols knowledge base.
+        Call this after updating monitoring_protocols_kb.md.
+        """
+        try:
+            self.client.delete_collection(self.monitoring_collection_name)
+            self.monitoring_collection = self.client.get_or_create_collection(
+                name=self.monitoring_collection_name,
+                embedding_function=self.embedding_fn
+            )
+            self.ingest_knowledge_base('monitoring_protocols_kb.md', self.monitoring_collection)
+            logger.info("Monitoring KB re-ingested successfully.")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to reingest monitoring KB: {e}")
+            return False
+
     def ingest_knowledge_base(self, filename: str, collection):
         """
         Reads a markdown file, splits by headers, and ingests into the specified collection.

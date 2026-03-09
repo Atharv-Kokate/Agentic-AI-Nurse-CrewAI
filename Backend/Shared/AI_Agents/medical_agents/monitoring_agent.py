@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 from typing import List, Optional
 from google import genai
 from google.genai import types
-from Shared.AI_Agents.medical_agents.rag_manager import RAGManager
+from medical_agents.rag_manager import RAGManager
 
 logger = logging.getLogger("monitoring_agent")
 
