@@ -11,6 +11,7 @@ Jobs:
 import os
 import logging
 from datetime import datetime, timedelta
+from typing import Optional
 from apscheduler.schedulers.background import BackgroundScheduler
 
 from database.session import SessionLocal
@@ -26,7 +27,7 @@ logger = logging.getLogger("scheduler")
 CHECKIN_INTERVAL_HOURS = int(os.getenv("CHECKIN_INTERVAL_HOURS", "8"))
 CHECKIN_EVALUATION_HOURS = int(os.getenv("CHECKIN_EVALUATION_HOURS", "2"))
 
-_scheduler: BackgroundScheduler | None = None
+_scheduler: Optional[BackgroundScheduler] = None
 
 
 # ---------------------------------------------------------------------------
@@ -195,22 +196,22 @@ def start_scheduler():
 
     _scheduler = BackgroundScheduler()
 
-    # Job 1: Generate check-ins every N hours
+    # Job 1: Generate check-ins every N hours (runs 60s after startup, then every N hours)
     _scheduler.add_job(
         generate_all_check_ins,
         "interval",
         hours=CHECKIN_INTERVAL_HOURS,
         id="generate_check_ins",
-        next_run_time=None,  # Don't run immediately on startup
+        next_run_time=datetime.utcnow() + timedelta(seconds=60),
     )
 
-    # Job 2: Evaluate unevaluated responses every N hours
+    # Job 2: Evaluate unevaluated responses every N hours (runs 2min after startup)
     _scheduler.add_job(
         evaluate_unevaluated_responses,
         "interval",
         hours=CHECKIN_EVALUATION_HOURS,
         id="evaluate_responses",
-        next_run_time=None,
+        next_run_time=datetime.utcnow() + timedelta(minutes=2),
     )
 
     _scheduler.start()
