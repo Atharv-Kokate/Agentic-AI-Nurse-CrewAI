@@ -310,9 +310,9 @@ export default function PatientHealthDashboard() {
             </div>
 
             {/* ══════ PROACTIVE MONITORING CHECK-IN ══════════════ */}
-            {patient && (
+            {patient && resolvedPatientId && (
                 <MonitoringCheckInCard
-                    patientId={patientId}
+                    patientId={resolvedPatientId}
                     role="PATIENT"
                     onComplete={fetchData}
                 />
