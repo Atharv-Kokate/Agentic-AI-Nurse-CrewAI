@@ -76,8 +76,9 @@ def generate_all_check_ins():
                     f"{patient.name} (id={patient.id})"
                 )
 
-                # Send push notification to patient
+                # Send push notification to patient and caretakers
                 _notify_patient_new_checkin(patient, db)
+                _notify_caretakers_new_checkin(patient, db)
 
             except Exception as e:
                 logger.error(f"  ✘ Failed for {patient.name}: {e}")
@@ -98,16 +99,47 @@ def _notify_patient_new_checkin(patient: Patient, db):
     """Send a push notification that a new check-in is ready."""
     try:
         from notifications.service import NotificationService
+        from database.models import User
 
-        notification_svc = NotificationService(db)
-        notification_svc.send_push_notification(
-            user_id=patient.user_id,
+        # Patient doesn't have user_id directly — find the User linked to this patient
+        user = db.query(User).filter(User.patient_id == patient.id).first()
+        if not user:
+            logger.warning(f"No user account linked to patient {patient.id}, skipping notification.")
+            return
+
+        NotificationService.send_push_notification(
+            db=db,
+            user_id=str(user.id),
             title="📋 New Health Check-In",
             body="You have new monitoring questions to answer. Tap to respond.",
+            event_type="NEW_CHECKIN",
             data={"type": "NEW_CHECKIN", "patient_id": str(patient.id)},
         )
     except Exception as e:
         logger.warning(f"Push notify failed for patient {patient.id}: {e}")
+
+
+def _notify_caretakers_new_checkin(patient: Patient, db):
+    """Send a push notification to all linked caretakers."""
+    try:
+        from notifications.service import NotificationService
+        from database.models import CaretakerPatientLink
+
+        caretakers = db.query(CaretakerPatientLink).filter(
+            CaretakerPatientLink.patient_id == patient.id
+        ).all()
+
+        for ct in caretakers:
+            NotificationService.send_push_notification(
+                db=db,
+                user_id=str(ct.caretaker_id),
+                title=f"📋 Check-In for {patient.name}",
+                body=f"{patient.name} has a new health check-in. Please answer your caretaker questions.",
+                event_type="NEW_CHECKIN_CARETAKER",
+                data={"type": "NEW_CHECKIN", "patient_id": str(patient.id)},
+            )
+    except Exception as e:
+        logger.warning(f"Push notify caretakers failed for patient {patient.id}: {e}")
 
 
 # ---------------------------------------------------------------------------
