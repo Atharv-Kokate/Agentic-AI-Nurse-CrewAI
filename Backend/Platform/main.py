@@ -1,7 +1,7 @@
 import json
 import logging
 from typing import Optional, Dict, Any, List
-from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks, WebSocket, WebSocketDisconnect, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
@@ -637,6 +637,57 @@ def escalate_to_doctor(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# --- Condition Tag Auto-Detection ---
+
+# Maps keywords found in known_conditions/symptoms text → standardized condition_tags
+_CONDITION_KEYWORD_MAP = {
+    "HYPERTENSION": [
+        "hypertension", "high bp", "high blood pressure", "elevated bp",
+        "htn", "bp high",
+    ],
+    "DIABETES_TYPE_2": [
+        "diabetes", "diabetic", "type 2", "type ii", "blood sugar",
+        "insulin", "metformin", "hyperglycemia",
+    ],
+    "POST_SURGERY": [
+        "surgery", "post-surgery", "post surgery", "operation",
+        "surgical", "post-op", "postop",
+    ],
+    "HEART_FAILURE": [
+        "heart failure", "chf", "congestive heart", "cardiac failure",
+        "cardiomyopathy", "ejection fraction",
+    ],
+    "COPD": [
+        "copd", "chronic obstructive", "emphysema", "chronic bronchitis",
+    ],
+    "HEART_ATTACK_RECOVERY": [
+        "heart attack", "myocardial infarction", "mi recovery",
+        "cardiac arrest", "stemi", "nstemi",
+    ],
+    "CARDIAC_ARRHYTHMIA": [
+        "arrhythmia", "atrial fibrillation", "afib", "a-fib",
+        "irregular heartbeat", "palpitation",
+    ],
+    "GENERAL_CARDIAC": [
+        "cardiac", "heart disease", "coronary", "angina",
+        "chest pain", "heart problem",
+    ],
+}
+
+
+def _detect_condition_tags(known_conditions: str, symptoms: str) -> list:
+    """
+    Scan known_conditions and symptoms text for keywords and return
+    matching standardized condition tags.
+    """
+    combined = f"{known_conditions} {symptoms}".lower()
+    tags = []
+    for tag, keywords in _CONDITION_KEYWORD_MAP.items():
+        if any(kw in combined for kw in keywords):
+            tags.append(tag)
+    return tags
+
+
 # --- Routes ---
 
 @app.post("/api/v1/analyze", response_model=AnalysisInitResponse)
@@ -660,6 +711,12 @@ def analyze_patient(
         conditions_json = {"known_conditions": request.known_conditions}
         medications_json = {"medications": request.current_medications} if request.current_medications else {}
 
+        # Auto-detect condition_tags from known_conditions text
+        detected_tags = _detect_condition_tags(
+            request.known_conditions or "",
+            request.initial_symptoms or "",
+        )
+
         if not patient:
             patient = Patient(
                 name=request.name,
@@ -668,7 +725,8 @@ def analyze_patient(
                 contact_number=request.contact_number,
                 known_conditions=conditions_json,
                 reported_symptoms=symptoms_json,
-                current_medications=medications_json
+                current_medications=medications_json,
+                condition_tags=detected_tags,
             )
             db.add(patient)
             db.commit()
@@ -687,6 +745,12 @@ def analyze_patient(
             
             if request.current_medications:
                  patient.current_medications = medications_json
+
+            # Update condition_tags if new tags were detected (merge, don't overwrite)
+            if detected_tags:
+                existing = set(patient.condition_tags or [])
+                merged = list(existing | set(detected_tags))
+                patient.condition_tags = merged
             
             patient.updated_at = datetime.utcnow()
             db.commit()

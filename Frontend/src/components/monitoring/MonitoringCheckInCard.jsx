@@ -119,7 +119,7 @@ const MonitoringCheckInCard = ({ patientId, role, onComplete }) => {
             />
             <div className="flex gap-3">
                 <button onClick={() => handleAnswer("SKIPPED")} className="flex-1 py-2 bg-slate-800 text-slate-400 rounded-lg hover:bg-slate-700 transition-colors">Skip</button>
-                <button onClick={() => handleAnswer("ANSWERED")} disabled={!freeTextValue.trim()} className="flex-1 py-2 bg-sky-500 text-white rounded-lg hover:bg-sky-600 disabled:opacity-50 transition-colors">Submit</button>
+                <button onClick={() => handleAnswer(freeTextValue.trim())} disabled={!freeTextValue.trim()} className="flex-1 py-2 bg-sky-500 text-white rounded-lg hover:bg-sky-600 disabled:opacity-50 transition-colors">Submit</button>
             </div>
         </div>
     );

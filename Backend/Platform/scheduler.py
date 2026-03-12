@@ -14,6 +14,7 @@ from datetime import datetime, timedelta
 from typing import Optional
 from apscheduler.schedulers.background import BackgroundScheduler
 
+from sqlalchemy import func
 from database.session import SessionLocal
 from database.models import (
     Patient, MonitoringCheckIn, MonitoringQuestion, MonitoringResponse
@@ -46,7 +47,7 @@ def generate_all_check_ins():
         # Patients who have at least one condition tag
         patients = db.query(Patient).filter(
             Patient.condition_tags.isnot(None),
-            Patient.condition_tags != "{}",
+            func.array_length(Patient.condition_tags, 1) > 0,
         ).all()
 
         generated = 0

@@ -9,7 +9,7 @@ Severity levels: GREEN, YELLOW, ORANGE, RED
 """
 
 import logging
-from typing import Optional
+from typing import Optional, List
 from sqlalchemy.orm import Session
 from uuid import UUID
 
@@ -46,7 +46,7 @@ YELLOW_NO_KEYWORDS = [
 ]
 
 
-def _keyword_match(text: str, keywords: list[str]) -> bool:
+def _keyword_match(text: str, keywords: List[str]) -> bool:
     """Check if any keyword appears in the text (case-insensitive)."""
     text_lower = text.lower()
     return any(kw in text_lower for kw in keywords)
@@ -99,7 +99,7 @@ def evaluate_comparison(answer: str) -> str:
 SEVERITY_ORDER = {"GREEN": 0, "YELLOW": 1, "ORANGE": 2, "RED": 3}
 
 
-def max_severity(severities: list[str]) -> str:
+def max_severity(severities: List[str]) -> str:
     """Return the highest severity from a list."""
     if not severities:
         return "GREEN"

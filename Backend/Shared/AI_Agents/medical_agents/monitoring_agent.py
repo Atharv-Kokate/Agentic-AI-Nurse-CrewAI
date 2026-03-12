@@ -2,8 +2,11 @@ import os
 import logging
 import json
 from datetime import datetime
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, VERSION as PYDANTIC_VERSION
 from typing import List, Optional
+
+PYDANTIC_V2 = int(PYDANTIC_VERSION.split(".")[0]) >= 2
+
 from google import genai
 from google.genai import types
 from medical_agents.rag_manager import RAGManager
@@ -17,7 +20,7 @@ class TargetedQuestion(BaseModel):
     condition_tag: str = Field(..., description="The condition this question is related to, e.g. 'POST_SURGERY' or 'GENERAL'.")
 
 class MonitoringCheckInPlan(BaseModel):
-    questions: list[TargetedQuestion] = Field(..., description="List of generated questions for this check-in session.")
+    questions: List[TargetedQuestion] = Field(..., description="List of generated questions for this check-in session.")
 
 class MonitoringAgent:
     def __init__(self, api_key: str = None):
@@ -35,7 +38,7 @@ class MonitoringAgent:
     def generate_check_in_questions(
         self, 
         patient_name: str,
-        condition_tags: list[str],
+        condition_tags: List[str],
         recent_history: str = "No recent history available."
     ) -> MonitoringCheckInPlan:
         """
@@ -105,7 +108,10 @@ class MonitoringAgent:
             json_output = response.text
             
             # Parse the strict JSON back into the Pydantic model
-            plan = MonitoringCheckInPlan.model_validate_json(json_output)
+            if PYDANTIC_V2:
+                plan = MonitoringCheckInPlan.model_validate_json(json_output)
+            else:
+                plan = MonitoringCheckInPlan.parse_raw(json_output)
             logger.info(f"Successfully generated {len(plan.questions)} monitoring questions.")
             return plan
             
