@@ -146,15 +146,17 @@ def get_pending_check_in(
         return {"check_in_id": None, "questions": []}
         
     # Check if this role already completed it
+    target_role = target_role.upper()
     if target_role == "PATIENT" and check_in.status_patient != "PENDING":
         return {"check_in_id": None, "questions": []}
     if target_role == "CARETAKER" and check_in.status_caretaker != "PENDING":
         return {"check_in_id": None, "questions": []}
 
-    # Get questions for this role
+    # Get questions for this role (Case Insensitive!)
+    from sqlalchemy import func
     questions = db.query(MonitoringQuestion).filter(
         MonitoringQuestion.check_in_id == check_in.id,
-        MonitoringQuestion.target_role == target_role
+        func.upper(MonitoringQuestion.target_role) == target_role
     ).all()
     
     # If there are no questions for this role, mark their status as NOT_REQUIRED
