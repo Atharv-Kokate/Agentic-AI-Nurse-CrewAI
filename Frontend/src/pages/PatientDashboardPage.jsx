@@ -8,6 +8,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { getWsUrl } from '../utils/websocket';
 import VideoCallModal from '../components/VideoCallModal';
 import TaskGrid from '../components/TaskGrid';
+import MonitoringCheckInCard from '../components/monitoring/MonitoringCheckInCard';
 
 const PatientDashboardPage = () => {
     const navigate = useNavigate();
@@ -216,6 +217,17 @@ const PatientDashboardPage = () => {
                     <Plus className="w-4 h-4" /> Start New Check-up
                 </button>
             </div>
+
+            {/* Proactive Monitoring Check-In */}
+            {patient && (
+                <MonitoringCheckInCard
+                    patientId={patient.id}
+                    role="PATIENT"
+                    onComplete={() => {
+                        // Optionally refresh data after check-in
+                    }}
+                />
+            )}
 
             {/* Status Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

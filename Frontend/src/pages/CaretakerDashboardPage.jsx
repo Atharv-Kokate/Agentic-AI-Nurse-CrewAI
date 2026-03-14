@@ -201,6 +201,7 @@ function CaretakerDashboardPage() {
                             <MonitoringCheckInCard
                                 patientId={patient.patient_id}
                                 role="CARETAKER"
+                                patientName={patient.name}
                             />
                             <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition p-6 border border-slate-100 flex flex-col h-full">
                                 <Link

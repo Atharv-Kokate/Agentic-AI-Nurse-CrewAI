@@ -314,6 +314,7 @@ export default function PatientHealthDashboard() {
                 <MonitoringCheckInCard
                     patientId={resolvedPatientId}
                     role="PATIENT"
+                    patientName={patient?.name}
                     onComplete={fetchData}
                 />
             )}
