@@ -8,6 +8,7 @@ import { cn } from '../utils/cn';
 import { useAuth } from '../contexts/AuthContext';
 import useNetworkStatus from '../hooks/useNetworkStatus';
 import { Send, WifiOff, Phone } from 'lucide-react';
+import VoiceInput from '../components/ui/VoiceInput';
 
 const steps = [
     { id: 'patient', title: 'Patient Info', icon: Activity },
@@ -24,7 +25,7 @@ const NewAssessmentPage = () => {
     const isOnline = useNetworkStatus();
     const [savedLocally, setSavedLocally] = useState(false);
 
-    const { register, handleSubmit, formState: { errors }, trigger, reset, watch } = useForm({
+    const { register, handleSubmit, formState: { errors }, trigger, reset, watch, setValue } = useForm({
         defaultValues: {
             name: '', age: '', gender: 'Male', contact_number: '',
             blood_pressure: '', heart_rate: '', blood_sugar: '',
@@ -241,32 +242,32 @@ Sent via offline-mode`;
                     {currentStep === 0 && (
                         <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
                             <div className="grid grid-cols-2 gap-4">
-  <div>
-    <label className="block text-sm font-medium text-slate-700">
-      Patient Name
-    </label>
-    <input
-      {...register('name')}
-      disabled
-      className="mt-1 w-full rounded-md border border-slate-200 bg-slate-800 text-white p-2.5 disabled:opacity-70 disabled:cursor-not-allowed focus:outline-none"
-      placeholder="John Doe"
-    />
-  </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700">
+                                        Patient Name
+                                    </label>
+                                    <input
+                                        {...register('name')}
+                                        disabled
+                                        className="mt-1 w-full rounded-md border border-slate-200 bg-slate-800 text-white p-2.5 disabled:opacity-70 disabled:cursor-not-allowed focus:outline-none"
+                                        placeholder="John Doe"
+                                    />
+                                </div>
 
-  <div>
-    <label className="block text-sm font-medium text-slate-700">
-      Age
-    </label>
-    <input
-      type="number"
-      {...register('age')}
-      disabled
-      className="mt-1 w-full rounded-md border border-slate-200 bg-slate-800 text-white p-2.5 disabled:opacity-70 disabled:cursor-not-allowed focus:outline-none"
-      placeholder="55"
-    />
-  </div>
-</div>
-                            
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700">
+                                        Age
+                                    </label>
+                                    <input
+                                        type="number"
+                                        {...register('age')}
+                                        disabled
+                                        className="mt-1 w-full rounded-md border border-slate-200 bg-slate-800 text-white p-2.5 disabled:opacity-70 disabled:cursor-not-allowed focus:outline-none"
+                                        placeholder="55"
+                                    />
+                                </div>
+                            </div>
+
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium text-slate-700">Gender</label>
@@ -287,32 +288,161 @@ Sent via offline-mode`;
 
                     {/* Step 2: Vitals */}
                     {currentStep === 1 && (
-                        <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
-                            <div className="grid grid-cols-3 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700">Blood Pressure</label>
-                                    <input {...register('blood_pressure', { required: 'Required' })} className="mt-1 w-full rounded-md border border-slate-200 bg-slate-800 text-white p-2.5 focus:border-sky-500 focus:outline-none placeholder:text-slate-400" placeholder="120/80" />
-                                    {errors.blood_pressure && <p className="text-xs text-red-500">{errors.blood_pressure.message}</p>}
+                        <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
+
+                            {/* Blood Pressure Sliders */}
+                            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+                                <label className="flex items-center justify-between text-sm font-medium text-slate-700 mb-4">
+                                    <span>Blood Pressure (mmHg)</span>
+                                    <span className="text-xl font-bold text-slate-800 bg-slate-100 px-3 py-1 rounded-lg border border-slate-200">
+                                        {formValues.blood_pressure || '120/80'}
+                                    </span>
+                                </label>
+
+                                <div className="space-y-6">
+                                    {/* Systolic */}
+                                    <div>
+                                        <div className="flex justify-between text-xs text-slate-500 mb-2">
+                                            <span>Systolic (Top)</span>
+                                            <span className={cn(
+                                                "font-medium",
+                                                (parseInt((formValues.blood_pressure || '120/80').split('/')[0]) < 90 || parseInt((formValues.blood_pressure || '120/80').split('/')[0]) > 140) ? "text-red-500" :
+                                                    (parseInt((formValues.blood_pressure || '120/80').split('/')[0]) > 120) ? "text-yellow-500" : "text-emerald-500"
+                                            )}>
+                                                {parseInt((formValues.blood_pressure || '120/80').split('/')[0])}
+                                            </span>
+                                        </div>
+                                        <input
+                                            type="range" min="80" max="200"
+                                            value={parseInt((formValues.blood_pressure || '120/80').split('/')[0])}
+                                            onChange={(e) => {
+                                                const dia = (formValues.blood_pressure || '120/80').split('/')[1];
+                                                setValue('blood_pressure', `${e.target.value}/${dia}`, { shouldValidate: true });
+                                            }}
+                                            className="w-full h-2 rounded-lg appearance-none cursor-pointer bg-slate-200 accent-sky-500"
+                                        />
+                                    </div>
+
+                                    {/* Diastolic */}
+                                    <div>
+                                        <div className="flex justify-between text-xs text-slate-500 mb-2">
+                                            <span>Diastolic (Bottom)</span>
+                                            <span className={cn(
+                                                "font-medium",
+                                                (parseInt((formValues.blood_pressure || '120/80').split('/')[1]) < 60 || parseInt((formValues.blood_pressure || '120/80').split('/')[1]) > 90) ? "text-red-500" :
+                                                    (parseInt((formValues.blood_pressure || '120/80').split('/')[1]) > 80) ? "text-yellow-500" : "text-emerald-500"
+                                            )}>
+                                                {parseInt((formValues.blood_pressure || '120/80').split('/')[1])}
+                                            </span>
+                                        </div>
+                                        <input
+                                            type="range" min="50" max="130"
+                                            value={parseInt((formValues.blood_pressure || '120/80').split('/')[1])}
+                                            onChange={(e) => {
+                                                const sys = (formValues.blood_pressure || '120/80').split('/')[0];
+                                                setValue('blood_pressure', `${sys}/${e.target.value}`, { shouldValidate: true });
+                                            }}
+                                            className="w-full h-2 rounded-lg appearance-none cursor-pointer bg-slate-200 accent-teal-500"
+                                        />
+                                    </div>
                                 </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700">Heart Rate (BPM)</label>
-                                    <input {...register('heart_rate', { required: 'Required' })} className="mt-1 w-full rounded-md border border-slate-200 bg-slate-800 text-white p-2.5 focus:border-sky-500 focus:outline-none placeholder:text-slate-400" placeholder="72" />
-                                    {errors.heart_rate && <p className="text-xs text-red-500">{errors.heart_rate.message}</p>}
+                                <input type="hidden" {...register('blood_pressure')} />
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {/* Heart Rate Slider */}
+                                <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+                                    <label className="flex items-center justify-between text-sm font-medium text-slate-700 mb-4">
+                                        <span>Heart Rate (BPM)</span>
+                                        <span className={cn(
+                                            "text-xl font-bold px-3 py-1 rounded-lg border border-slate-200 bg-slate-100",
+                                            (formValues.heart_rate < 60 || formValues.heart_rate > 100) && formValues.heart_rate !== '' ? "text-red-500" :
+                                                formValues.heart_rate === '' ? "text-slate-800" : "text-emerald-500"
+                                        )}>
+                                            {formValues.heart_rate || '--'}
+                                        </span>
+                                    </label>
+                                    <input
+                                        type="range" min="40" max="180"
+                                        value={formValues.heart_rate || 75}
+                                        onChange={(e) => setValue('heart_rate', e.target.value, { shouldValidate: true })}
+                                        className="w-full h-2 rounded-lg appearance-none cursor-pointer bg-slate-200 accent-rose-500"
+                                    />
+                                    <div className="flex justify-between text-[10px] text-slate-400 mt-2 font-medium">
+                                        <span>40</span><span>180</span>
+                                    </div>
+                                    <input type="hidden" {...register('heart_rate')} />
                                 </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700">Blood Sugar (mg/dL)</label>
-                                    <input {...register('blood_sugar', { required: 'Required' })} className="mt-1 w-full rounded-md border border-slate-200 bg-slate-800 text-white p-2.5 focus:border-sky-500 focus:outline-none" placeholder="90" />
-                                    {errors.blood_sugar && <p className="text-xs text-red-500">{errors.blood_sugar.message}</p>}
+
+                                {/* Blood Sugar Slider */}
+                                <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+                                    <label className="flex items-center justify-between text-sm font-medium text-slate-700 mb-4">
+                                        <span>Blood Sugar (mg/dL)</span>
+                                        <span className={cn(
+                                            "text-xl font-bold px-3 py-1 rounded-lg border border-slate-200 bg-slate-100",
+                                            (formValues.blood_sugar < 70 || formValues.blood_sugar > 140) && formValues.blood_sugar !== '' ? "text-red-500" :
+                                                formValues.blood_sugar === '' ? "text-slate-800" : "text-emerald-500"
+                                        )}>
+                                            {formValues.blood_sugar || '--'}
+                                        </span>
+                                    </label>
+                                    <input
+                                        type="range" min="50" max="300"
+                                        value={formValues.blood_sugar || 100}
+                                        onChange={(e) => setValue('blood_sugar', e.target.value, { shouldValidate: true })}
+                                        className="w-full h-2 rounded-lg appearance-none cursor-pointer bg-slate-200 accent-amber-500"
+                                    />
+                                    <div className="flex justify-between text-[10px] text-slate-400 mt-2 font-medium">
+                                        <span>50</span><span>300</span>
+                                    </div>
+                                    <input type="hidden" {...register('blood_sugar')} />
                                 </div>
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700">Hours Slept</label>
-                                    <input type="number" {...register('sleep_hours')} className="mt-1 w-full rounded-md border border-slate-200 bg-slate-800 text-white p-2.5 focus:border-sky-500 focus:outline-none" placeholder="8" />
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {/* Sleep Hours Buttons */}
+                                <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+                                    <label className="block text-sm font-medium text-slate-700 mb-3">Hours Slept</label>
+                                    <div className="flex flex-wrap gap-2">
+                                        {[4, 5, 6, 7, 8, 9, 10].map(h => (
+                                            <button
+                                                key={h}
+                                                type="button"
+                                                onClick={() => setValue('sleep_hours', h, { shouldValidate: true })}
+                                                className={cn(
+                                                    "w-10 h-10 rounded-full font-bold text-sm transition-all",
+                                                    formValues.sleep_hours == h
+                                                        ? "bg-sky-500 text-white shadow-md shadow-sky-500/30 scale-110"
+                                                        : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                                                )}
+                                            >
+                                                {h}{h === 10 ? '+' : ''}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <input type="hidden" {...register('sleep_hours')} />
                                 </div>
-                                <div className="flex items-center pt-8">
-                                    <input type="checkbox" {...register('meds_taken')} className="h-4 w-4 rounded border-slate-300 text-sky-500 focus:ring-sky-500" id="meds" />
-                                    <label htmlFor="meds" className="ml-2 block text-sm text-slate-700">Medications taken today?</label>
+
+                                {/* Meds Taken Toggle */}
+                                <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm flex items-center justify-between">
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700">Medications Taken?</label>
+                                        <p className="text-xs text-slate-500 mt-1">Have you taken today's prescribed meds?</p>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setValue('meds_taken', !formValues.meds_taken)}
+                                        className={cn(
+                                            "relative inline-flex h-8 w-14 items-center rounded-full transition-colors",
+                                            formValues.meds_taken ? "bg-emerald-500" : "bg-slate-300"
+                                        )}
+                                    >
+                                        <span className={cn(
+                                            "inline-block h-6 w-6 transform rounded-full bg-white transition-transform shadow",
+                                            formValues.meds_taken ? "translate-x-7" : "translate-x-1"
+                                        )} />
+                                    </button>
+                                    <input type="hidden" {...register('meds_taken')} />
                                 </div>
                             </div>
                         </motion.div>
@@ -331,9 +461,15 @@ Sent via offline-mode`;
                                 <textarea {...register('current_medications')} rows={2} className="mt-1 w-full rounded-md border border-slate-200 text-white bg-slate-800 p-2.5 focus:border-sky-500 focus:outline-none" placeholder="e.g. Metformin 500mg, Lisinopril..." />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-slate-700">Current Symptoms</label>
-                                <textarea {...register('initial_symptoms', { required: 'Required' })} rows={3} className="mt-1 w-full rounded-md border border-slate-200 text-white bg-slate-800 p-2.5 focus:border-sky-500 focus:outline-none" placeholder="Describe what the patient is feeling..." />
-                                {errors.initial_symptoms && <p className="text-xs text-red-500">{errors.initial_symptoms.message}</p>}
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Current Symptoms</label>
+                                <p className="text-xs text-slate-500 mb-2">Tap the mic to describe how you're feeling, or type it</p>
+                                <VoiceInput
+                                    value={formValues.initial_symptoms}
+                                    onChange={(val) => setValue('initial_symptoms', val, { shouldValidate: true })}
+                                    placeholder="e.g., I'm feeling dizzy and have a headache..."
+                                />
+                                <input type="hidden" {...register('initial_symptoms', { required: 'Symptoms are required' })} />
+                                {errors.initial_symptoms && <p className="text-xs text-red-500 mt-1">{errors.initial_symptoms.message}</p>}
                             </div>
                         </motion.div>
                     )}
