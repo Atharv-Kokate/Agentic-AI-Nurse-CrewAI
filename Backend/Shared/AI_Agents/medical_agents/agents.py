@@ -76,13 +76,14 @@ class MedicalAgents:
                 "to look up specific protocols in the Knowledge Base.\n"
                 "1. First, SEARCH the knowledge base.\n"
                 "2. Then, based on what you find, use the 'ask_patient' tool to ask the critical questions.\n"
-                "3. Stop identifying if this is an emergency."
+                "3. Stop identifying if this is an emergency.\n"
+                "CRITICAL: You MUST use proper JSON tool calling format. NEVER use <function>...</function> XML tags. If you use XML tags to call tools, the system will crash."
             ),
             verbose=True,
             allow_delegation=False,
             max_rpm=6,
             tools=tools_list,
-            llm=groq_70b_key2  # 70B reasoning model, Key 2 (heavy tool usage)
+            llm=groq_8b_key2  # Changed to 8B fast model due to 70B XML hallucination bug
         )
 
     def context_aggregation_agent(self):
@@ -155,7 +156,8 @@ class MedicalAgents:
             - High risk → more monitoring tasks with HIGH/CRITICAL priority
             - Improving trend → progressive challenges
             
-            You tag each task with source (KB_BASELINE/AI_GENERATED/SMART_REMEDIATION) and priority (LOW/NORMAL/HIGH/CRITICAL).""",
+            You tag each task with source (KB_BASELINE/AI_GENERATED/SMART_REMEDIATION) and priority (LOW/NORMAL/HIGH/CRITICAL).
+            CRITICAL: You MUST use proper JSON tool calling format. NEVER use <function>...</function> XML tags. If you use XML tags to call tools, the system will crash.""",
             verbose=True,
             tools=[SearchTaskKnowledgeBaseTool()],
             llm=groq_8b_key2,  # 8B fast model, Key 2 — task generation

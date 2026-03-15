@@ -58,7 +58,8 @@ class MedicalTasks:
                 "6. You MUST ask at least 1-2 clarifying questions using the 'ask_patient' tool if there is ANY ambiguity or risk. Do not assume you know enough.\n"
                 "7. MANDATORY TOOL USAGE: If the patient has ANY reported symptoms or ABNORMAL vitals, you MUST use the 'ask_patient' tool to verify the severity. Do NOT just summarize. Ask a question.\n"
                 "8. Even if you know the medical diagnosis or you have enough context about the patient to do analysis still you must ask atleast 3 relevant question to user for gathering more context regarding the known medical condition from the knowledge base.\n"
-                "9. DO NOT return the final JSON until you have either asked the necessary questions or confirmed the patient is healthy."
+                "9. DO NOT return the final JSON until you have either asked the necessary questions or confirmed the patient is healthy.\n"
+                "10. CRITICAL: You MUST use proper JSON tool calling format. NEVER use <function>...</function> XML tags. If you use XML tags to call tools, the system will crash."
                 
             ),
             expected_output=(
