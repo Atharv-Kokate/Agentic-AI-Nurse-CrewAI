@@ -629,7 +629,7 @@ def escalate_to_doctor(
         }
         
         logger.info(f"Triggering N8N Escalation (Manual): {N8N_WEBHOOK}")
-        response = requests.post(N8N_WEBHOOK, json=payload, timeout=10) # Increased timeout
+        response = requests.post(N8N_WEBHOOK, json=payload, timeout=240) # Increased timeout to 4 minutes to allow phone call to complete
         return {"status": "success", "n8n_response": response.status_code}
 
     except Exception as e:

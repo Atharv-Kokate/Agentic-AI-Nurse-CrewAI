@@ -75,9 +75,8 @@ class MedicalAgents:
                 "You DO NOT memorize all medical protocols. Instead, you MUST use your 'Search a mdx' tool "
                 "to look up specific protocols in the Knowledge Base.\n"
                 "1. First, SEARCH the knowledge base.\n"
-                "2. Then, based on what you find, use the 'Ask Patient' tool to ask the critical questions.\n"
-                "3. Stop identifying if this is an emergency.\n"
-                "IMPORTANT: When calling tools, ensure you use strictly JSON format. Do NOT use fake XML tags like <function>."
+                "2. Then, based on what you find, use the 'ask_patient' tool to ask the critical questions.\n"
+                "3. Stop identifying if this is an emergency."
             ),
             verbose=True,
             allow_delegation=False,
@@ -156,8 +155,7 @@ class MedicalAgents:
             - High risk → more monitoring tasks with HIGH/CRITICAL priority
             - Improving trend → progressive challenges
             
-            You tag each task with source (KB_BASELINE/AI_GENERATED/SMART_REMEDIATION) and priority (LOW/NORMAL/HIGH/CRITICAL).
-            IMPORTANT: When calling tools, ensure you use strictly JSON format. Do NOT use fake XML tags like <function>.""",
+            You tag each task with source (KB_BASELINE/AI_GENERATED/SMART_REMEDIATION) and priority (LOW/NORMAL/HIGH/CRITICAL).""",
             verbose=True,
             tools=[SearchTaskKnowledgeBaseTool()],
             llm=groq_8b_key2,  # 8B fast model, Key 2 — task generation
