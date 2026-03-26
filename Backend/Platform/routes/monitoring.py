@@ -6,14 +6,22 @@ from datetime import datetime, timedelta
 from uuid import UUID
 
 from database.session import get_db
-from database.models import User, Patient, UserRole, MonitoringCheckIn, MonitoringQuestion, MonitoringResponse
+from database.models import User, Patient, UserRole, MonitoringCheckIn, MonitoringQuestion, MonitoringResponse, TelemetryLog
 from auth.dependencies import get_current_active_user, require_roles
 from medical_agents.monitoring_agent import MonitoringAgent
-from severity_engine import evaluate_check_in, handle_severity_escalation
+from severity_engine import evaluate_check_in, handle_severity_escalation, evaluate_vitals_severity, check_telemetry_anomalies, handle_telemetry_escalation
 
 router = APIRouter(prefix="/api/v1/monitoring", tags=["Monitoring"])
 
 # --- Schemas ---
+class TelemetryPayload(BaseModel):
+    patient_id: UUID
+    heart_rate: Optional[int] = None
+    blood_pressure: Optional[str] = None
+    spo2: Optional[int] = None
+    # Add an optional secret token field if you want to auth n8n webhooks
+    webhook_token: Optional[str] = None
+
 class SubmitResponseItem(BaseModel):
     question_id: UUID
     answer_value: str
@@ -230,4 +238,65 @@ def submit_check_in_responses(
         "severity": eval_result["overall_severity"],
         "red_flags": eval_result["red_count"],
         "orange_flags": eval_result["orange_count"],
+    }
+
+
+@router.post("/telemetry")
+def ingest_telemetry_webhook(
+    payload: TelemetryPayload,
+    db: Session = Depends(get_db)
+):
+    """
+    Webhook endpoint for n8n to stream continuous vitals data.
+    Implements a 3-minute sliding window logic to alert on sustained anomalies.
+    """
+    # Verify patient exists
+    patient = db.query(Patient).filter(Patient.id == payload.patient_id).first()
+    if not patient:
+        raise HTTPException(status_code=404, detail="Patient not found")
+
+    # 1. Log telemetry
+    log = TelemetryLog(
+        patient_id=payload.patient_id,
+        heart_rate=payload.heart_rate,
+        blood_pressure=payload.blood_pressure,
+        spo2=payload.spo2
+    )
+    db.add(log)
+    db.commit()
+
+    # 2. Check for sustained anomalies (last 6 readings = 3 minutes if at 30s interval)
+    is_sustained_anomaly = check_telemetry_anomalies(payload.patient_id, db)
+
+    if is_sustained_anomaly:
+        highest_severity = "ORANGE"
+        # We can evaluate the single current reading to see if it's RED
+        current_sev = evaluate_vitals_severity(payload.heart_rate, payload.blood_pressure, payload.spo2)
+        if current_sev == "RED":
+            highest_severity = "RED"
+            
+        handle_telemetry_escalation(payload.patient_id, highest_severity, db)
+        return {"status": "success", "alert_triggered": True, "severity": highest_severity}
+    
+    return {"status": "success", "alert_triggered": False}
+
+@router.get("/telemetry/latest/{patient_id}")
+def get_latest_telemetry(
+    patient_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Fetch the latest anomalous reading to pre-fill the frontend Assessment Check-up page.
+    """
+    log = db.query(TelemetryLog).filter(TelemetryLog.patient_id == patient_id).order_by(TelemetryLog.timestamp.desc()).first()
+    if not log:
+        return {"heart_rate": "", "blood_pressure": "", "spo2": ""}
+        
+    return {
+        "heart_rate": str(log.heart_rate) if log.heart_rate else "",
+        "blood_pressure": log.blood_pressure if log.blood_pressure else "",
+        "blood_sugar": "", # Add if supported later
+        "spo2": str(log.spo2) if log.spo2 else "",
+        "timestamp": log.timestamp.isoformat()
     }

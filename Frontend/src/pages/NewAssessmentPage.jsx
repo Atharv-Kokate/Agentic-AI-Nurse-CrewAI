@@ -71,6 +71,21 @@ const NewAssessmentPage = () => {
                         const patient = response.data;
                         console.log("Patient data received:", patient);
 
+                        // Try fetching latest telemetry for pre-filling vitals
+                        let presetVitals = { blood_pressure: '', heart_rate: '', blood_sugar: '', sleep_hours: '' };
+                        try {
+                             if(patient.id) {
+                                  const telResponse = await client.get(`/monitoring/telemetry/latest/${patient.id}`);
+                                  if(telResponse.data) {
+                                       presetVitals.heart_rate = telResponse.data.heart_rate || '';
+                                       presetVitals.blood_pressure = telResponse.data.blood_pressure || '';
+                                       // Assuming SpO2 is supported on backend but not in form yet, we just fill what we have
+                                  }
+                             }
+                        } catch(telErr) {
+                             console.log("No recent telemetry or failed to fetch:", telErr);
+                        }
+
                         // Helper to safely extract list from potentially nested objects
                         const extractList = (obj, keys) => {
                             if (!obj) return '';
@@ -92,10 +107,10 @@ const NewAssessmentPage = () => {
                             current_medications: extractList(patient.current_medications, ['medications', 'current_medications']),
                             initial_symptoms: '', // Always start blank?
                             meds_taken: false,
-                            blood_pressure: '',
-                            heart_rate: '',
-                            blood_sugar: '',
-                            sleep_hours: ''
+                            blood_pressure: presetVitals.blood_pressure,
+                            heart_rate: presetVitals.heart_rate,
+                            blood_sugar: presetVitals.blood_sugar,
+                            sleep_hours: presetVitals.sleep_hours
                         });
                     } else {
                         // Offline: Load from local storage if available

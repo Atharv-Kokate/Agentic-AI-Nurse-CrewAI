@@ -225,3 +225,14 @@ class MonitoringResponse(Base):
     
     question = sa_relationship("MonitoringQuestion", back_populates="responses")
     responder = sa_relationship("User")
+
+class TelemetryLog(Base):
+    __tablename__ = "telemetry_logs"
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    patient_id = Column(UUID(as_uuid=True), ForeignKey("patients.id"), nullable=False, index=True)
+    heart_rate = Column(Integer, nullable=True)
+    blood_pressure = Column(String, nullable=True)
+    spo2 = Column(Integer, nullable=True)
+    timestamp = Column(DateTime, nullable=False, default=datetime.utcnow, index=True)
+    
+    patient = sa_relationship("Patient")

@@ -263,3 +263,117 @@ def handle_severity_escalation(
             )
     except Exception as e:
         logger.error(f"Failed to send monitoring escalation notification: {e}")
+
+def evaluate_vitals_severity(hr: int | None = None, bp: str | None = None, spo2: int | None = None) -> str:
+    """Evaluate raw vitals data against critical thresholds."""
+    if spo2 is not None and spo2 < 90:
+        return "RED"
+    if hr is not None and (hr > 130 or hr < 40):
+        return "RED"
+    if hr is not None and (hr > 110 or hr < 50):
+        return "ORANGE"
+    
+    if bp:
+        try:
+            sys, dia = map(int, bp.split('/'))
+            if sys > 180 or sys < 90 or dia > 120 or dia < 60:
+                return "RED"
+            if sys > 140 or dia > 90:
+                return "ORANGE"
+        except Exception:
+            pass
+
+    return "GREEN"
+
+
+def check_telemetry_anomalies(patient_id: UUID, db: Session) -> bool:
+    """
+    Check if the last 6 telemetry readings (for the past 3 minutes) all exceed
+    normal thresholds (i.e., evaluate_vitals_severity != GREEN).
+    """
+    from database.models import TelemetryLog
+    logs = (
+        db.query(TelemetryLog)
+        .filter(TelemetryLog.patient_id == patient_id)
+        .order_by(TelemetryLog.timestamp.desc())
+        .limit(6)
+        .all()
+    )
+
+    if len(logs) < 6:
+        return False
+
+    for log in logs:
+        sev = evaluate_vitals_severity(log.heart_rate, log.blood_pressure, log.spo2)
+        if sev == "GREEN":
+            return False
+
+    return True
+
+
+def handle_telemetry_escalation(
+    patient_id: UUID,
+    overall_severity: str,
+    db: Session,
+):
+    """
+    Called when a sustained anomaly is detected.
+    Creates an alert and sends a push notification to both Caretaker and Patient.
+    """
+    if overall_severity not in ("ORANGE", "RED"):
+        return
+
+    patient = db.query(Patient).filter(Patient.id == patient_id).first()
+    patient_name = patient.name if patient else "Unknown"
+
+    severity_label = "CRITICAL" if overall_severity == "RED" else "WARNING"
+    alert_msg = (
+        f"Continuous monitoring detected sustained abnormal vitals for {patient_name}."
+    )
+
+    # Create alert record
+    new_alert = alerts(
+        patient_id=patient_id,
+        alert_type=f"TELEMETRY_{severity_label}",
+        alert_message=alert_msg,
+        call_received=False,
+    )
+    db.add(new_alert)
+    db.commit()
+
+    # Send push notification
+    try:
+        from notifications.service import NotificationService
+
+        # 1. Notify Caretakers
+        caretakers = db.query(CaretakerPatientLink).filter(
+            CaretakerPatientLink.patient_id == patient_id
+        ).all()
+
+        title = f"🚨 URGENT: Abnormal Vitals Detected for {patient_name}"
+
+        for ct in caretakers:
+            NotificationService.send_push_notification(
+                db=db,
+                user_id=ct.caretaker_id,
+                title=title,
+                body=alert_msg,
+                event_type=f"TELEMETRY_{severity_label}",
+                data={"click_action": f"/dashboard/patient/{patient_id}"},
+            )
+
+        # 2. Notify Patient
+        if patient.user_account:
+            patient_title = "🚨 Important: We noticed changes in your vitals"
+            patient_body = "Please click here to complete a quick AI check-up so we can verify you are okay."
+            NotificationService.send_push_notification(
+                db=db,
+                user_id=patient.user_account.id,
+                title=patient_title,
+                body=patient_body,
+                event_type=f"TELEMETRY_{severity_label}",
+                data={"click_action": "/assessments/new", "action": "START_ASSESSMENT", "patient_id": str(patient_id)},
+            )
+            
+    except Exception as e:
+        logger.error(f"Failed to send telemetry escalation notification: {e}")
