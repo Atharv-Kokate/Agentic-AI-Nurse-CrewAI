@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🏥 VitalIQ — Agentic AI Nurse
+# 🏥 Aviral — Agentic AI Nurse
 
 ### Intelligent Patient Health Monitoring & Risk Assessment Platform
 
@@ -25,7 +25,7 @@
 
 ## 📸 Overview
 
-VitalIQ is an **agentic AI nursing assistant** that automates patient health monitoring and clinical decision-making through a multi-agent architecture. Nurses submit patient vitals, and the system autonomously evaluates them through a 5-stage AI pipeline — asking the patient follow-up questions in real-time when needed, consulting a medical knowledge base (RAG), computing a risk score, and deciding on an action: **monitor at home**, **schedule appointment**, **alert caregiver**, or **trigger emergency escalation** via WhatsApp to a doctor.
+Aviral is an **agentic AI nursing assistant** that automates patient health monitoring and clinical decision-making through a multi-agent architecture. Nurses submit patient vitals, and the system autonomously evaluates them through a 5-stage AI pipeline — asking the patient follow-up questions in real-time when needed, consulting a medical knowledge base (RAG), computing a risk score, and deciding on an action: **monitor at home**, **schedule appointment**, **alert caregiver**, or **trigger emergency escalation** via WhatsApp to a doctor.
 
 ### Key Highlights
 
@@ -147,7 +147,7 @@ VitalIQ is an **agentic AI nursing assistant** that automates patient health mon
 
 ## 🤖 AI Agent Pipeline
 
-The core of VitalIQ is a **5-stage sequential CrewAI pipeline** that processes patient vitals through specialized agents. Each agent has a defined role, goal, and backstory, and uses Groq-hosted Llama models for inference.
+The core of Aviral is a **5-stage sequential CrewAI pipeline** that processes patient vitals through specialized agents. Each agent has a defined role, goal, and backstory, and uses Groq-hosted Llama models for inference.
 
 ```
 Patient Vitals Submitted
