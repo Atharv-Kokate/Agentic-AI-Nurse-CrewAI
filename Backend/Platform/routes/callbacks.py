@@ -13,7 +13,7 @@ class DoctorAdviceRequest(BaseModel):
     patient_id: str
     doctor_name: Optional[str] = "Medical Officer"
     recommendation_summary: str
-    medication _advice: Optional[str] = None
+    medication_advice: Optional[str] = None
     escalation_level: Optional[str] = "Standard"
 
 @router.post("/doctor-advice")
