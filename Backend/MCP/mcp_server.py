@@ -14,7 +14,7 @@ Architecture:
   - Permissions mirror the FastAPI route guards exactly
 """
 
-from fastmcp import FastMCP, Context
+from mcp.server.fastmcp import FastMCP, Context
 import sys
 import os
 import json
@@ -57,8 +57,7 @@ from database.models import (
     MonitoringCheckIn, MonitoringQuestion, MonitoringResponse,
     TelemetryLog, DeviceToken, NotificationLog,
 )
-from medical_agents.crew import MedicalCrew
-from medical_agents.agents import MedicalAgents
+# Medical agent imports are deferred inside specific tools to prevent CrewAI startup crashes
 
 # Auth utilities (reuse the exact same password verification)
 from auth.security import verify_password
@@ -510,6 +509,7 @@ async def run_full_analysis(
         )
 
         try:
+            from medical_agents.crew import MedicalCrew
             medical_crew = MedicalCrew(patient_id=str(patient_id))
             crew_result = await asyncio.to_thread(
                 lambda: _run_crew_agent_safely(lambda: medical_crew.run(formatted_input))
@@ -592,6 +592,7 @@ async def analyze_vitals(vitals_json: str) -> str:
 
     try:
         from crewai import Agent, Task, Crew
+        from medical_agents.agents import MedicalAgents
 
         vitals_data = json.loads(vitals_json) if isinstance(vitals_json, str) else vitals_json
         agents = MedicalAgents()
@@ -630,6 +631,7 @@ async def run_risk_assessment(case_context: str) -> str:
 
     try:
         from crewai import Agent, Task, Crew
+        from medical_agents.agents import MedicalAgents
 
         agents = MedicalAgents()
         risk_agent = agents.risk_assessment_agent()
@@ -845,10 +847,10 @@ async def ingest_telemetry(
 
 @mcp.tool()
 async def schedule_medication_reminder(
-    patient_id: str,
     medicine_name: str,
     dosage: str,
     schedule_time: str,
+    patient_id: str = None,
     remaining_count: int = 0,
 ) -> str:
     """
@@ -856,15 +858,22 @@ async def schedule_medication_reminder(
     Requires: ADMIN, NURSE, or PATIENT (own only).
 
     Args:
-        patient_id: UUID of the patient.
         medicine_name: Name of the medication.
         dosage: Dosage instruction (e.g. "500mg").
         schedule_time: Time in HH:MM format (24h).
+        patient_id: UUID of the patient (optional for PATIENT role).
         remaining_count: Initial stock count (default 0).
     """
     auth_err = _require_auth(["ADMIN", "NURSE", "PATIENT"])
     if auth_err:
         return auth_err
+
+    # Auto-fill patient_id for PATIENT role
+    if not patient_id:
+        if _auth_state["role"] == "PATIENT":
+            patient_id = _auth_state["patient_id"]
+        else:
+            return "❌ patient_id is required for your role."
 
     if _auth_state["role"] == "PATIENT":
         access_err = _check_patient_access(patient_id)
@@ -1168,6 +1177,7 @@ async def generate_daily_health_plan(patient_id: str) -> str:
 
             patient_data_str = json.dumps(context, default=str)
 
+        from medical_agents.crew import MedicalCrew
         crew = MedicalCrew(patient_id=str(patient_id))
         result = await asyncio.to_thread(
             lambda: _run_crew_agent_safely(lambda: crew.run_planning_crew(patient_data_str))
