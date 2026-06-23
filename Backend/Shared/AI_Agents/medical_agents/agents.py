@@ -13,24 +13,28 @@ _KEY_2 = os.getenv("GROQ_API_KEY_2") or _KEY_1  # Fallback to key1 if key2 missi
 
 # 70B — Deep reasoning (symptom inquiry, risk assessment)
 groq_70b_key1 = LLM(
-    model="groq/llama-3.3-70b-versatile",
+    model="openai/llama-3.3-70b-versatile",
+    base_url="https://api.groq.com/openai/v1",
     api_key=_KEY_1,
     num_retries=3,
 )
 groq_70b_key2 = LLM(
-    model="groq/llama-3.3-70b-versatile",
+    model="openai/llama-3.3-70b-versatile",
+    base_url="https://api.groq.com/openai/v1",
     api_key=_KEY_2,
     num_retries=3,
 )
 
 # 8B — Fast, high-throughput (vitals, aggregation, decision, planning)
 groq_8b_key1 = LLM(
-    model="groq/llama-3.1-8b-instant",
+    model="openai/llama-3.1-8b-instant",
+    base_url="https://api.groq.com/openai/v1",
     api_key=_KEY_1,
     num_retries=3,
 )
 groq_8b_key2 = LLM(
-    model="groq/llama-3.1-8b-instant",
+    model="openai/llama-3.1-8b-instant",
+    base_url="https://api.groq.com/openai/v1",
     api_key=_KEY_2,
     num_retries=3,
 )
